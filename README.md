@@ -1,36 +1,184 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ShezaStar E-Commerce - Product Management System
+
+A comprehensive product management system for vehicle electronic gadgets with dynamic variant types, multiple images, and intelligent image-to-variant mapping.
+
+## Features
+
+- **Dynamic Variant Types**: Create custom variant categories (Color, Size, Storage, etc.) with unlimited items
+- **Multiple Images**: Upload and manage multiple product images with drag-and-drop reordering
+- **Image-to-Variant Mapping**: Map images to specific variant items or combinations using drag-and-drop
+- **Flexible Pricing**: Base price, offer price, and optional per-variant price modifiers
+- **Full CRUD Operations**: Complete admin panel for managing products and variant types
+
+## Tech Stack
+
+- **Framework**: Next.js 16 with App Router
+- **Database**: MongoDB
+- **Validation**: Zod
+- **UI**: React with Tailwind CSS
+- **Drag & Drop**: @dnd-kit
+- **Image Processing**: Sharp
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ installed
+- MongoDB running locally or connection string to MongoDB instance
+
+### Installation
+
+1. Clone the repository and install dependencies:
+
+```bash
+npm install
+```
+
+2. Create environment file:
+
+```bash
+cp .env.local.example .env.local
+```
+
+3. Update `.env.local` with your MongoDB connection:
+
+```env
+MONGODB_URI=mongodb://localhost:27017
+DB_NAME=shezastar
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+4. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage Guide
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Create Variant Types
 
-## Learn More
+Before creating products, set up your variant types:
 
-To learn more about Next.js, take a look at the following resources:
+1. Navigate to **Variant Types** from the admin panel
+2. Click **Create Variant Type**
+3. Enter a name (e.g., "Color", "Storage", "Size")
+4. Add items to the variant type (e.g., "Red", "Blue", "Black")
+5. Save the variant type
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. Create Products
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Navigate to **Products** from the admin panel
+2. Click **Create Product**
+3. Follow the multi-step form:
+   - **Step 1**: Enter product name, description, base price, and optional offer price
+   - **Step 2**: Upload product images (drag & drop or click to select)
+   - **Step 3**: Select variant types and choose items for each
+   - **Step 4**: Map images to variant items (drag variant tags onto images)
+   - **Step 5**: Review and submit
 
-## Deploy on Vercel
+### 3. Image-to-Variant Mapping
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Two ways to map images to variants:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Drag & Drop**: Drag a variant tag and drop it on an image
+- **Multi-Select**: Check multiple variant items and click "Map Selected" on an image
+
+**Mapping Logic**:
+- Images with no mappings show for all variant combinations
+- Images mapped to single items show when that item is selected
+- Images mapped to multiple items show only when ALL those items are selected together
+
+## Project Structure
+
+```
+app/
+  (admin)/              # Admin panel pages
+    products/           # Product management
+    variant-types/      # Variant type management
+  api/                  # API routes
+    products/           # Product endpoints
+    variant-types/      # Variant type endpoints
+
+lib/
+  db/                   # Database connection
+  errors/               # Error handling
+  product/              # Product feature
+    product.schema.ts   # Zod schemas
+    product.service.ts  # Business logic
+    product.controller.ts # Request handling
+    model/              # Domain models
+  variant-type/         # Variant type feature
+  utils/                # Utilities (file upload, etc.)
+
+components/
+  ui/                   # Reusable UI components
+```
+
+## API Endpoints
+
+### Variant Types
+
+- `GET /api/variant-types` - List all variant types
+- `POST /api/variant-types` - Create variant type
+- `GET /api/variant-types/[id]` - Get variant type
+- `PUT /api/variant-types/[id]` - Update variant type
+- `DELETE /api/variant-types/[id]` - Delete variant type
+
+### Products
+
+- `GET /api/products` - List products (with pagination)
+- `POST /api/products` - Create product
+- `GET /api/products/[id]` - Get product
+- `PUT /api/products/[id]` - Update product
+- `DELETE /api/products/[id]` - Delete product
+- `POST /api/products/[id]/images` - Upload images
+- `DELETE /api/products/[id]/images/[imageId]` - Delete image
+- `POST /api/products/[id]/images/map` - Map images to variants
+
+## Architecture
+
+This project follows a clean, layered architecture:
+
+- **Routes**: Handle HTTP requests/responses
+- **Controllers**: Validate input, coordinate operations
+- **Services**: Contain business logic
+- **Models**: Define domain entities and transformations
+
+See `AGENTS.md` for detailed architecture guidelines.
+
+## Development
+
+```bash
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Run linter
+npm run lint
+```
+
+## Notes
+
+- No authentication is implemented (as requested for development)
+- Images are stored in `public/uploads/`
+- All images are automatically optimized using Sharp
+- The system supports unlimited variant types and items
+- Image filtering is handled automatically based on variant selection
+
+## Future Enhancements
+
+- User authentication and authorization
+- Product categories and tags
+- Inventory management
+- Order processing
+- Customer-facing storefront
+- Search and filtering
+- Product reviews and ratings
