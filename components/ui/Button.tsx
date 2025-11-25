@@ -4,7 +4,7 @@
 import { ButtonHTMLAttributes } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger';
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
     size?: 'sm' | 'md' | 'lg';
 }
 
@@ -15,18 +15,20 @@ export function Button({
     children,
     ...props
 }: ButtonProps) {
-    const baseStyles = 'font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    const baseStyles = 'font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--ring)] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2';
 
     const variantStyles = {
-        primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-        secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
-        danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+        primary: 'bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 shadow-md hover:shadow-lg',
+        secondary: 'bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:bg-[var(--accent)] shadow-sm hover:shadow-md',
+        danger: 'bg-[var(--danger)] text-white hover:opacity-90 shadow-md hover:shadow-lg',
+        ghost: 'hover:bg-[var(--accent)] text-[var(--foreground)]',
+        outline: 'border-2 border-[var(--border)] hover:bg-[var(--accent)] text-[var(--foreground)]',
     };
 
     const sizeStyles = {
         sm: 'px-3 py-1.5 text-sm',
-        md: 'px-4 py-2 text-base',
-        lg: 'px-6 py-3 text-lg',
+        md: 'px-5 py-2.5 text-base',
+        lg: 'px-7 py-3.5 text-lg',
     };
 
     return (
