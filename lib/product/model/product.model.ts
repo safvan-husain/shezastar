@@ -1,6 +1,6 @@
 // lib/product/model/product.model.ts
 import { ObjectId } from 'mongodb';
-import { ProductImage, ProductVariant } from '../product.schema';
+import { ProductImage, ProductVariant, InstallationService } from '../product.schema';
 
 export interface ProductDocument {
     _id: ObjectId;
@@ -11,6 +11,7 @@ export interface ProductDocument {
     images: ProductImage[];
     variants: ProductVariant[];
     subCategoryIds: string[];
+    installationService?: InstallationService;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -24,6 +25,7 @@ export interface Product {
     images: ProductImage[];
     variants: ProductVariant[];
     subCategoryIds: string[];
+    installationService?: InstallationService;
     createdAt: string;
     updatedAt: string;
 }
@@ -38,6 +40,7 @@ export function toProduct(doc: ProductDocument): Product {
         images: doc.images,
         variants: doc.variants,
         subCategoryIds: doc.subCategoryIds || [],
+        installationService: doc.installationService,
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };

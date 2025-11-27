@@ -27,6 +27,7 @@ export async function POST(req: Request) {
         const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
         const variants = JSON.parse(formData.get('variants') as string || '[]');
         const subCategoryIds = JSON.parse(formData.get('subCategoryIds') as string || '[]');
+        const installationService = formData.get('installationService') ? JSON.parse(formData.get('installationService') as string) : undefined;
         const existingImages = JSON.parse(formData.get('existingImages') as string || '[]');
 
         // Handle new image uploads
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
             images: allImages,
             variants,
             subCategoryIds,
+            installationService,
         };
 
         const { status, body } = await handleCreateProduct(productData);

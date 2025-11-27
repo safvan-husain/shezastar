@@ -9,6 +9,7 @@ import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ImagesStep } from './steps/ImagesStep';
 import { CategoryStep } from './steps/CategoryStep';
 import { VariantsStep } from './steps/VariantsStep';
+import { InstallationServiceStep } from './steps/InstallationServiceStep';
 import { ImageMappingStep } from './steps/ImageMappingStep';
 import { ReviewStep } from './steps/ReviewStep';
 
@@ -54,6 +55,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
     );
     const [variants, setVariants] = useState<ProductVariant[]>(initialData?.variants || []);
     const [subCategoryIds, setSubCategoryIds] = useState<string[]>(initialData?.subCategoryIds || []);
+    const [installationEnabled, setInstallationEnabled] = useState(initialData?.installationService?.enabled || false);
+    const [inStorePrice, setInStorePrice] = useState(initialData?.installationService?.inStorePrice?.toString() || '');
+    const [atHomePrice, setAtHomePrice] = useState(initialData?.installationService?.atHomePrice?.toString() || '');
     const [imageMappings, setImageMappings] = useState<Record<string, string[]>>(
         initialData?.images?.reduce((acc: any, img: any) => {
             if (img.mappedVariants && img.mappedVariants.length > 0) {
@@ -68,8 +72,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
         { number: 2, title: 'Images', description: 'Upload product images' },
         { number: 3, title: 'Categories', description: 'Select product categories' },
         { number: 4, title: 'Variants', description: 'Configure product variants' },
-        { number: 5, title: 'Image Mapping', description: 'Map images to variants' },
-        { number: 6, title: 'Review', description: 'Review and submit' },
+        { number: 5, title: 'Installation', description: 'Installation service options' },
+        { number: 6, title: 'Image Mapping', description: 'Map images to variants' },
+        { number: 7, title: 'Review', description: 'Review and submit' },
     ];
 
     const handleSubmit = async () => {
@@ -86,6 +91,14 @@ export function ProductForm({ initialData }: ProductFormProps) {
             if (offerPrice) formData.append('offerPrice', offerPrice);
             formData.append('variants', JSON.stringify(variants));
             formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
+            
+            // Add installation service data
+            const installationService = {
+                enabled: installationEnabled,
+                inStorePrice: installationEnabled && inStorePrice ? parseFloat(inStorePrice) : undefined,
+                atHomePrice: installationEnabled && atHomePrice ? parseFloat(atHomePrice) : undefined,
+            };
+            formData.append('installationService', JSON.stringify(installationService));
 
             // Add existing images metadata
             const existingImages = images.filter(img => !img.file).map((img, index) => ({
@@ -262,6 +275,17 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     )}
 
                     {step === 5 && (
+                        <InstallationServiceStep
+                            enabled={installationEnabled}
+                            inStorePrice={inStorePrice}
+                            atHomePrice={atHomePrice}
+                            onEnabledChange={setInstallationEnabled}
+                            onInStorePriceChange={setInStorePrice}
+                            onAtHomePriceChange={setAtHomePrice}
+                        />
+                    )}
+
+                    {step === 6 && (
                         <ImageMappingStep
                             images={images}
                             variants={variants}
@@ -270,7 +294,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         />
                     )}
 
-                    {step === 6 && (
+                    {step === 7 && (
                         <ReviewStep
                             name={name}
                             description={description}
@@ -308,7 +332,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                                     Delete Product
                                 </Button>
                             )}
-                            {step < 6 ? (
+                            {step < 7 ? (
                                 <Button size="lg" onClick={() => setStep(step + 1)} disabled={!canProceed() || loading}>
                                     Next
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

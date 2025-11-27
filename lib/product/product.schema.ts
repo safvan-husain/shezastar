@@ -18,6 +18,12 @@ export const ProductVariantSchema = z.object({
     priceModifier: z.number().optional(), // Optional price override for this variant
 });
 
+export const InstallationServiceSchema = z.object({
+    enabled: z.boolean().default(false),
+    inStorePrice: z.number().min(0).optional(),
+    atHomePrice: z.number().min(0).optional(),
+});
+
 export const CreateProductSchema = z.object({
     name: z.string().min(1, 'Product name is required'),
     description: z.string().optional(),
@@ -26,6 +32,7 @@ export const CreateProductSchema = z.object({
     images: z.array(ProductImageSchema).default([]),
     variants: z.array(ProductVariantSchema).default([]),
     subCategoryIds: z.array(z.string()).default([]),
+    installationService: InstallationServiceSchema.optional(),
 });
 
 export const UpdateProductSchema = z.object({
@@ -36,6 +43,7 @@ export const UpdateProductSchema = z.object({
     images: z.array(ProductImageSchema).optional(),
     variants: z.array(ProductVariantSchema).optional(),
     subCategoryIds: z.array(z.string()).optional(),
+    installationService: InstallationServiceSchema.optional(),
 });
 
 export const ImageMappingSchema = z.object({
@@ -45,6 +53,7 @@ export const ImageMappingSchema = z.object({
 
 export type ProductImage = z.infer<typeof ProductImageSchema>;
 export type ProductVariant = z.infer<typeof ProductVariantSchema>;
+export type InstallationService = z.infer<typeof InstallationServiceSchema>;
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 export type ImageMappingInput = z.infer<typeof ImageMappingSchema>;

@@ -36,6 +36,7 @@ export async function PUT(
             const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
             const variants = formData.get('variants') ? JSON.parse(formData.get('variants') as string) : undefined;
             const subCategoryIds = formData.get('subCategoryIds') ? JSON.parse(formData.get('subCategoryIds') as string) : undefined;
+            const installationService = formData.get('installationService') ? JSON.parse(formData.get('installationService') as string) : undefined;
             const existingImages = JSON.parse(formData.get('existingImages') as string || '[]');
 
             // Handle new image uploads
@@ -69,6 +70,7 @@ export async function PUT(
             if (offerPrice !== undefined) productData.offerPrice = offerPrice;
             if (variants !== undefined) productData.variants = variants;
             if (subCategoryIds !== undefined) productData.subCategoryIds = subCategoryIds;
+            if (installationService !== undefined) productData.installationService = installationService;
             productData.images = allImages;
 
             const { status, body } = await handleUpdateProduct(id, productData);
