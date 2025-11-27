@@ -33,6 +33,7 @@ export async function createProduct(input: CreateProductInput) {
         offerPrice: input.offerPrice,
         images,
         variants: input.variants,
+        subCategoryIds: input.subCategoryIds || [],
         createdAt: now,
         updatedAt: now,
     };
@@ -127,6 +128,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
         }));
     }
     if (input.variants) updateDoc.variants = input.variants;
+    if (input.subCategoryIds !== undefined) updateDoc.subCategoryIds = input.subCategoryIds;
 
     await collection.updateOne({ _id: objectId }, { $set: updateDoc });
 

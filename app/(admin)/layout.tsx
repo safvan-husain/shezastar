@@ -23,6 +23,12 @@ export default function AdminLayout({
                                     Products
                                 </Link>
                                 <Link
+                                    href="/categories"
+                                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                                >
+                                    Categories
+                                </Link>
+                                <Link
                                     href="/variant-types"
                                     className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                                 >
@@ -33,7 +39,7 @@ export default function AdminLayout({
                     </div>
                 </div>
             </nav>
-            <main>{children}</main>
+            <main className="container mx-auto px-4 py-8">{children}</main>
         </div>
     );
 }

@@ -10,6 +10,7 @@ export interface ProductDocument {
     offerPrice?: number;
     images: ProductImage[];
     variants: ProductVariant[];
+    subCategoryIds: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -22,6 +23,7 @@ export interface Product {
     offerPrice?: number;
     images: ProductImage[];
     variants: ProductVariant[];
+    subCategoryIds: string[];
     createdAt: string;
     updatedAt: string;
 }
@@ -35,6 +37,7 @@ export function toProduct(doc: ProductDocument): Product {
         offerPrice: doc.offerPrice,
         images: doc.images,
         variants: doc.variants,
+        subCategoryIds: doc.subCategoryIds || [],
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };

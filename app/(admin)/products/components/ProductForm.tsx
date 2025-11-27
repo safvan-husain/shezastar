@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ImagesStep } from './steps/ImagesStep';
+import { CategoryStep } from './steps/CategoryStep';
 import { VariantsStep } from './steps/VariantsStep';
 import { ImageMappingStep } from './steps/ImageMappingStep';
 import { ReviewStep } from './steps/ReviewStep';
@@ -52,6 +53,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
         })) || []
     );
     const [variants, setVariants] = useState<ProductVariant[]>(initialData?.variants || []);
+    const [subCategoryIds, setSubCategoryIds] = useState<string[]>(initialData?.subCategoryIds || []);
     const [imageMappings, setImageMappings] = useState<Record<string, string[]>>(
         initialData?.images?.reduce((acc: any, img: any) => {
             if (img.mappedVariants && img.mappedVariants.length > 0) {
@@ -64,9 +66,10 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const steps = [
         { number: 1, title: 'Basic Info', description: 'Product details and pricing' },
         { number: 2, title: 'Images', description: 'Upload product images' },
-        { number: 3, title: 'Variants', description: 'Configure product variants' },
-        { number: 4, title: 'Image Mapping', description: 'Map images to variants' },
-        { number: 5, title: 'Review', description: 'Review and submit' },
+        { number: 3, title: 'Categories', description: 'Select product categories' },
+        { number: 4, title: 'Variants', description: 'Configure product variants' },
+        { number: 5, title: 'Image Mapping', description: 'Map images to variants' },
+        { number: 6, title: 'Review', description: 'Review and submit' },
     ];
 
     const handleSubmit = async () => {
@@ -81,6 +84,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 offerPrice: offerPrice ? parseFloat(offerPrice) : undefined,
                 images: [],
                 variants,
+                subCategoryIds,
             };
 
             const url = initialData?.id ? `/api/products/${initialData.id}` : '/api/products';
@@ -275,13 +279,20 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     )}
 
                     {step === 3 && (
+                        <CategoryStep
+                            selectedSubCategoryIds={subCategoryIds}
+                            onSelectionChange={setSubCategoryIds}
+                        />
+                    )}
+
+                    {step === 4 && (
                         <VariantsStep
                             variants={variants}
                             onVariantsChange={setVariants}
                         />
                     )}
 
-                    {step === 4 && (
+                    {step === 5 && (
                         <ImageMappingStep
                             images={images}
                             variants={variants}
@@ -290,7 +301,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         />
                     )}
 
-                    {step === 5 && (
+                    {step === 6 && (
                         <ReviewStep
                             name={name}
                             description={description}
@@ -328,7 +339,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                                     Delete Product
                                 </Button>
                             )}
-                            {step < 5 ? (
+                            {step < 6 ? (
                                 <Button size="lg" onClick={() => setStep(step + 1)} disabled={!canProceed() || loading}>
                                     Next
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

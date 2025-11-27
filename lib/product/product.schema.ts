@@ -25,6 +25,7 @@ export const CreateProductSchema = z.object({
     offerPrice: z.number().min(0).optional(),
     images: z.array(ProductImageSchema).default([]),
     variants: z.array(ProductVariantSchema).default([]),
+    subCategoryIds: z.array(z.string()).default([]),
 });
 
 export const UpdateProductSchema = z.object({
@@ -34,6 +35,7 @@ export const UpdateProductSchema = z.object({
     offerPrice: z.number().min(0).optional(),
     images: z.array(ProductImageSchema).optional(),
     variants: z.array(ProductVariantSchema).optional(),
+    subCategoryIds: z.array(z.string()).optional(),
 });
 
 export const ImageMappingSchema = z.object({
