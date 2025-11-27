@@ -77,82 +77,51 @@ export function ProductForm({ initialData }: ProductFormProps) {
         setLoading(true);
 
         try {
-            const productData = {
-                name,
-                description,
-                basePrice: parseFloat(basePrice),
-                offerPrice: offerPrice ? parseFloat(offerPrice) : undefined,
-                images: [],
-                variants,
-                subCategoryIds,
-            };
+            const formData = new FormData();
+
+            // Add basic product data
+            formData.append('name', name);
+            if (description) formData.append('description', description);
+            formData.append('basePrice', basePrice);
+            if (offerPrice) formData.append('offerPrice', offerPrice);
+            formData.append('variants', JSON.stringify(variants));
+            formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
+
+            // Add existing images metadata
+            const existingImages = images.filter(img => !img.file).map((img, index) => ({
+                id: img.id,
+                url: img.url,
+                mappedVariants: imageMappings[img.id] || [],
+                order: index,
+            }));
+            formData.append('existingImages', JSON.stringify(existingImages));
+
+            // Add new image files
+            const newImages = images.filter(img => img.file);
+            newImages.forEach((img, index) => {
+                if (img.file) {
+                    formData.append('newImages', img.file);
+                    // Store temporary ID and mappings for new images
+                    formData.append(`newImageMeta_${index}`, JSON.stringify({
+                        tempId: img.id,
+                        mappedVariants: imageMappings[img.id] || [],
+                        order: images.indexOf(img),
+                    }));
+                }
+            });
+            formData.append('newImagesCount', newImages.length.toString());
 
             const url = initialData?.id ? `/api/products/${initialData.id}` : '/api/products';
             const method = initialData?.id ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(productData),
+                body: formData,
             });
 
             if (!res.ok) {
                 const data = await res.json();
                 throw new Error(data.error || 'Failed to save product');
-            }
-
-            const product = await res.json();
-
-            const newImages = images.filter(img => img.file);
-            if (newImages.length > 0) {
-                const formData = new FormData();
-                newImages.forEach(img => {
-                    if (img.file) formData.append('images', img.file);
-                });
-
-                const uploadRes = await fetch(`/api/products/${product.id}/images`, {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (!uploadRes.ok) {
-                    throw new Error('Failed to upload images');
-                }
-
-                const updatedProduct = await uploadRes.json();
-
-                const imageIdMap: Record<string, string> = {};
-                let newImageIndex = 0;
-                images.forEach(img => {
-                    if (img.file) {
-                        const newImage = updatedProduct.images[updatedProduct.images.length - newImages.length + newImageIndex];
-                        imageIdMap[img.id] = newImage.id;
-                        newImageIndex++;
-                    } else {
-                        imageIdMap[img.id] = img.id;
-                    }
-                });
-
-                const updatedMappings: Record<string, string[]> = {};
-                Object.entries(imageMappings).forEach(([oldId, variantIds]) => {
-                    const newId = imageIdMap[oldId];
-                    if (newId) {
-                        updatedMappings[newId] = variantIds;
-                    }
-                });
-
-                if (Object.keys(updatedMappings).length > 0) {
-                    const mappingData = Object.entries(updatedMappings).map(([imageId, variantItemIds]) => ({
-                        imageId,
-                        variantItemIds,
-                    }));
-
-                    await fetch(`/api/products/${product.id}/images/map`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(mappingData),
-                    });
-                }
             }
 
             router.push('/products');
