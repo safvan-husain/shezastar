@@ -116,11 +116,11 @@ export default async function ProductsPage() {
                         </div>
 
                         {/* Products Grid */}
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
                             {products.map((product: any) => (
-                                <Card key={product.id} hover className="overflow-hidden p-0">
+                                <Card key={product.id} className="overflow-hidden p-2">
                                     {/* Product Image */}
-                                    <div className="relative h-56 bg-[var(--muted)] overflow-hidden">
+                                    <div className="relative bg-[var(--muted)] overflow-hidden aspect-square">
                                         {product.images && product.images.length > 0 ? (
                                             <img
                                                 src={product.images[0].url}
@@ -142,7 +142,7 @@ export default async function ProductsPage() {
                                     </div>
 
                                     {/* Product Info */}
-                                    <div className="p-5">
+                                    <div className="">
                                         <h2 className="text-xl font-bold text-[var(--foreground)] mb-2 line-clamp-1">
                                             {product.name}
                                         </h2>

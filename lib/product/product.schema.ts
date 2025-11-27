@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const ProductImageSchema = z.object({
     id: z.string(),
-    url: z.string().url(),
+    url: z.string().min(1), // Changed from .url() to .min(1) to accept relative paths
     mappedVariants: z.array(z.string()).default([]), // Array of variant item IDs or combination keys
     order: z.number().default(0),
 });
