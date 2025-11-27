@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { useToast } from '@/components/ui/Toast';
 import { nanoid } from 'nanoid';
 
 interface VariantItem {
@@ -23,6 +24,7 @@ interface VariantTypeFormProps {
 
 export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
     const router = useRouter();
+    const { showToast } = useToast();
     const [name, setName] = useState(initialData?.name || '');
     const [items, setItems] = useState<VariantItem[]>(initialData?.items || []);
     const [newItemName, setNewItemName] = useState('');
@@ -75,13 +77,31 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.error || 'Failed to save variant type');
+                const errorMessage = data.message || data.error || 'Failed to save variant type';
+                
+                showToast(errorMessage, 'error', {
+                    status: res.status,
+                    body: data,
+                    url: res.url,
+                    method,
+                });
+                
+                setError(errorMessage);
+                setLoading(false);
+                return;
             }
 
+            showToast(
+                initialData?.id ? 'Variant type updated successfully' : 'Variant type created successfully',
+                'success'
+            );
+            
             router.push('/variant-types');
             router.refresh();
         } catch (err: any) {
-            setError(err.message);
+            const errorMessage = err.message || 'An unexpected error occurred';
+            showToast(errorMessage, 'error');
+            setError(errorMessage);
             setLoading(false);
         }
     };
@@ -102,13 +122,28 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.error || data.details?.message || 'Failed to delete variant type');
+                const errorMessage = data.message || data.error || data.details?.message || 'Failed to delete variant type';
+                
+                showToast(errorMessage, 'error', {
+                    status: res.status,
+                    body: data,
+                    url: res.url,
+                    method: 'DELETE',
+                });
+                
+                setError(errorMessage);
+                setLoading(false);
+                return;
             }
 
+            showToast('Variant type deleted successfully', 'success');
+            
             router.push('/variant-types');
             router.refresh();
         } catch (err: any) {
-            setError(err.message);
+            const errorMessage = err.message || 'An unexpected error occurred';
+            showToast(errorMessage, 'error');
+            setError(errorMessage);
             setLoading(false);
         }
     };

@@ -169,6 +169,8 @@ Services may import DB utilities directly.
 
 ## 🚧 Error Handling
 
+### **Backend Error Handling**
+
 Use a single `AppError` class.
 
 ```ts
@@ -186,6 +188,157 @@ export class AppError extends Error {
 
 Services throw `AppError`.
 Controllers translate them to HTTP responses.
+
+### **Frontend Error Handling**
+
+All API errors must be displayed to users via toast notifications with detailed information.
+
+**Toast System:**
+
+* Use `useToast()` hook in client components
+* Show error message in toast
+* Include full error details (status, body, URL, method)
+* Click toast to expand and view full response
+
+**Implementation:**
+
+```tsx
+'use client';
+
+import { useToast } from '@/components/ui/Toast';
+
+export function MyComponent() {
+  const { showToast } = useToast();
+
+  const handleApiCall = async () => {
+    try {
+      const res = await fetch('/api/endpoint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        const errorMessage = data.message || data.error || 'Request failed';
+        
+        // Show error toast with details
+        showToast(errorMessage, 'error', {
+          status: res.status,
+          body: data,
+          url: res.url,
+          method: 'POST',
+        });
+        
+        return;
+      }
+
+      // Success
+      const result = await res.json();
+      showToast('Operation successful', 'success');
+      
+    } catch (err: any) {
+      showToast(err.message || 'An unexpected error occurred', 'error');
+    }
+  };
+}
+```
+
+**Toast Types:**
+
+* `success` - Green toast for successful operations
+* `error` - Red toast for errors (with expandable details)
+* `warning` - Orange toast for warnings
+* `info` - Blue toast for information
+
+**Error Details Structure:**
+
+```ts
+{
+  status: number;      // HTTP status code
+  body: any;          // Full response body
+  url: string;        // Request URL
+  method: string;     // HTTP method (GET, POST, etc.)
+}
+```
+
+**Server Components Pattern:**
+
+For Server Components that fetch data, return error information and use a client component to display the toast:
+
+```tsx
+// Server Component (page.tsx)
+import { ErrorHandler } from './components/ErrorHandler';
+
+async function getData() {
+  const res = await fetch('/api/endpoint');
+  
+  if (!res.ok) {
+    let body;
+    try {
+      body = await res.json();
+    } catch {
+      body = { error: 'Failed to parse response' };
+    }
+    
+    return {
+      error: {
+        message: body.message || body.error || 'Request failed',
+        status: res.status,
+        body,
+        url: res.url,
+      },
+      data: null,
+    };
+  }
+  
+  return { data: await res.json(), error: null };
+}
+
+export default async function Page() {
+  const { data, error } = await getData();
+  
+  return (
+    <div>
+      {error && <ErrorHandler error={error} />}
+      {/* Render data */}
+    </div>
+  );
+}
+
+// Client Component (ErrorHandler.tsx)
+'use client';
+
+import { useEffect } from 'react';
+import { useToast } from '@/components/ui/Toast';
+
+export function ErrorHandler({ error }) {
+  const { showToast } = useToast();
+  
+  useEffect(() => {
+    if (error) {
+      showToast(error.message, 'error', {
+        status: error.status,
+        body: error.body,
+        url: error.url,
+        method: 'GET',
+      });
+    }
+  }, [error, showToast]);
+  
+  return null;
+}
+```
+
+**Rules:**
+
+* Always show toast for API errors
+* Include detailed error information for debugging
+* Use user-friendly error messages
+* Never silently fail or only log to console
+* Show success toasts for mutations (create, update, delete)
+* For Server Components, pass error to client component for toast display
+* Never return empty arrays/objects silently on error
 
 ---
 
@@ -601,6 +754,8 @@ export function ProductForm() {
 * **Never import from `app/*` inside `lib/*`.**
 * **Use Cache Components for optimal performance.**
 * **Server Components by default, Client Components when needed.**
+* **Always show API errors in toast notifications with full details.**
+* **Never silently fail or only log errors to console.**
 * **Follow this structure unless explicitly overridden.**
 
 ---

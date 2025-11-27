@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { VariantTypesErrorHandler } from './components/VariantTypesClient';
 
 async function getVariantTypes() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/variant-types`, {
@@ -9,17 +10,33 @@ async function getVariantTypes() {
     });
 
     if (!res.ok) {
-        return [];
+        let body;
+        try {
+            body = await res.json();
+        } catch {
+            body = { error: 'Failed to parse response' };
+        }
+        
+        return {
+            error: {
+                message: body.message || body.error || 'Failed to load variant types',
+                status: res.status,
+                body,
+                url: res.url,
+            },
+            data: [],
+        };
     }
 
-    return res.json();
+    return { data: await res.json(), error: null };
 }
 
 export default async function VariantTypesPage() {
-    const variantTypes = await getVariantTypes();
+    const { data: variantTypes, error } = await getVariantTypes();
 
     return (
         <div className="min-h-screen bg-[var(--background)]">
+            {error && <VariantTypesErrorHandler error={error} />}
             <div className="container mx-auto px-4 py-8 max-w-7xl">
                 {/* Header Section */}
                 <div className="mb-10">

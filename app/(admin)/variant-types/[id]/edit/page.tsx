@@ -1,6 +1,7 @@
 // app/(admin)/variant-types/[id]/edit/page.tsx
 import Link from 'next/link';
 import { VariantTypeForm } from '../../components/VariantTypeForm';
+import { VariantTypesErrorHandler } from '../../components/VariantTypesClient';
 
 async function getVariantType(id: string) {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/variant-types/${id}`, {
@@ -8,7 +9,14 @@ async function getVariantType(id: string) {
     });
 
     if (!res.ok) {
-        throw new Error('Failed to fetch variant type');
+        let body;
+        try {
+            body = await res.json();
+        } catch {
+            body = { error: 'Failed to parse response' };
+        }
+        
+        throw new Error(body.message || body.error || 'Failed to fetch variant type');
     }
 
     return res.json();
