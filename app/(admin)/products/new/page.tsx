@@ -1,8 +1,15 @@
 // app/(admin)/products/new/page.tsx
 import Link from 'next/link';
+import { getCategories } from '@/lib/queries/category.queries';
+import { getVariantTypes } from '@/lib/queries/variant-type.queries';
 import { ProductForm } from '../components/ProductForm';
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+    const [categories, variantTypes] = await Promise.all([
+        getCategories(),
+        getVariantTypes(),
+    ]);
+
     return (
         <div className="min-h-screen bg-[var(--background)]">
             <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -38,7 +45,7 @@ export default function NewProductPage() {
                 </div>
 
                 {/* Form */}
-                <ProductForm />
+                <ProductForm categories={categories} variantTypes={variantTypes} />
             </div>
         </div>
     );
