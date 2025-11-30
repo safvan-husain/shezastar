@@ -113,7 +113,7 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
             >
                 <input {...getInputProps()} />
                 <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
+                    className="mx-auto h-12 w-12 text-[var(--text-muted)]"
                     stroke="currentColor"
                     fill="none"
                     viewBox="0 0 48 48"

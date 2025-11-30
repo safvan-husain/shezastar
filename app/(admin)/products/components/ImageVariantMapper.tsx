@@ -157,7 +157,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
     if (variants.length === 0 || variants.every(v => v.selectedItems.length === 0)) {
         return (
             <Card>
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-[var(--text-muted)] text-center py-4">
                     Add variants and select items to map them to images
                 </p>
             </Card>

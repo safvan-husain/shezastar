@@ -13,7 +13,7 @@ export default function Home() {
         <div className="space-y-4">
           <a
             href="/products"
-            className="inline-block px-8 py-3 bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold rounded-lg hover:bg-[color:rgba(17,24,39,0.9)] transition-colors"
+            className="inline-block px-8 py-3 bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold rounded-lg hover:bg-[var(--text-primary)] transition-colors"
           >
             Go to Admin Panel
           </a>

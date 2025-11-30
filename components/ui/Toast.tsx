@@ -116,9 +116,9 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
     };
 
     const typeStyles = {
-        success: 'bg-[color:rgba(22,163,74,0.16)] border-[color:rgba(22,163,74,0.6)] text-[var(--text-primary)]',
-        error: 'bg-[color:rgba(239,68,68,0.16)] border-[color:rgba(239,68,68,0.6)] text-[var(--text-primary)]',
-        warning: 'bg-[color:rgba(245,158,11,0.16)] border-[color:rgba(245,158,11,0.7)] text-[var(--text-primary)]',
+        success: 'bg-[var(--bg-subtle)] border-[var(--border-subtle)] text-[var(--text-primary)]',
+        error: 'bg-[var(--bg-subtle)] border-[var(--border-subtle)] text-[var(--text-primary)]',
+        warning: 'bg-[var(--bg-subtle)] border-[var(--border-subtle)] text-[var(--text-primary)]',
         info: 'bg-[var(--bg-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)]',
     };
 

@@ -117,7 +117,7 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
     if (variantTypes.length === 0) {
         return (
             <Card>
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-[var(--text-muted)] text-center py-4">
                     No variant types available. Create variant types first.
                 </p>
             </Card>
@@ -127,7 +127,7 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
     return (
         <div className="space-y-4">
             {variants.length === 0 && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-[var(--text-secondary)]">
                     Select variant types to add to this product
                 </p>
             )}

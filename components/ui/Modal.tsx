@@ -27,7 +27,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div
-                className="absolute inset-0 bg-[color:rgba(0,0,0,0.45)] dark:bg-[color:rgba(0,0,0,0.7)]"
+                className="absolute inset-0 bg-[var(--bg-base)]/60"
                 onClick={onClose}
             />
             <div className="relative bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-[var(--border-subtle)]">
