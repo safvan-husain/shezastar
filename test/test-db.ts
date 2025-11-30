@@ -14,11 +14,12 @@ export async function close() {
 }
 
 export async function clear() {
-    if (mongoClient) {
-        const collections = await mongoClient.db().collections();
-        for (const collection of collections) {
-            await collection.deleteMany({});
-        }
+    if (!mongoClient) return;
+
+    const db = mongoClient.db(TEST_DB_NAME);
+    const collections = await db.collections();
+    for (const collection of collections) {
+        await collection.deleteMany({});
     }
 }
 

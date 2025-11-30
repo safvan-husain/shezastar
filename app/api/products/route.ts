@@ -18,55 +18,64 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     try {
-        const formData = await req.formData();
+        const contentType = req.headers.get('content-type');
 
-        // Extract basic product data
-        const name = formData.get('name') as string;
-        const description = formData.get('description') as string | null;
-        const basePrice = parseFloat(formData.get('basePrice') as string);
-        const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
-        const variants = JSON.parse(formData.get('variants') as string || '[]');
-        const subCategoryIds = JSON.parse(formData.get('subCategoryIds') as string || '[]');
-        const installationService = formData.get('installationService') ? JSON.parse(formData.get('installationService') as string) : undefined;
-        const existingImages = JSON.parse(formData.get('existingImages') as string || '[]');
+        // Support both JSON (used by tests) and multipart/form-data (used by the app)
+        if (contentType?.includes('multipart/form-data')) {
+            const formData = await req.formData();
 
-        // Handle new image uploads
-        const newImagesCount = parseInt(formData.get('newImagesCount') as string || '0');
-        const newImageFiles = formData.getAll('newImages') as File[];
-        
-        let uploadedImages: any[] = [];
-        if (newImageFiles.length > 0) {
-            const urls = await saveImages(newImageFiles);
+            // Extract basic product data
+            const name = formData.get('name') as string;
+            const description = formData.get('description') as string | null;
+            const basePrice = parseFloat(formData.get('basePrice') as string);
+            const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
+            const variants = JSON.parse(formData.get('variants') as string || '[]');
+            const subCategoryIds = JSON.parse(formData.get('subCategoryIds') as string || '[]');
+            const installationService = formData.get('installationService') ? JSON.parse(formData.get('installationService') as string) : undefined;
+            const existingImages = JSON.parse(formData.get('existingImages') as string || '[]');
+
+            // Handle new image uploads
+            const newImagesCount = parseInt(formData.get('newImagesCount') as string || '0');
+            const newImageFiles = formData.getAll('newImages') as File[];
             
-            // Map uploaded URLs with metadata
-            uploadedImages = urls.map((url, index) => {
-                const metaStr = formData.get(`newImageMeta_${index}`) as string;
-                const meta = metaStr ? JSON.parse(metaStr) : {};
+            let uploadedImages: any[] = [];
+            if (newImageFiles.length > 0) {
+                const urls = await saveImages(newImageFiles);
                 
-                return {
-                    id: nanoid(),
-                    url,
-                    mappedVariants: meta.mappedVariants || [],
-                    order: meta.order ?? (existingImages.length + index),
-                };
-            });
+                // Map uploaded URLs with metadata
+                uploadedImages = urls.map((url, index) => {
+                    const metaStr = formData.get(`newImageMeta_${index}`) as string;
+                    const meta = metaStr ? JSON.parse(metaStr) : {};
+                    
+                    return {
+                        id: nanoid(),
+                        url,
+                        mappedVariants: meta.mappedVariants || [],
+                        order: meta.order ?? (existingImages.length + index),
+                    };
+                });
+            }
+
+            // Combine existing and new images
+            const allImages = [...existingImages, ...uploadedImages];
+
+            const productData = {
+                name,
+                description,
+                basePrice,
+                offerPrice,
+                images: allImages,
+                variants,
+                subCategoryIds,
+                installationService,
+            };
+
+            const { status, body } = await handleCreateProduct(productData);
+            return NextResponse.json(body, { status });
         }
 
-        // Combine existing and new images
-        const allImages = [...existingImages, ...uploadedImages];
-
-        const productData = {
-            name,
-            description,
-            basePrice,
-            offerPrice,
-            images: allImages,
-            variants,
-            subCategoryIds,
-            installationService,
-        };
-
-        const { status, body } = await handleCreateProduct(productData);
+        const jsonData = await req.json();
+        const { status, body } = await handleCreateProduct(jsonData);
         return NextResponse.json(body, { status });
     } catch (error: any) {
         return NextResponse.json(
