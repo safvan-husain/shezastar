@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+    addVariantItemAction,
     createVariantTypeAction,
     deleteVariantTypeAction,
+    removeVariantItemAction,
     updateVariantTypeAction,
 } from '@/lib/actions/variant-type.actions';
 import { getPrismaClient } from '../test-db';
@@ -100,5 +102,60 @@ describe('Variant Types Server Actions', () => {
         expect(result.success).toBe(false);
         if (result.success) return;
         expect(result.error.code).toBe('VARIANT_TYPE_NOT_FOUND');
+    });
+
+    it('should add a variant item', async () => {
+        const formData = new FormData();
+        formData.append('name', 'Collections');
+        formData.append('items', JSON.stringify([{ id: 'basic', name: 'Basic' }]));
+
+        const created = await createVariantTypeAction(formData);
+        if (!created.success) throw new Error('Failed to create variant type for test');
+
+        const addForm = new FormData();
+        addForm.append('name', 'Advanced');
+        const added = await addVariantItemAction(created.data.id, addForm);
+        expect(added.success).toBe(true);
+        if (!added.success) return;
+
+        expect(added.data.items.some((item: any) => item.name === 'Advanced')).toBe(true);
+    });
+
+    it('should remove a variant item', async () => {
+        const formData = new FormData();
+        formData.append('name', 'Fabrics');
+        formData.append(
+            'items',
+            JSON.stringify([
+                { id: 'linen', name: 'Linen' },
+                { id: 'silk', name: 'Silk' },
+            ]),
+        );
+
+        const created = await createVariantTypeAction(formData);
+        if (!created.success) throw new Error('Failed to create variant type for test');
+
+        const silk = created.data.items.find((item: any) => item.name === 'Silk');
+        if (!silk) throw new Error('Expected Silk variant item');
+        const removed = await removeVariantItemAction(created.data.id, silk.id);
+        expect(removed.success).toBe(true);
+        if (!removed.success) return;
+
+        expect(removed.data.items.some((item: any) => item.id === silk.id)).toBe(false);
+    });
+
+    it('should error when removing a missing variant item', async () => {
+        const formData = new FormData();
+        formData.append('name', 'Memory');
+        formData.append('items', JSON.stringify([{ id: '4gb', name: '4GB' }]));
+
+        const created = await createVariantTypeAction(formData);
+        if (!created.success) throw new Error('Failed to create variant type for test');
+
+        const removed = await removeVariantItemAction(created.data.id, '000000000000000000000000');
+        expect(removed.success).toBe(false);
+        if (!removed.success) {
+            expect(removed.error.code).toBe('VARIANT_ITEM_NOT_FOUND');
+        }
     });
 });

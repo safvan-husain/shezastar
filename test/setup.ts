@@ -1,9 +1,6 @@
 import { beforeAll, afterAll, afterEach, vi } from 'vitest';
 
 vi.mock('@/lib/db/prisma', () => import('./prisma-mock'));
-
-import { startTestDB, stopTestDB, clearDatabase } from './test-db';
-
 vi.mock('next/cache', async () => {
     const actual = await vi.importActual<any>('next/cache');
     return {
@@ -12,6 +9,12 @@ vi.mock('next/cache', async () => {
         revalidateTag: vi.fn(),
     };
 });
+vi.mock('@/lib/utils/file-upload', () => ({
+    saveImages: vi.fn().mockResolvedValue([]),
+    deleteImages: vi.fn().mockResolvedValue(undefined),
+}));
+
+import { startTestDB, stopTestDB, clearDatabase } from './test-db';
 
 beforeAll(async () => {
     await startTestDB();
