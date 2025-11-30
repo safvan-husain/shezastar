@@ -1,18 +1,10 @@
 // app/(admin)/products/[id]/edit/page.tsx
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { getCategories } from '@/lib/queries/category.queries';
+import { getProductById } from '@/lib/queries/product.queries';
+import { getVariantTypes } from '@/lib/queries/variant-type.queries';
 import { ProductForm } from '../../components/ProductForm';
-
-async function getProduct(id: string) {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/products/${id}`, {
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        throw new Error('Failed to fetch product');
-    }
-
-    return res.json();
-}
 
 export default async function EditProductPage({
     params,
@@ -20,7 +12,15 @@ export default async function EditProductPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
-    const product = await getProduct(id);
+    const [product, categories, variantTypes] = await Promise.all([
+        getProductById(id),
+        getCategories(),
+        getVariantTypes(),
+    ]);
+
+    if (!product) {
+        notFound();
+    }
 
     return (
         <div className="min-h-screen bg-[var(--background)]">
@@ -57,7 +57,7 @@ export default async function EditProductPage({
                 </div>
 
                 {/* Form */}
-                <ProductForm initialData={product} />
+                <ProductForm initialData={product} categories={categories} variantTypes={variantTypes} />
             </div>
         </div>
     );

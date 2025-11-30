@@ -1,19 +1,8 @@
 // app/(admin)/products/page.tsx
 import Link from 'next/link';
+import { getProducts } from '@/lib/queries/product.queries';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-
-async function getProducts() {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/products`, {
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        return { products: [], pagination: { total: 0 } };
-    }
-
-    return res.json();
-}
 
 export default async function ProductsPage() {
     const { products } = await getProducts();

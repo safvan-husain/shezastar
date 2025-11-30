@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createProduct, getProduct, updateProduct, deleteProduct } from '@/lib/product/product.service';
+import { createProduct, getProductById, updateProduct, deleteProduct } from '@/lib/services/product.service';
 import { AppError } from '@/lib/errors/app-error';
 
 // Mock file upload utils
@@ -39,7 +39,7 @@ describe('Product Service Unit Tests', () => {
     });
 
     it('should get product by id', async () => {
-        const result = await getProduct(createdProductId);
+        const result = await getProductById(createdProductId);
         expect(result.id).toBe(createdProductId);
         expect(result.name).toBe('Unit Test Product');
     });

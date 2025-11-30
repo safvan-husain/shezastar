@@ -17,11 +17,12 @@ interface ProductVariant {
 }
 
 interface VariantsStepProps {
+    variantTypes: { id: string; name: string; items: VariantItem[] }[];
     variants: ProductVariant[];
     onVariantsChange: (variants: ProductVariant[]) => void;
 }
 
-export function VariantsStep({ variants, onVariantsChange }: VariantsStepProps) {
+export function VariantsStep({ variantTypes, variants, onVariantsChange }: VariantsStepProps) {
     return (
         <Card>
             <div className="flex items-center gap-3 mb-6">
@@ -35,7 +36,7 @@ export function VariantsStep({ variants, onVariantsChange }: VariantsStepProps) 
                     <p className="text-sm text-[var(--muted-foreground)]">{variants.length} variant type{variants.length !== 1 ? 's' : ''} configured</p>
                 </div>
             </div>
-            <VariantSelector variants={variants} onChange={onVariantsChange} />
+            <VariantSelector variantTypes={variantTypes} variants={variants} onChange={onVariantsChange} />
         </Card>
     );
 }

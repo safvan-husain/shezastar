@@ -1,11 +1,9 @@
 // app/(admin)/products/components/VariantSelector.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { useToast } from '@/components/ui/Toast';
 
 interface VariantItem {
     id: string;
@@ -26,42 +24,12 @@ interface ProductVariant {
 }
 
 interface VariantSelectorProps {
+    variantTypes: VariantType[];
     variants: ProductVariant[];
     onChange: (variants: ProductVariant[]) => void;
 }
 
-export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
-    const { showToast } = useToast();
-    const [variantTypes, setVariantTypes] = useState<VariantType[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetch('/api/variant-types')
-            .then(async res => {
-                if (!res.ok) {
-                    const data = await res.json();
-                    const errorMessage = data.message || data.error || 'Failed to load variant types';
-                    
-                    showToast(errorMessage, 'error', {
-                        status: res.status,
-                        body: data,
-                        url: res.url,
-                        method: 'GET',
-                    });
-                    
-                    throw new Error(errorMessage);
-                }
-                return res.json();
-            })
-            .then(data => {
-                setVariantTypes(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error('Failed to load variant types:', err);
-                setLoading(false);
-            });
-    }, [showToast]);
+export function VariantSelector({ variantTypes, variants, onChange }: VariantSelectorProps) {
 
     const addVariant = (variantType: VariantType) => {
         if (variants.some(v => v.variantTypeId === variantType.id)) {
@@ -109,10 +77,6 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
             )
         );
     };
-
-    if (loading) {
-        return <div className="text-center py-4">Loading variant types...</div>;
-    }
 
     if (variantTypes.length === 0) {
         return (
