@@ -1,18 +1,16 @@
 import { MongoClient, ObjectId } from 'mongodb';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 
-let mongoServer: MongoMemoryServer;
 let mongoClient: MongoClient;
 
+const TEST_DB_NAME = 'shazstar_test';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
+
 export async function connect() {
-    mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    mongoClient = await MongoClient.connect(uri);
+    mongoClient = await MongoClient.connect(MONGODB_URI);
 }
 
 export async function close() {
     if (mongoClient) await mongoClient.close();
-    if (mongoServer) await mongoServer.stop();
 }
 
 export async function clear() {
@@ -29,7 +27,7 @@ export async function connectToDatabase() {
         // If not explicitly connected (e.g. in a unit test without global setup), connect now
         await connect();
     }
-    return { client: mongoClient, db: mongoClient.db() };
+    return { client: mongoClient, db: mongoClient.db(TEST_DB_NAME) };
 }
 
 export async function getCollection(name: string) {

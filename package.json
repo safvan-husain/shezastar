@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest"
+    "test": "vitest --run",
+    "test:unit": "vitest --run test/unit",
+    "test:integration": "vitest --run test/integration"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
