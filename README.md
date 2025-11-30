@@ -107,9 +107,8 @@ lib/
   errors/               # Error handling
   product/              # Product feature
     product.schema.ts   # Zod schemas
-    product.service.ts  # Business logic
-    product.controller.ts # Request handling
-    model/              # Domain models
+    product.service.ts  # Business logic (legacy)
+    model/              # Domain models (legacy)
   variant-type/         # Variant type feature
   utils/                # Utilities (file upload, etc.)
 
@@ -129,23 +128,16 @@ components/
 
 ### Products
 
-- `GET /api/products` - List products (with pagination)
-- `POST /api/products` - Create product
-- `GET /api/products/[id]` - Get product
-- `PUT /api/products/[id]` - Update product
-- `DELETE /api/products/[id]` - Delete product
-- `POST /api/products/[id]/images` - Upload images
-- `DELETE /api/products/[id]/images/[imageId]` - Delete image
-- `POST /api/products/[id]/images/map` - Map images to variants
+Product management now uses Server Actions plus Prisma-backed services/queries. UI components call `lib/actions/product.actions.ts` for mutations and `lib/queries/product.queries.ts` for reads.
 
 ## Architecture
 
-This project follows a clean, layered architecture:
+This project follows a clean, layered architecture aligned with Server Actions:
 
-- **Routes**: Handle HTTP requests/responses
-- **Controllers**: Validate input, coordinate operations
-- **Services**: Contain business logic
-- **Models**: Define domain entities and transformations
+- **Server Components**: Call queries for data reads
+- **Server Actions (`lib/actions`)**: Validate input, call services, and revalidate caches
+- **Queries (`lib/queries`)**: Centralize reads with Prisma and caching
+- **Services (`lib/services`)**: Contain business logic and Prisma access
 
 See `AGENTS.md` for detailed architecture guidelines.
 

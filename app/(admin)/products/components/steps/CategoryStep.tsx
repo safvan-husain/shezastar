@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 
 interface SubCategory {
@@ -15,32 +15,13 @@ interface Category {
 }
 
 interface CategoryStepProps {
+    categories: Category[];
     selectedSubCategoryIds: string[];
     onSelectionChange: (ids: string[]) => void;
 }
 
-export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: CategoryStepProps) {
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
+export function CategoryStep({ categories, selectedSubCategoryIds, onSelectionChange }: CategoryStepProps) {
     const [searchQuery, setSearchQuery] = useState('');
-
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    const fetchCategories = async () => {
-        try {
-            const res = await fetch('/api/categories');
-            if (res.ok) {
-                const data = await res.json();
-                setCategories(data);
-            }
-        } catch (err) {
-            console.error('Failed to fetch categories:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const filteredCategories = useMemo(() => {
         if (!searchQuery.trim()) return categories;
@@ -76,14 +57,6 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
         });
         return names;
     };
-
-    if (loading) {
-        return (
-            <Card>
-                <div className="text-center py-8">Loading categories...</div>
-            </Card>
-        );
-    }
 
     if (categories.length === 0) {
         return (

@@ -1,7 +1,8 @@
 // app/(admin)/products/components/ProductForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { Category, VariantType } from '@prisma/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -12,6 +13,7 @@ import { VariantsStep } from './steps/VariantsStep';
 import { InstallationServiceStep } from './steps/InstallationServiceStep';
 import { ImageMappingStep } from './steps/ImageMappingStep';
 import { ReviewStep } from './steps/ReviewStep';
+import { createProductAction, deleteProductAction, updateProductAction } from '@/lib/actions/product.actions';
 
 interface ImageFile {
     id: string;
@@ -33,11 +35,14 @@ interface ProductVariant {
 }
 
 interface ProductFormProps {
+    categories: Category[];
+    variantTypes: VariantType[];
     initialData?: any;
 }
 
-export function ProductForm({ initialData }: ProductFormProps) {
+export function ProductForm({ categories, variantTypes, initialData }: ProductFormProps) {
     const router = useRouter();
+    const [, startTransition] = useTransition();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -124,21 +129,20 @@ export function ProductForm({ initialData }: ProductFormProps) {
             });
             formData.append('newImagesCount', newImages.length.toString());
 
-            const url = initialData?.id ? `/api/products/${initialData.id}` : '/api/products';
-            const method = initialData?.id ? 'PUT' : 'POST';
+            startTransition(async () => {
+                const result = initialData?.id
+                    ? await updateProductAction(initialData.id, formData)
+                    : await createProductAction(formData);
 
-            const res = await fetch(url, {
-                method,
-                body: formData,
+                if (!result.success) {
+                    setError(result.error.message);
+                    setLoading(false);
+                    return;
+                }
+
+                router.push('/products');
+                router.refresh();
             });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Failed to save product');
-            }
-
-            router.push('/products');
-            router.refresh();
         } catch (err: any) {
             setError(err.message);
             setLoading(false);
@@ -152,16 +156,17 @@ export function ProductForm({ initialData }: ProductFormProps) {
         setLoading(true);
 
         try {
-            const res = await fetch(`/api/products/${initialData.id}`, {
-                method: 'DELETE',
+            startTransition(async () => {
+                const result = await deleteProductAction(initialData.id);
+                if (!result.success) {
+                    setError(result.error.message);
+                    setLoading(false);
+                    return;
+                }
+
+                router.push('/products');
+                router.refresh();
             });
-
-            if (!res.ok) {
-                throw new Error('Failed to delete product');
-            }
-
-            router.push('/products');
-            router.refresh();
         } catch (err: any) {
             setError(err.message);
             setLoading(false);
@@ -262,6 +267,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
                     {step === 3 && (
                         <CategoryStep
+                            categories={categories}
                             selectedSubCategoryIds={subCategoryIds}
                             onSelectionChange={setSubCategoryIds}
                         />
@@ -269,6 +275,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
                     {step === 4 && (
                         <VariantsStep
+                            variantTypes={variantTypes}
                             variants={variants}
                             onVariantsChange={setVariants}
                         />
