@@ -6,7 +6,7 @@ import { CategoryList } from './components/CategoryList';
 
 export default function CategoriesPage() {
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-7xl mx-auto my-12">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold">Categories</h1>
