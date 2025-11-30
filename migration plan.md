@@ -15,8 +15,12 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 - [x] Map current Mongo collections to Prisma models; plan data migration scripts if existing data must be preserved.
 
 ## Phase 2 – Services & Validation
-- [ ] Move business logic to `lib/services/*` using Prisma; replace `mongo-client` calls. (Products migrated; categories/variant types still use `mongo-client`.)
-- [ ] Move/align Zod schemas to `lib/validations/*` (rename from feature `*.schema.ts`). (Product schemas live in `lib/validations`; others pending.)
+- [x] Products use Prisma-backed services (legacy Mongo removed).
+- [ ] Categories use Prisma-backed services (legacy Mongo still active).
+- [ ] Variant types use Prisma-backed services (legacy Mongo still active).
+- [x] Product Zod schemas live in `lib/validations`.
+- [ ] Category Zod schemas centralized in `lib/validations` (currently feature-local).
+- [ ] Variant-type Zod schemas centralized in `lib/validations` (currently feature-local).
 - [ ] Define DTOs for form payloads vs stored models (products/images/variants).
 
 ## Phase 3 – Queries (Reads)
@@ -24,7 +28,9 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 - [x] Shape select/output to avoid over-fetching; provide view models for UI.
 
 ## Phase 4 – Server Actions (Writes)
-- [ ] Replace API routes with Server Actions under `lib/actions/*` (`product.actions.ts`, `category.actions.ts`, `variant-type.actions.ts`). (Product API replaced; category/variant-type routes still active.)
+- [x] Replace product API route with Server Actions under `lib/actions/product.actions.ts`.
+- [ ] Replace category API routes with Server Actions under `lib/actions/category.actions.ts`.
+- [ ] Replace variant-type API routes with Server Actions under `lib/actions/variant-type.actions.ts`.
 - [x] In actions: `'use server'`, validate with Zod, call services, return `{ success, data?, error? }`, revalidate tags/paths (`revalidateTag('products')`, etc.).
 - [x] Handle file uploads (FormData) inside actions; retire API routes after wiring UI.
 
@@ -38,20 +44,20 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 - [ ] Apply UI guidelines: design tokens, consistent states, accessibility/motion; consolidate shared components under `components/ui`, page-scoped under `app/.../components`.
 
 ## Phase 7 – Error Handling UX
-- Add `components/ui/error-toast.tsx` (expandable, copyable) and wire to all action responses.
-- Ensure services throw `AppError`; actions convert to structured error objects; UI surfaces backend message and supports copy.
+- [ ] Add `components/ui/error-toast.tsx` (expandable, copyable) and wire to all action responses.
+- [ ] Ensure services throw `AppError`; actions convert to structured error objects; UI surfaces backend message and supports copy.
 
 ## Phase 8 – Testing
-- Update tests to Prisma with Mongo test DB; clean collections between runs.
-- Convert integration tests to target Server Actions (no `NextResponse`/`node-mocks-http`); use FormData helpers.
-- Adjust unit tests for services and validation with Prisma.
-- Update test scripts if needed (`npm run test:integration`, etc.).
+- [ ] Update tests to Prisma with Mongo test DB; clean collections between runs.
+- [ ] Convert integration tests to target Server Actions (no `NextResponse`/`node-mocks-http`); use FormData helpers.
+- [ ] Adjust unit tests for services and validation with Prisma.
+- [ ] Update test scripts if needed (`npm run test:integration`, etc.).
 
 ## Phase 9 – Cleanup & Docs
-- Remove deprecated API routes, controllers layer, `lib/db/mongo-client.ts`, duplicate error class.
-- Enforce import flow: `app/* → lib/actions|queries → lib/services → prisma`.
-- Update README/setup for Prisma/Mongo, Server Actions, cache usage, error toasts.
-- Populate `.kiro/steering/agents-progress.md` with actual phases/dates as milestones land.
+- [ ] Remove deprecated API routes, controllers layer, `lib/db/mongo-client.ts`, duplicate error class.
+- [ ] Enforce import flow: `app/* → lib/actions|queries → lib/services → prisma`.
+- [ ] Update README/setup for Prisma/Mongo, Server Actions, cache usage, error toasts.
+- [ ] Populate `.kiro/steering/agents-progress.md` with actual phases/dates as milestones land.
 
 ---
 
@@ -67,4 +73,9 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 4) [x] Replace `POST /products` API route with `lib/actions/product.actions.ts` using the new validation/service, including file upload handling via `lib/utils/file-upload.ts`.
 5) [ ] Add `components/ui/error-toast.tsx` and propagate to pages using the new product actions; ensure errors are copyable/expandable.
 6) [ ] Update tests to hit product Server Actions (form payloads + file uploads) against the Mongo test database seeded via Prisma; clean collections between cases.
-7) [ ] Remove the deprecated product API route and controller once the action-backed UI passes regression tests; repeat the same pattern for categories and variant types.
+7) [ ] Remove the deprecated product API route and controller once the action-backed UI passes regression tests.
+8) [ ] Migrate categories to Prisma-backed services and create `lib/actions/category.actions.ts` to replace legacy API routes.
+9) [ ] Migrate variant types to Prisma-backed services and create `lib/actions/variant-type.actions.ts` to replace legacy API routes.
+10) [ ] Move category and variant-type validation schemas into `lib/validations` alongside products; align DTOs across features.
+11) [ ] Remove `lib/db/mongo-client.ts` and any remaining Mongo helpers after all features run on Prisma services.
+12) [ ] Update integration tests to target category and variant-type server actions instead of legacy API routes.
