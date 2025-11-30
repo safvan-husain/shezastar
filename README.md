@@ -98,9 +98,8 @@ app/
   (admin)/              # Admin panel pages
     products/           # Product management
     variant-types/      # Variant type management
-  api/                  # API routes
+  api/                  # API routes (products only; categories/variant types now use Server Actions)
     products/           # Product endpoints
-    variant-types/      # Variant type endpoints
 
 lib/
   db/                   # Database connection
@@ -118,17 +117,9 @@ components/
 
 ## API Endpoints
 
-### Variant Types
-
-- `GET /api/variant-types` - List all variant types
-- `POST /api/variant-types` - Create variant type
-- `GET /api/variant-types/[id]` - Get variant type
-- `PUT /api/variant-types/[id]` - Update variant type
-- `DELETE /api/variant-types/[id]` - Delete variant type
-
 ### Products
 
-Product management now uses Server Actions plus Prisma-backed services/queries. UI components call `lib/actions/product.actions.ts` for mutations and `lib/queries/product.queries.ts` for reads.
+Product management now uses Server Actions plus Prisma-backed services/queries. UI components call `lib/actions/product.actions.ts` for mutations and `lib/queries/product.queries.ts` for reads. Categories and variant types have been migrated fully to Server Actions; their legacy API routes were removed.
 
 ## Architecture
 

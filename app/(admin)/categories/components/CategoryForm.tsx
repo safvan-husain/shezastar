@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { nanoid } from 'nanoid';
+import {
+    createCategoryAction,
+    updateCategoryAction,
+} from '@/lib/actions/category.actions';
+import { useErrorToast } from '@/components/ui/error-toast';
 
 interface SubCategory {
     id: string;
@@ -20,6 +25,8 @@ interface CategoryFormProps {
 
 export function CategoryForm({ initialData }: CategoryFormProps) {
     const router = useRouter();
+    const [, startTransition] = useTransition();
+    const { showErrorToast } = useErrorToast();
     const [name, setName] = useState(initialData?.name || '');
     const [subCategories, setSubCategories] = useState<SubCategory[]>(
         initialData?.subCategories || []
@@ -48,26 +55,35 @@ export function CategoryForm({ initialData }: CategoryFormProps) {
         setLoading(true);
 
         try {
-            const url = initialData?.id
-                ? `/api/categories/${initialData.id}`
-                : '/api/categories';
-            const method = initialData?.id ? 'PUT' : 'POST';
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('subCategories', JSON.stringify(subCategories));
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, subCategories }),
+            startTransition(async () => {
+                try {
+                    const result = initialData?.id
+                        ? await updateCategoryAction(initialData.id, formData)
+                        : await createCategoryAction(formData);
+
+                    if (!result.success) {
+                        setError(result.error.message);
+                        showErrorToast(result.error);
+                        setLoading(false);
+                        return;
+                    }
+
+                    router.push('/categories');
+                    router.refresh();
+                } catch (err: any) {
+                    setError(err.message);
+                    showErrorToast(err.message || 'Failed to save category');
+                } finally {
+                    setLoading(false);
+                }
             });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Failed to save category');
-            }
-
-            router.push('/categories');
-            router.refresh();
         } catch (err: any) {
             setError(err.message);
+            showErrorToast(err.message || 'Failed to save category');
             setLoading(false);
         }
     };

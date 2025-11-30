@@ -1,15 +1,23 @@
-import { beforeAll, afterAll, vi } from 'vitest';
-import * as db from './test-db';
+import { beforeAll, afterAll, afterEach, vi } from 'vitest';
+import { startTestDB, stopTestDB, clearDatabase } from './test-db';
 
-// Mock the real module
-vi.mock('@/lib/db/mongo-client', async () => {
-    return await import('./test-db');
+vi.mock('next/cache', async () => {
+    const actual = await vi.importActual<any>('next/cache');
+    return {
+        ...actual,
+        revalidatePath: vi.fn(),
+        revalidateTag: vi.fn(),
+    };
 });
 
 beforeAll(async () => {
-    await db.connect();
+    await startTestDB();
+});
+
+afterEach(async () => {
+    await clearDatabase();
 });
 
 afterAll(async () => {
-    await db.close();
+    await stopTestDB();
 });

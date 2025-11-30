@@ -29,8 +29,8 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 
 ## Phase 4 – Server Actions (Writes)
 - [x] Replace product API route with Server Actions under `lib/actions/product.actions.ts`.
-- [ ] Replace category API routes with Server Actions under `lib/actions/category.actions.ts`.
-- [ ] Replace variant-type API routes with Server Actions under `lib/actions/variant-type.actions.ts`.
+- [x] Replace category API routes with Server Actions under `lib/actions/category.actions.ts`.
+- [x] Replace variant-type API routes with Server Actions under `lib/actions/variant-type.actions.ts`.
 - [x] In actions: `'use server'`, validate with Zod, call services, return `{ success, data?, error? }`, revalidate tags/paths (`revalidateTag('products')`, etc.).
 - [x] Handle file uploads (FormData) inside actions; retire API routes after wiring UI.
 
@@ -49,7 +49,7 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 
 ## Phase 8 – Testing
 - [ ] Update tests to Prisma with Mongo test DB; clean collections between runs.
-- [ ] Convert integration tests to target Server Actions (no `NextResponse`/`node-mocks-http`); use FormData helpers.
+- [x] Convert integration tests to target Server Actions (no `NextResponse`/`node-mocks-http`); use FormData helpers.
 - [ ] Adjust unit tests for services and validation with Prisma.
 - [ ] Update test scripts if needed (`npm run test:integration`, etc.).
 

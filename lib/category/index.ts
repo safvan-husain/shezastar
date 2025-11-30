@@ -6,4 +6,3 @@ export type SubCategory = PrismaSubCategory;
 
 export * from '@/lib/validations/category.schema';
 export * from '@/lib/services/category.service';
-export * from './category.controller';

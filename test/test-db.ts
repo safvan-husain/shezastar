@@ -1,40 +1,39 @@
-import { MongoClient, ObjectId } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import type { PrismaClient } from '@prisma/client';
 
-let mongoServer: MongoMemoryServer;
-let mongoClient: MongoClient;
+let mongoServer: MongoMemoryServer | null = null;
+let prisma: PrismaClient | null = null;
 
-export async function connect() {
+export async function startTestDB() {
     mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    mongoClient = await MongoClient.connect(uri);
-}
+    process.env.DATABASE_URL = mongoServer.getUri('testdb');
 
-export async function close() {
-    if (mongoClient) await mongoClient.close();
-    if (mongoServer) await mongoServer.stop();
-}
-
-export async function clear() {
-    if (mongoClient) {
-        const collections = await mongoClient.db().collections();
-        for (const collection of collections) {
-            await collection.deleteMany({});
-        }
+    if (!prisma) {
+        const { prisma: client } = await import('@/lib/db/prisma');
+        prisma = client;
     }
 }
 
-export async function connectToDatabase() {
-    if (!mongoClient) {
-        // If not explicitly connected (e.g. in a unit test without global setup), connect now
-        await connect();
+export async function getPrismaClient(): Promise<PrismaClient> {
+    if (!prisma) {
+        const { prisma: client } = await import('@/lib/db/prisma');
+        prisma = client;
     }
-    return { client: mongoClient, db: mongoClient.db() };
+    return prisma;
 }
 
-export async function getCollection(name: string) {
-    const { db } = await connectToDatabase();
-    return db.collection(name);
+export async function clearDatabase() {
+    const client = await getPrismaClient();
+    await client.product.deleteMany();
+    await client.category.deleteMany();
+    await client.variantType.deleteMany();
 }
 
-export { ObjectId };
+export async function stopTestDB() {
+    if (prisma) {
+        await prisma.$disconnect();
+    }
+    if (mongoServer) {
+        await mongoServer.stop();
+    }
+}

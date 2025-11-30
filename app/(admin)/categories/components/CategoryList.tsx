@@ -1,58 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { deleteCategoryAction } from '@/lib/actions/category.actions';
+import { useErrorToast } from '@/components/ui/error-toast';
+import { Category } from '@/lib/category';
 
-interface SubCategory {
-    id: string;
-    name: string;
-}
-
-interface Category {
-    id: string;
-    name: string;
-    subCategories: SubCategory[];
-}
-
-export function CategoryList() {
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
+export function CategoryList({ initialCategories }: { initialCategories: Category[] }) {
+    const router = useRouter();
+    const [, startTransition] = useTransition();
+    const { showErrorToast } = useErrorToast();
+    const [categories, setCategories] = useState<Category[]>(initialCategories);
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    const fetchCategories = async () => {
-        try {
-            const res = await fetch('/api/categories');
-            if (res.ok) {
-                const data = await res.json();
-                setCategories(data);
-            }
-        } catch (err) {
-            console.error('Failed to fetch categories:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this category?')) return;
-
-        try {
-            const res = await fetch(`/api/categories/${id}`, {
-                method: 'DELETE',
-            });
-
-            if (res.ok) {
-                fetchCategories();
-            }
-        } catch (err) {
-            console.error('Failed to delete category:', err);
-        }
-    };
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const toggleExpand = (id: string) => {
         const newExpanded = new Set(expandedCategories);
@@ -63,10 +25,6 @@ export function CategoryList() {
         }
         setExpandedCategories(newExpanded);
     };
-
-    if (loading) {
-        return <div className="text-center py-8">Loading...</div>;
-    }
 
     if (categories.length === 0) {
         return (
@@ -116,9 +74,28 @@ export function CategoryList() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDelete(category.id)}
+                                disabled={deletingId === category.id}
+                                onClick={() => {
+                                    if (!confirm('Are you sure you want to delete this category?')) return;
+                                    setDeletingId(category.id);
+                                    startTransition(async () => {
+                                        try {
+                                            const result = await deleteCategoryAction(category.id);
+                                            if (!result.success) {
+                                                showErrorToast(result.error);
+                                                return;
+                                            }
+                                            setCategories(prev => prev.filter(c => c.id !== category.id));
+                                            router.refresh();
+                                        } catch (err: any) {
+                                            showErrorToast(err.message || 'Failed to delete category');
+                                        } finally {
+                                            setDeletingId(null);
+                                        }
+                                    });
+                                }}
                             >
-                                Delete
+                                {deletingId === category.id ? 'Deleting...' : 'Delete'}
                             </Button>
                         </div>
                     </div>

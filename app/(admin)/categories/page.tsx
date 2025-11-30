@@ -1,10 +1,13 @@
 // app/(admin)/categories/page.tsx
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
+import { getCategories } from '@/lib/queries/category.queries';
 import { CategoryList } from './components/CategoryList';
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+    const categories = await getCategories();
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -25,7 +28,7 @@ export default function CategoriesPage() {
             </div>
 
             <Card>
-                <CategoryList />
+                <CategoryList initialCategories={categories} />
             </Card>
         </div>
     );

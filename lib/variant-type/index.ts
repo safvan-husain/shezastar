@@ -6,4 +6,3 @@ export type VariantItem = PrismaVariantItem;
 
 export * from '@/lib/validations/variant-type.schema';
 export * from '@/lib/services/variant-type.service';
-export * from './variant-type.controller';

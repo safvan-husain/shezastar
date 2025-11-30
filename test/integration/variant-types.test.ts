@@ -1,98 +1,86 @@
 import { describe, it, expect } from 'vitest';
-import { GET as getVariantTypes, POST as createVariantType } from '@/app/api/variant-types/route';
-import { GET as getVariantType, PUT as updateVariantType, DELETE as deleteVariantType } from '@/app/api/variant-types/[id]/route';
+import {
+    createVariantTypeAction,
+    deleteVariantTypeAction,
+    updateVariantTypeAction,
+} from '@/lib/actions/variant-type.actions';
+import { getPrismaClient } from '../test-db';
 
-describe('Variant Types API Integration', () => {
+describe('Variant Types Server Actions', () => {
     let createdVariantTypeId: string;
 
     it('should create a new variant type', async () => {
-        const variantTypeData = {
-            name: 'Color',
-            items: [
+        const formData = new FormData();
+        formData.append('name', 'Color');
+        formData.append(
+            'items',
+            JSON.stringify([
                 { id: 'red', name: 'Red' },
-                { id: 'blue', name: 'Blue' }
-            ]
-        };
+                { id: 'blue', name: 'Blue' },
+            ]),
+        );
 
-        const req = new Request('http://localhost/api/variant-types', {
-            method: 'POST',
-            body: JSON.stringify(variantTypeData),
-        });
+        const result = await createVariantTypeAction(formData);
 
-        const res = await createVariantType(req);
-        const body = await res.json();
+        expect(result.success).toBe(true);
+        if (!result.success) return;
 
-        expect(res.status).toBe(201);
-        expect(body).toMatchObject({
-            name: variantTypeData.name,
-        });
-        expect(body.items).toHaveLength(2);
-        expect(body.id).toBeDefined();
-        createdVariantTypeId = body.id;
+        createdVariantTypeId = result.data.id;
+        expect(result.data.name).toBe('Color');
+        expect(result.data.items).toHaveLength(2);
     });
 
     it('should get all variant types', async () => {
-        // The GET handler for variant types doesn't use the request object
-        const res = await getVariantTypes();
-        const body = await res.json();
+        const prisma = await getPrismaClient();
+        const variantTypes = await prisma.variantType.findMany();
 
-        expect(res.status).toBe(200);
-        expect(Array.isArray(body)).toBe(true);
-        expect(body.length).toBeGreaterThan(0);
-        const found = body.find((vt: any) => vt.id === createdVariantTypeId);
+        expect(Array.isArray(variantTypes)).toBe(true);
+        expect(variantTypes.length).toBeGreaterThan(0);
+        const found = variantTypes.find(vt => vt.id === createdVariantTypeId);
         expect(found).toBeDefined();
     });
 
     it('should get a single variant type by id', async () => {
-        const req = new Request(`http://localhost/api/variant-types/${createdVariantTypeId}`);
-        const params = Promise.resolve({ id: createdVariantTypeId });
-        const res = await getVariantType(req, { params });
-        const body = await res.json();
+        const prisma = await getPrismaClient();
+        const variantType = await prisma.variantType.findUnique({ where: { id: createdVariantTypeId } });
 
-        expect(res.status).toBe(200);
-        expect(body.id).toBe(createdVariantTypeId);
-        expect(body.name).toBe('Color');
+        expect(variantType).toBeTruthy();
+        expect(variantType?.id).toBe(createdVariantTypeId);
+        expect(variantType?.name).toBe('Color');
     });
 
     it('should update a variant type', async () => {
-        const updateData = {
-            name: 'Updated Color',
-            items: [
-                { id: 'green', name: 'Green' }
-            ]
-        };
+        const formData = new FormData();
+        formData.append('name', 'Updated Color');
+        formData.append(
+            'items',
+            JSON.stringify([{ id: 'green', name: 'Green' }]),
+        );
 
-        const req = new Request(`http://localhost/api/variant-types/${createdVariantTypeId}`, {
-            method: 'PUT',
-            body: JSON.stringify(updateData),
-        });
-        const params = Promise.resolve({ id: createdVariantTypeId });
-        const res = await updateVariantType(req, { params });
-        const body = await res.json();
+        const result = await updateVariantTypeAction(createdVariantTypeId, formData);
 
-        expect(res.status).toBe(200);
-        expect(body.name).toBe(updateData.name);
-        expect(body.items).toHaveLength(1);
-        expect(body.items[0].name).toBe('Green');
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+
+        expect(result.data.name).toBe('Updated Color');
+        expect(result.data.items).toHaveLength(1);
+        expect(result.data.items[0].name).toBe('Green');
     });
 
     it('should delete a variant type', async () => {
-        const req = new Request(`http://localhost/api/variant-types/${createdVariantTypeId}`, {
-            method: 'DELETE',
-        });
-        const params = Promise.resolve({ id: createdVariantTypeId });
-        const res = await deleteVariantType(req, { params });
-        const body = await res.json();
+        const result = await deleteVariantTypeAction(createdVariantTypeId);
 
-        expect(res.status).toBe(200);
-        expect(body.success).toBe(true);
+        expect(result.success).toBe(true);
+
+        const prisma = await getPrismaClient();
+        const variantType = await prisma.variantType.findUnique({ where: { id: createdVariantTypeId } });
+        expect(variantType).toBeNull();
     });
 
-    it('should return 404 for deleted variant type', async () => {
-        const req = new Request(`http://localhost/api/variant-types/${createdVariantTypeId}`);
-        const params = Promise.resolve({ id: createdVariantTypeId });
-        const res = await getVariantType(req, { params });
-
-        expect(res.status).toBe(404);
+    it('should return error when deleting non-existent variant type', async () => {
+        const result = await deleteVariantTypeAction('000000000000000000000000');
+        expect(result.success).toBe(false);
+        if (result.success) return;
+        expect(result.error.code).toBe('VARIANT_TYPE_NOT_FOUND');
     });
 });

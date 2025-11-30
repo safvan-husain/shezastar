@@ -1,13 +1,18 @@
 // app/(admin)/variant-types/components/VariantTypeForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
-import { useToast } from '@/components/ui/Toast';
 import { nanoid } from 'nanoid';
+import {
+    createVariantTypeAction,
+    deleteVariantTypeAction,
+    updateVariantTypeAction,
+} from '@/lib/actions/variant-type.actions';
+import { useErrorToast } from '@/components/ui/error-toast';
 
 interface VariantItem {
     id: string;
@@ -24,7 +29,8 @@ interface VariantTypeFormProps {
 
 export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
     const router = useRouter();
-    const { showToast } = useToast();
+    const [, startTransition] = useTransition();
+    const { showErrorToast } = useErrorToast();
     const [name, setName] = useState(initialData?.name || '');
     const [items, setItems] = useState<VariantItem[]>(initialData?.items || []);
     const [newItemName, setNewItemName] = useState('');
@@ -63,45 +69,37 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
         setLoading(true);
 
         try {
-            const url = initialData?.id
-                ? `/api/variant-types/${initialData.id}`
-                : '/api/variant-types';
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('items', JSON.stringify(items));
 
-            const method = initialData?.id ? 'PUT' : 'POST';
+            startTransition(async () => {
+                try {
+                    const result = initialData?.id
+                        ? await updateVariantTypeAction(initialData.id as string, formData)
+                        : await createVariantTypeAction(formData);
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, items }),
+                    if (!result.success) {
+                        const message = result.error.message || 'Failed to save variant type';
+                        setError(message);
+                        showErrorToast(result.error);
+                        return;
+                    }
+
+                    router.push('/variant-types');
+                    router.refresh();
+                } catch (err: any) {
+                    const message = err.message || 'Failed to save variant type';
+                    setError(message);
+                    showErrorToast(message);
+                } finally {
+                    setLoading(false);
+                }
             });
-
-            if (!res.ok) {
-                const data = await res.json();
-                const errorMessage = data.message || data.error || 'Failed to save variant type';
-                
-                showToast(errorMessage, 'error', {
-                    status: res.status,
-                    body: data,
-                    url: res.url,
-                    method,
-                });
-                
-                setError(errorMessage);
-                setLoading(false);
-                return;
-            }
-
-            showToast(
-                initialData?.id ? 'Variant type updated successfully' : 'Variant type created successfully',
-                'success'
-            );
-            
-            router.push('/variant-types');
-            router.refresh();
         } catch (err: any) {
             const errorMessage = err.message || 'An unexpected error occurred';
-            showToast(errorMessage, 'error');
             setError(errorMessage);
+            showErrorToast(errorMessage);
             setLoading(false);
         }
     };
@@ -116,33 +114,29 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
         setLoading(true);
 
         try {
-            const res = await fetch(`/api/variant-types/${initialData.id}`, {
-                method: 'DELETE',
+            startTransition(async () => {
+                try {
+                    const result = await deleteVariantTypeAction(initialData.id as string);
+                    if (!result.success) {
+                        const message = result.error.message || 'Failed to delete variant type';
+                        setError(message);
+                        showErrorToast(result.error);
+                        return;
+                    }
+
+                    router.push('/variant-types');
+                    router.refresh();
+                } catch (err: any) {
+                    const message = err.message || 'Failed to delete variant type';
+                    setError(message);
+                    showErrorToast(message);
+                } finally {
+                    setLoading(false);
+                }
             });
-
-            if (!res.ok) {
-                const data = await res.json();
-                const errorMessage = data.message || data.error || data.details?.message || 'Failed to delete variant type';
-                
-                showToast(errorMessage, 'error', {
-                    status: res.status,
-                    body: data,
-                    url: res.url,
-                    method: 'DELETE',
-                });
-                
-                setError(errorMessage);
-                setLoading(false);
-                return;
-            }
-
-            showToast('Variant type deleted successfully', 'success');
-            
-            router.push('/variant-types');
-            router.refresh();
         } catch (err: any) {
             const errorMessage = err.message || 'An unexpected error occurred';
-            showToast(errorMessage, 'error');
+            showErrorToast(errorMessage);
             setError(errorMessage);
             setLoading(false);
         }
