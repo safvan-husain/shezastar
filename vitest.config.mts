@@ -5,6 +5,7 @@ export default defineConfig({
     test: {
         environment: 'node',
         setupFiles: ['./test/setup.ts'],
+        pool: 'threads',
         alias: {
             '@': path.resolve(__dirname, './'),
         },

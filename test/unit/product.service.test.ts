@@ -8,8 +8,6 @@ vi.mock('@/lib/utils/file-upload', () => ({
 }));
 
 describe('Product Service Unit Tests', () => {
-    let createdProductId: string;
-
     it('should create a product', async () => {
         const input = {
             name: 'Unit Test Product',
@@ -23,7 +21,6 @@ describe('Product Service Unit Tests', () => {
         expect(result.name).toBe(input.name);
         expect(result.basePrice).toBe(input.basePrice);
         expect(result.id).toBeDefined();
-        createdProductId = result.id;
     });
 
     it('should throw error if offer price >= base price', async () => {
@@ -39,29 +36,52 @@ describe('Product Service Unit Tests', () => {
     });
 
     it('should get product by id', async () => {
-        const result = await getProductById(createdProductId);
-        expect(result.id).toBe(createdProductId);
-        expect(result.name).toBe('Unit Test Product');
+        const created = await createProduct({
+            name: 'Fetchable Product',
+            description: 'Description',
+            basePrice: 150,
+            images: [],
+            variants: []
+        });
+
+        const result = await getProductById(created.id);
+        expect(result.id).toBe(created.id);
+        expect(result.name).toBe('Fetchable Product');
     });
 
     it('should throw 404 for non-existent product', async () => {
         const fakeId = '000000000000000000000000';
-        await expect(getProduct(fakeId)).rejects.toThrow('PRODUCT_NOT_FOUND');
+        await expect(getProductById(fakeId)).rejects.toThrow('PRODUCT_NOT_FOUND');
     });
 
     it('should update product', async () => {
+        const created = await createProduct({
+            name: 'Product To Update',
+            description: 'Description',
+            basePrice: 100,
+            images: [],
+            variants: []
+        });
+
         const update = {
             name: 'Updated Name',
             basePrice: 200
         };
 
-        const result = await updateProduct(createdProductId, update);
+        const result = await updateProduct(created.id, update);
         expect(result.name).toBe(update.name);
         expect(result.basePrice).toBe(update.basePrice);
     });
 
     it('should delete product', async () => {
-        const result = await deleteProduct(createdProductId);
+        const created = await createProduct({
+            name: 'Product To Delete',
+            basePrice: 80,
+            images: [],
+            variants: []
+        });
+
+        const result = await deleteProduct(created.id);
         expect(result.success).toBe(true);
     });
 });

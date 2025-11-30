@@ -1,4 +1,7 @@
 import { beforeAll, afterAll, afterEach, vi } from 'vitest';
+
+vi.mock('@/lib/db/prisma', () => import('./prisma-mock'));
+
 import { startTestDB, stopTestDB, clearDatabase } from './test-db';
 
 vi.mock('next/cache', async () => {
