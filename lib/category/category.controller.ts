@@ -1,11 +1,11 @@
 // lib/category/category.controller.ts
 import { catchError } from '@/lib/errors/app-error';
 import {
+    AddSubCategorySchema,
     CreateCategorySchema,
     UpdateCategorySchema,
-    AddSubCategorySchema,
-} from './category.schema';
-import * as categoryService from './category.service';
+} from '@/lib/validations/category.schema';
+import * as categoryService from '@/lib/services/category.service';
 
 export async function handleCreateCategory(input: unknown) {
     try {

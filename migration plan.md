@@ -16,12 +16,12 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 
 ## Phase 2 – Services & Validation
 - [x] Products use Prisma-backed services (legacy Mongo removed).
-- [ ] Categories use Prisma-backed services (legacy Mongo still active).
-- [ ] Variant types use Prisma-backed services (legacy Mongo still active).
+- [x] Categories use Prisma-backed services (legacy Mongo still active).
+- [x] Variant types use Prisma-backed services (legacy Mongo still active).
 - [x] Product Zod schemas live in `lib/validations`.
-- [ ] Category Zod schemas centralized in `lib/validations` (currently feature-local).
-- [ ] Variant-type Zod schemas centralized in `lib/validations` (currently feature-local).
-- [ ] Define DTOs for form payloads vs stored models (products/images/variants).
+- [x] Category Zod schemas centralized in `lib/validations` (currently feature-local).
+- [x] Variant-type Zod schemas centralized in `lib/validations` (currently feature-local).
+- [x] Define DTOs for form payloads vs stored models (products/images/variants).
 
 ## Phase 3 – Queries (Reads)
 - [x] Add `lib/queries/*` for reads (e.g., `getAllProducts`, `getProductById`, `getCategories`, `getVariantTypes`), using `cache()`/`'use cache'` and cache tags where appropriate.

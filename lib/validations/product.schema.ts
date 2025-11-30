@@ -1,3 +1,4 @@
+import type { Product, ProductImage, ProductVariant } from '@prisma/client';
 import { z } from 'zod';
 
 const ProductImageSchema = z.object({
@@ -58,3 +59,33 @@ export type InstallationServiceInput = z.infer<typeof InstallationServiceSchema>
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 export type ImageMappingInput = z.infer<typeof ImageMappingSchema>;
+export type ProductVariantSelectedItemInput = z.infer<typeof ProductVariantSelectedItemSchema>;
+
+export type ProductFormVariant = {
+    variantTypeId: string;
+    variantTypeName: string;
+    selectedItems: ProductVariantSelectedItemInput[];
+    priceModifier?: number;
+};
+
+export type ProductFormImage = {
+    id: string;
+    url?: string;
+    mappedVariants: string[];
+    order?: number;
+};
+
+export type ProductFormPayload = {
+    name: string;
+    description?: string;
+    basePrice: string;
+    offerPrice?: string;
+    variants: ProductFormVariant[];
+    subCategoryIds: string[];
+    installationService?: InstallationServiceInput;
+    images: ProductFormImage[];
+};
+
+export type ProductDTO = Product;
+export type ProductImageDTO = ProductImage;
+export type ProductVariantDTO = ProductVariant;

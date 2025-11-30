@@ -1,8 +1,7 @@
-// lib/variant-type/variant-type.schema.ts
 import { z } from 'zod';
 
 export const VariantItemSchema = z.object({
-    id: z.string(),
+    id: z.string().min(1).optional(),
     name: z.string().min(1, 'Item name is required'),
     metadata: z.record(z.any()).optional(),
 });
@@ -22,7 +21,8 @@ export const AddItemSchema = z.object({
     metadata: z.record(z.any()).optional(),
 });
 
-export type VariantItem = z.infer<typeof VariantItemSchema>;
+export type VariantItemInput = z.infer<typeof VariantItemSchema>;
+export type VariantItemDTO = VariantItemInput & { id: string };
 export type CreateVariantTypeInput = z.infer<typeof CreateVariantTypeSchema>;
 export type UpdateVariantTypeInput = z.infer<typeof UpdateVariantTypeSchema>;
 export type AddItemInput = z.infer<typeof AddItemSchema>;

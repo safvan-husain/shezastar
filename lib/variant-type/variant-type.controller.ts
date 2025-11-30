@@ -1,11 +1,11 @@
 // lib/variant-type/variant-type.controller.ts
 import { catchError } from '@/lib/errors/app-error';
 import {
+    AddItemSchema,
     CreateVariantTypeSchema,
     UpdateVariantTypeSchema,
-    AddItemSchema,
-} from './variant-type.schema';
-import * as variantTypeService from './variant-type.service';
+} from '@/lib/validations/variant-type.schema';
+import * as variantTypeService from '@/lib/services/variant-type.service';
 
 export async function handleCreateVariantType(input: unknown) {
     try {
