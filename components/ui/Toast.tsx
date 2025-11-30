@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 
 interface ToastDetails {
     status?: number;
+    code?: string;
     body?: any;
     url?: string;
     method?: string;
@@ -100,6 +101,7 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
         const errorInfo = {
             message: toast.message,
             status: toast.details.status,
+            code: toast.details.code,
             method: toast.details.method,
             url: toast.details.url,
             timestamp: toast.details.timestamp,
@@ -210,6 +212,12 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
                         </button>
                     </div>
                     <div className="text-xs space-y-1.5 font-mono">
+                        {toast.details.code && (
+                            <div className="flex gap-2">
+                                <span className="opacity-75 min-w-[60px]">Code:</span>
+                                <span className="font-bold">{toast.details.code}</span>
+                            </div>
+                        )}
                         {toast.details.status && (
                             <div className="flex gap-2">
                                 <span className="opacity-75 min-w-[60px]">Status:</span>

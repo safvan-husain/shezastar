@@ -44,7 +44,7 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 - [ ] Apply UI guidelines: design tokens, consistent states, accessibility/motion; consolidate shared components under `components/ui`, page-scoped under `app/.../components`.
 
 ## Phase 7 – Error Handling UX
-- [ ] Add `components/ui/error-toast.tsx` (expandable, copyable) and wire to all action responses.
+- [x] Add `components/ui/error-toast.tsx` (expandable, copyable) and wire to all action responses.
 - [ ] Ensure services throw `AppError`; actions convert to structured error objects; UI surfaces backend message and supports copy.
 
 ## Phase 8 – Testing
@@ -71,7 +71,7 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 2) [x] Port the highest-traffic read paths first: build `lib/queries/products.ts` (`getAllProducts`, `getProductById`), wire to Server Components, and cache-tag the list/detail views.
 3) [x] Create `lib/validations/product.ts` and `lib/services/product.service.ts`; move existing DTO logic into services, returning `AppError` on validation/business failures.
 4) [x] Replace `POST /products` API route with `lib/actions/product.actions.ts` using the new validation/service, including file upload handling via `lib/utils/file-upload.ts`.
-5) [ ] Add `components/ui/error-toast.tsx` and propagate to pages using the new product actions; ensure errors are copyable/expandable.
+5) [x] Add `components/ui/error-toast.tsx` and propagate to pages using the new product actions; ensure errors are copyable/expandable.
 6) [ ] Update tests to hit product Server Actions (form payloads + file uploads) against the Mongo test database seeded via Prisma; clean collections between cases.
 7) [ ] Remove the deprecated product API route and controller once the action-backed UI passes regression tests.
 8) [ ] Migrate categories to Prisma-backed services and create `lib/actions/category.actions.ts` to replace legacy API routes.

@@ -16,6 +16,7 @@ import { ReviewStep } from './steps/ReviewStep';
 import { createProductAction, deleteProductAction, updateProductAction } from '@/lib/actions/product.actions';
 import { VariantType } from '@/lib/variant-type';
 import { Category } from '@/lib/category';
+import { useErrorToast } from '@/components/ui/error-toast';
 
 interface ImageFile {
     id: string;
@@ -45,6 +46,7 @@ interface ProductFormProps {
 export function ProductForm({ categories, variantTypes, initialData }: ProductFormProps) {
     const router = useRouter();
     const [, startTransition] = useTransition();
+    const { showErrorToast } = useErrorToast();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -138,6 +140,7 @@ export function ProductForm({ categories, variantTypes, initialData }: ProductFo
 
                 if (!result.success) {
                     setError(result.error.message);
+                    showErrorToast(result.error);
                     setLoading(false);
                     return;
                 }
@@ -147,6 +150,7 @@ export function ProductForm({ categories, variantTypes, initialData }: ProductFo
             });
         } catch (err: any) {
             setError(err.message);
+            showErrorToast(err.message || 'An unexpected error occurred');
             setLoading(false);
         }
     };
@@ -162,6 +166,7 @@ export function ProductForm({ categories, variantTypes, initialData }: ProductFo
                 const result = await deleteProductAction(initialData.id);
                 if (!result.success) {
                     setError(result.error.message);
+                    showErrorToast(result.error);
                     setLoading(false);
                     return;
                 }
@@ -171,6 +176,7 @@ export function ProductForm({ categories, variantTypes, initialData }: ProductFo
             });
         } catch (err: any) {
             setError(err.message);
+            showErrorToast(err.message || 'An unexpected error occurred');
             setLoading(false);
         }
     };
