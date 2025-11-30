@@ -41,7 +41,7 @@ function DraggableVariantTag({ item, variantTypeName }: { item: VariantItem; var
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            className={`px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg cursor-move select-none ${isDragging ? 'opacity-50' : ''
+            className={`px-3 py-1.5 bg-[var(--bg-subtle)] text-[var(--text-primary)] rounded-lg cursor-move select-none border border-[var(--border-subtle)] ${isDragging ? 'opacity-50' : ''
                 }`}
         >
             {item.name}
@@ -57,7 +57,7 @@ function DroppableImage({ image, mappedItems }: { image: ImageFile; mappedItems:
     return (
         <div
             ref={setNodeRef}
-            className={`relative border-2 rounded-lg overflow-hidden transition-colors ${isOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+            className={`relative border-2 rounded-lg overflow-hidden transition-colors ${isOver ? 'border-[var(--border-strong)] bg-[var(--bg-subtle)]' : 'border-[var(--border-subtle)]'
                 }`}
         >
             <img
@@ -71,7 +71,7 @@ function DroppableImage({ image, mappedItems }: { image: ImageFile; mappedItems:
                         {mappedItems.map(itemId => (
                             <span
                                 key={itemId}
-                                className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded"
+                                className="px-2 py-0.5 bg-[var(--bg-subtle)] text-[var(--text-primary)] text-xs rounded border border-[var(--border-subtle)]"
                             >
                                 {itemId}
                             </span>
@@ -147,7 +147,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
     if (images.length === 0) {
         return (
             <Card>
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-[var(--text-muted)] text-center py-4">
                     Upload images first to map them to variants
                 </p>
             </Card>
@@ -177,7 +177,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
         <div className="space-y-6">
             <Card>
                 <h3 className="text-lg font-semibold mb-4">How to Map Images to Variants</h3>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
+                <ol className="list-decimal list-inside space-y-2 text-sm text-[var(--text-secondary)]">
                     <li>Drag a variant tag and drop it on an image to map them</li>
                     <li>Or select multiple variants and click "Map Selected" on an image</li>
                     <li>Images with no mappings will show for all variant combinations</li>
@@ -190,13 +190,13 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                     {/* Variant Items Panel */}
                     <Card>
                         <h3 className="text-lg font-semibold mb-4">Variant Items</h3>
-                        <p className="text-sm text-gray-600 mb-4">
+                        <p className="text-sm text-[var(--text-secondary)] mb-4">
                             Drag these onto images or select multiple and use "Map Selected"
                         </p>
 
                         {variants.map(variant => (
                             <div key={variant.variantTypeId} className="mb-4">
-                                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-2">
                                     {variant.variantTypeName}
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
@@ -219,11 +219,11 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                         ))}
 
                         {selectedItems.size > 0 && (
-                            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                                <p className="text-sm font-medium text-blue-900">
+                            <div className="mt-4 p-3 bg-[var(--bg-subtle)] rounded-lg border border-[var(--border-subtle)]">
+                                <p className="text-sm font-medium text-[var(--text-primary)]">
                                     {selectedItems.size} item{selectedItems.size > 1 ? 's' : ''} selected
                                 </p>
-                                <p className="text-xs text-blue-700 mt-1">
+                                <p className="text-xs text-[var(--text-secondary)] mt-1">
                                     Click "Map Selected" on any image below
                                 </p>
                             </div>
@@ -233,7 +233,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                     {/* Images Panel */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Product Images</h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-[var(--text-secondary)]">
                             Drop variant items here to map them
                         </p>
 
@@ -252,7 +252,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                                             {mappedItemNames.length > 0 && (
                                                 <div className="text-xs">
                                                     {mappedItemNames.map((name, i) => (
-                                                        <div key={i} className="text-gray-600">{name}</div>
+                                                        <div key={i} className="text-[var(--text-secondary)]">{name}</div>
                                                     ))}
                                                 </div>
                                             )}
@@ -262,7 +262,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                                                     <button
                                                         type="button"
                                                         onClick={() => mapSelectedToImage(image.id)}
-                                                        className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                        className="text-xs px-2 py-1 bg-[var(--bg-subtle)] text-[var(--text-primary)] rounded hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)]"
                                                     >
                                                         Map Selected
                                                     </button>
@@ -271,7 +271,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                                                     <button
                                                         type="button"
                                                         onClick={() => clearMapping(image.id)}
-                                                        className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                                                        className="text-xs px-2 py-1 bg-[var(--bg-subtle)] text-[var(--text-primary)] rounded hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)]"
                                                     >
                                                         Clear
                                                     </button>
@@ -287,7 +287,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
 
                 <DragOverlay>
                     {activeId ? (
-                        <div className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg">
+                        <div className="px-3 py-1.5 bg-[var(--bg-subtle)] text-[var(--text-primary)] rounded-lg border border-[var(--border-subtle)]">
                             {allVariantItems.find(item => item.id === activeId)?.name}
                         </div>
                     ) : null}

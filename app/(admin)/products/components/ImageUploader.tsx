@@ -53,7 +53,7 @@ function SortableImage({ image, onRemove }: { image: ImageFile; onRemove: () => 
                     e.stopPropagation();
                     onRemove();
                 }}
-                className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-subtle)] p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -108,7 +108,7 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
         <div className="space-y-4">
             <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragActive ? 'border-[var(--border-strong)] bg-[var(--bg-subtle)]' : 'border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
                     }`}
             >
                 <input {...getInputProps()} />
@@ -125,15 +125,15 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
                         strokeLinejoin="round"
                     />
                 </svg>
-                <p className="mt-2 text-sm text-gray-600">
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
                     {isDragActive ? 'Drop images here' : 'Drag & drop images here, or click to select'}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">PNG, JPG, JPEG, WEBP up to 5MB</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">PNG, JPG, JPEG, WEBP up to 5MB</p>
             </div>
 
             {images.length > 0 && (
                 <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">
+                    <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">
                         {images.length} {images.length === 1 ? 'image' : 'images'} (drag to reorder)
                     </p>
                     <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

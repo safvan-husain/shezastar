@@ -87,20 +87,20 @@ export default async function VariantTypesPage() {
                     <>
                         {/* Stats Bar */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                            <Card className="bg-gradient-to-br from-[var(--primary)] to-blue-600 text-white">
+                            <Card className="bg-[var(--bg-subtle)] text-[var(--text-primary)]">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm opacity-90 mb-1">Total Types</p>
                                         <p className="text-3xl font-bold">{variantTypes.length}</p>
                                     </div>
-                                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                    <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center">
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                                         </svg>
                                     </div>
                                 </div>
                             </Card>
-                            <Card className="bg-gradient-to-br from-[var(--success)] to-green-600 text-white">
+                            <Card className="bg-[var(--bg-subtle)] text-[var(--text-primary)]">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm opacity-90 mb-1">Total Items</p>
@@ -108,14 +108,14 @@ export default async function VariantTypesPage() {
                                             {variantTypes.reduce((sum: number, type: any) => sum + type.items.length, 0)}
                                         </p>
                                     </div>
-                                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                    <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center">
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                                         </svg>
                                     </div>
                                 </div>
                             </Card>
-                            <Card className="bg-gradient-to-br from-[var(--warning)] to-orange-600 text-white">
+                            <Card className="bg-[var(--bg-subtle)] text-[var(--text-primary)]">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm opacity-90 mb-1">Avg Items/Type</p>
@@ -123,7 +123,7 @@ export default async function VariantTypesPage() {
                                             {Math.round(variantTypes.reduce((sum: number, type: any) => sum + type.items.length, 0) / variantTypes.length)}
                                         </p>
                                     </div>
-                                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                    <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center">
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                         </svg>

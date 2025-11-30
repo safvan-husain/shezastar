@@ -18,11 +18,11 @@ export function Button({
     const baseStyles = 'font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--ring)] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2';
 
     const variantStyles = {
-        primary: 'bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 shadow-md hover:shadow-lg',
-        secondary: 'bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:bg-[var(--accent)] shadow-sm hover:shadow-md',
-        danger: 'bg-[var(--danger)] text-white hover:opacity-90 shadow-md hover:shadow-lg',
-        ghost: 'hover:bg-[var(--accent)] text-[var(--foreground)]',
-        outline: 'border-2 border-[var(--border)] hover:bg-[var(--accent)] text-[var(--foreground)]',
+        primary: 'bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[color:rgba(17,24,39,0.9)] shadow-md hover:shadow-lg',
+        secondary: 'bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:bg-[var(--bg-elevated)] shadow-sm hover:shadow-md',
+        danger: 'bg-[var(--danger)] text-[var(--text-inverted)] hover:opacity-90 shadow-md hover:shadow-lg',
+        ghost: 'bg-transparent hover:bg-[var(--bg-subtle)] text-[var(--text-primary)]',
+        outline: 'border border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-primary)]',
     };
 
     const sizeStyles = {

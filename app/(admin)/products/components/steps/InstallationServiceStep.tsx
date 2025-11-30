@@ -78,7 +78,7 @@ export function InstallationServiceStep({
                                         value={inStorePrice}
                                         onChange={(e) => onInStorePriceChange(e.target.value)}
                                         placeholder="0.00"
-                                        className="w-full pl-8 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent transition-all text-[var(--foreground)]"
+                                        className="w-full pl-8 pr-4 py-3 bg-[var(--bg-subtle)] border-2 border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent transition-all text-[var(--text-primary)]"
                                     />
                                 </div>
                                 <p className="text-xs text-[var(--muted-foreground)]">
@@ -115,15 +115,15 @@ export function InstallationServiceStep({
                         </div>
 
                         {/* Info Box */}
-                        <div className="bg-blue-500/10 border-2 border-blue-500/30 rounded-lg p-4 flex gap-3">
-                            <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="bg-[var(--bg-subtle)] border-2 border-[var(--border-subtle)] rounded-lg p-4 flex gap-3">
+                            <svg className="w-5 h-5 text-[var(--text-secondary)] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <div className="text-sm">
-                                <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                                <p className="font-semibold text-[var(--text-primary)] mb-1">
                                     Installation Service Information
                                 </p>
-                                <p className="text-blue-600/80 dark:text-blue-400/80">
+                                <p className="text-[var(--text-secondary)]">
                                     These prices will be available as options during checkout. Customers can choose between in-store or at-home installation when placing their order.
                                 </p>
                             </div>

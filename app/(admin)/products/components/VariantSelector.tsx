@@ -151,7 +151,7 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
 
                         <div className="space-y-4">
                             <div>
-                                <p className="text-sm font-medium text-gray-700 mb-2">
+                                <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">
                                     Select items:
                                 </p>
                                 <div className="flex flex-wrap gap-2">
@@ -161,8 +161,8 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
                                             type="button"
                                             onClick={() => toggleItem(variant.variantTypeId, item)}
                                             className={`px-3 py-1.5 rounded-lg border transition-colors ${variant.selectedItems.some(i => i.id === item.id)
-                                                    ? 'bg-blue-600 text-white border-blue-600'
-                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                                                    ? 'bg-[var(--bg-subtle)] text-[var(--text-primary)] border-[var(--border-strong)]'
+                                                    : 'bg-[var(--bg-base)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
                                                 }`}
                                         >
                                             {item.name}
@@ -182,7 +182,7 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
                                         parseFloat(e.target.value) || 0
                                     )}
                                 />
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-[var(--text-muted)] mt-1">
                                     Add to base price (can be negative)
                                 </p>
                             </div>
@@ -192,7 +192,7 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
             })}
 
             <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">
+                <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">
                     Add variant type:
                 </p>
                 <div className="flex flex-wrap gap-2">

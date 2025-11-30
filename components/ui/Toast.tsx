@@ -116,10 +116,10 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
     };
 
     const typeStyles = {
-        success: 'bg-green-500/90 border-green-600 text-white',
-        error: 'bg-red-500/90 border-red-600 text-white',
-        warning: 'bg-orange-500/90 border-orange-600 text-white',
-        info: 'bg-blue-500/90 border-blue-600 text-white',
+        success: 'bg-[color:rgba(22,163,74,0.16)] border-[color:rgba(22,163,74,0.6)] text-[var(--text-primary)]',
+        error: 'bg-[color:rgba(239,68,68,0.16)] border-[color:rgba(239,68,68,0.6)] text-[var(--text-primary)]',
+        warning: 'bg-[color:rgba(245,158,11,0.16)] border-[color:rgba(245,158,11,0.7)] text-[var(--text-primary)]',
+        info: 'bg-[var(--bg-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)]',
     };
 
     const icons = {
@@ -182,7 +182,7 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
             </div>
             
             {showDetails && toast.details && (
-                <div className="px-4 pb-3 border-t border-white/30 mt-2 pt-3">
+                <div className="px-4 pb-3 border-t border-[var(--border-subtle)] mt-2 pt-3">
                     <div className="flex justify-between items-center mb-3">
                         <p className="text-xs font-semibold opacity-90">Error Details</p>
                         <button
@@ -190,7 +190,7 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
                                 e.stopPropagation();
                                 copyToClipboard();
                             }}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] rounded-lg text-xs font-medium transition-colors"
                         >
                             {copied ? (
                                 <>
@@ -237,7 +237,7 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
                         {toast.details.body && (
                             <div className="mt-3">
                                 <div className="opacity-75 mb-1.5 font-semibold">Response:</div>
-                                <pre className="bg-black/20 p-2.5 rounded-lg overflow-x-auto text-[10px] max-h-40 overflow-y-auto leading-relaxed">
+                                <pre className="bg-[var(--bg-subtle)] p-2.5 rounded-lg overflow-x-auto text-[10px] max-h-40 overflow-y-auto leading-relaxed text-[var(--text-secondary)]">
                                     {JSON.stringify(toast.details.body, null, 2)}
                                 </pre>
                             </div>
