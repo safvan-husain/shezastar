@@ -1,6 +1,21 @@
 // lib/category/model/category.model.ts
 import { ObjectId } from 'mongodb';
-import { SubCategory } from '../category.schema';
+import { SubCategory, SubSubCategory } from '../category.schema';
+
+function normalizeSubSubCategories(subSubCategories?: SubSubCategory[]) {
+    return subSubCategories ?? [];
+}
+
+function normalizeSubCategory(subCategory: SubCategory): SubCategory {
+    return {
+        ...subCategory,
+        subSubCategories: normalizeSubSubCategories(subCategory.subSubCategories),
+    };
+}
+
+function normalizeSubCategories(subCategories: SubCategory[]) {
+    return subCategories.map(normalizeSubCategory);
+}
 
 export interface CategoryDocument {
     _id: ObjectId;
@@ -22,7 +37,7 @@ export function toCategory(doc: CategoryDocument): Category {
     return {
         id: doc._id.toString(),
         name: doc.name,
-        subCategories: doc.subCategories,
+        subCategories: normalizeSubCategories(doc.subCategories),
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };

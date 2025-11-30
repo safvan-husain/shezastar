@@ -4,6 +4,8 @@ import {
     CreateCategorySchema,
     UpdateCategorySchema,
     AddSubCategorySchema,
+    AddSubSubCategorySchema,
+    UpdateSubCategorySchema,
 } from './category.schema';
 import * as categoryService from './category.service';
 
@@ -67,6 +69,43 @@ export async function handleAddSubCategory(id: string, input: unknown) {
 export async function handleRemoveSubCategory(id: string, subCategoryId: string) {
     try {
         const result = await categoryService.removeSubCategory(id, subCategoryId);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleAddSubSubCategory(
+    id: string,
+    subCategoryId: string,
+    input: unknown
+) {
+    try {
+        const parsed = AddSubSubCategorySchema.parse(input);
+        const result = await categoryService.addSubSubCategory(id, subCategoryId, parsed);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleRemoveSubSubCategory(
+    id: string,
+    subCategoryId: string,
+    subSubCategoryId: string
+) {
+    try {
+        const result = await categoryService.removeSubSubCategory(id, subCategoryId, subSubCategoryId);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleUpdateSubCategory(id: string, subCategoryId: string, input: unknown) {
+    try {
+        const parsed = UpdateSubCategorySchema.parse(input);
+        const result = await categoryService.updateSubCategory(id, subCategoryId, parsed);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);
