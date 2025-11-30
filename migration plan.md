@@ -5,14 +5,14 @@ Plan to align the codebase with the new steering (Server Actions, Prisma targeti
 ---
 
 ## Phase 0 – Prep
-- Set env: add `DATABASE_URL` for MongoDB (dev/test). Plan test DB URI.
-- Add deps: `prisma`, `@prisma/client` (and tooling like `ts-node` if needed). Prepare to remove direct `mongodb` dependency after migration.
-- Initialize `prisma/schema.prisma` with MongoDB provider; model existing collections (products, categories, variant types, images/variants) to preserve shape.
+- [x] Set env: add `DATABASE_URL` for MongoDB (dev/test). Plan test DB URI.
+- [x] Add deps: `prisma`, `@prisma/client` (and tooling like `ts-node` if needed). Prepare to remove direct `mongodb` dependency after migration.
+- [x] Initialize `prisma/schema.prisma` with MongoDB provider; model existing collections (products, categories, variant types, images/variants) to preserve shape.
 
 ## Phase 1 – Data Layer & Errors
-- Add `lib/db/prisma.ts` singleton (per steering).
-- Consolidate to one `AppError` (remove `lib/error/appError.ts` duplication); shape per steering (`status`, `code`, `message`, `details`, `timestamp`).
-- Map current Mongo collections to Prisma models; plan data migration scripts if existing data must be preserved.
+- [x] Add `lib/db/prisma.ts` singleton (per steering).
+- [x] Consolidate to one `AppError` (remove `lib/error/appError.ts` duplication); shape per steering (`status`, `code`, `message`, `details`, `timestamp`).
+- [x] Map current Mongo collections to Prisma models; plan data migration scripts if existing data must be preserved.
 
 ## Phase 2 – Services & Validation
 - Move business logic to `lib/services/*` using Prisma; replace `mongo-client` calls.

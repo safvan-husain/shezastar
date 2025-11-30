@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type SubCategory {
+  id   String
+  name String
+}
+
+type VariantItem {
+  id       String
+  name     String
+  metadata Json?
+}
+
+type ProductVariantSelectedItem {
+  id   String
+  name String
+}
+
+type ProductVariant {
+  variantTypeId   String
+  variantTypeName String
+  selectedItems   ProductVariantSelectedItem[]
+  priceModifier   Float?
+}
+
+type ProductImage {
+  id             String
+  url            String
+  mappedVariants String[]
+  order           Int
+}
+
+type InstallationService {
+  enabled     Boolean
+  inStorePrice Float?
+  atHomePrice  Float?
+}
+
+model Category {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  subCategories SubCategory[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model VariantType {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  items     VariantItem[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Product {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  name                String
+  description         String?
+  basePrice           Float
+  offerPrice          Float?
+  images              ProductImage[]
+  variants            ProductVariant[]
+  subCategoryIds      String[]
+  installationService InstallationService?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
