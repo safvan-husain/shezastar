@@ -9,10 +9,10 @@
   --border-subtle: #e5e5e5;
   --border-strong: #d4d4d4;
 
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #9ca3af;
-  --text-inverted: #f9fafb;
+  --text-primary: #000000;
+  --text-secondary: #404040;
+  --text-muted: #a3a3a3;
+  --text-inverted: #ffffff;
 
   /* Typography scale */
   --font-size-xs: 0.75rem;
@@ -35,8 +35,8 @@
   --foreground: var(--text-primary);
   --card: var(--bg-subtle);
   --card-foreground: var(--text-primary);
-  --primary: #111827; /* neutral primary, feature modules can override */
-  --primary-foreground: #f9fafb;
+  --primary: #000000; /* neutral primary, feature modules can override */
+  --primary-foreground: #ffffff;
   --secondary: var(--bg-subtle);
   --secondary-foreground: var(--text-secondary);
   --muted: var(--bg-subtle);
@@ -45,28 +45,28 @@
   --accent-foreground: var(--text-primary);
   --border: var(--border-subtle);
   --input: var(--border-subtle);
-  --ring: #111827;
+  --ring: #000000;
 
-  /* Semantic accents: defaults, can be overridden in context */
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  /* Semantic accents: grayscale only */
+  --success: #000000;
+  --warning: #404040;
+  --danger: #000000;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     /* Base grayscale palette: dark mode */
-    --bg-base: #020617;
-    --bg-subtle: #020617;
-    --bg-elevated: #020617;
+    --bg-base: #000000;
+    --bg-subtle: #0a0a0a;
+    --bg-elevated: #171717;
 
-    --border-subtle: #1f2937;
-    --border-strong: #374151;
+    --border-subtle: #262626;
+    --border-strong: #404040;
 
-    --text-primary: #f9fafb;
-    --text-secondary: #d1d5db;
-    --text-muted: #6b7280;
-    --text-inverted: #020617;
+    --text-primary: #ffffff;
+    --text-secondary: #d4d4d4;
+    --text-muted: #737373;
+    --text-inverted: #000000;
 
     /* Keep typography, radii, and shadows shared across modes */
 
@@ -75,21 +75,21 @@
     --foreground: var(--text-primary);
     --card: var(--bg-subtle);
     --card-foreground: var(--text-primary);
-    --primary: #f9fafb;
-    --primary-foreground: #020617;
-    --secondary: #020617;
+    --primary: #ffffff;
+    --primary-foreground: #000000;
+    --secondary: #0a0a0a;
     --secondary-foreground: var(--text-secondary);
-    --muted: #020617;
+    --muted: #0a0a0a;
     --muted-foreground: var(--text-muted);
-    --accent: #020617;
+    --accent: #171717;
     --accent-foreground: var(--text-primary);
     --border: var(--border-subtle);
     --input: var(--border-subtle);
-    --ring: #f9fafb;
+    --ring: #ffffff;
 
-    --success: #22c55e;
-    --warning: #fbbf24;
-    --danger: #f97373;
+    --success: #ffffff;
+    --warning: #d4d4d4;
+    --danger: #ffffff;
   }
 }
 
