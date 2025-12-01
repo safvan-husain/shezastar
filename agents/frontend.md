@@ -11,6 +11,7 @@
 - Avoid `cookies()/headers()/searchParams` inside cached scopes—read them outside and pass values in.
 - Use Suspense for dynamic sections; prefer Server Components and mark Client Components only when interactivity/hooks/browser APIs are required.
 - When using runtime APIs (`params`, `searchParams`), pass promises to children and resolve inside Suspense-wrapped components.
+- **Route params are promises.** Type page props as `interface PageProps { params: Promise<{ slug: string }> }` (same for `searchParams`) and `await params` inside the server component before reading values. Never assume synchronous objects; doing so leads to runtime failures in Next.js 16.
 
 ### Canonical cache snippet (latest docs)
 ```tsx
