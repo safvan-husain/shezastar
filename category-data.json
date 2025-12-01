@@ -1,0 +1,462 @@
+{
+  "categories": [
+    {
+      "name": "AUDIO & ELECTRONICS",
+      "url": "https://shezastar.com/product-category/audio-electronics/",
+      "children": [
+        {
+          "name": "Headrest Monitor",
+          "url": "https://shezastar.com/product-category/audio-electronics/headrest-monitor/"
+        },
+        {
+          "name": "Car Camera",
+          "url": "https://shezastar.com/product-category/audio-electronics/car-camera/"
+        },
+        {
+          "name": "Alarms & Engine Start",
+          "url": "https://shezastar.com/product-category/audio-electronics/alarms-engine-start/"
+        },
+        {
+          "name": "Portable GPS System",
+          "url": "https://shezastar.com/product-category/audio-electronics/portable-gps-system/"
+        },
+        {
+          "name": "Mobile Mounts & Chargers",
+          "url": "https://shezastar.com/product-category/audio-electronics/mobile-mounts-chargers/"
+        },
+        {
+          "name": "Jump Starter & Cables",
+          "url": "https://shezastar.com/product-category/audio-electronics/jump-starter-cables/"
+        },
+        {
+          "name": "Action & Dash Cam",
+          "url": "https://shezastar.com/product-category/audio-electronics/action-dash-cam/"
+        },
+        {
+          "name": "TPMS (Tyre Gauge)",
+          "url": "https://shezastar.com/product-category/audio-electronics/window-tint-accessories/"
+        },
+        {
+          "name": "Horns",
+          "url": "https://shezastar.com/product-category/audio-electronics/horns/"
+        },
+        {
+          "name": "Power Inverter",
+          "url": "https://shezastar.com/product-category/audio-electronics/power-inverter/"
+        },
+        {
+          "name": "Electric Tailgate",
+          "url": "https://shezastar.com/product-category/audio-electronics/electric-tailgate/"
+        },
+        {
+          "name": "Camera & Driving Safety",
+          "url": "https://shezastar.com/product-category/audio-electronics/camera-driving-safety/"
+        },
+        {
+          "name": "Other Accessories",
+          "url": "https://shezastar.com/product-category/auto-detailing/other-accessories/"
+        }
+      ]
+    },
+    {
+      "name": "SPEAKERS & AMPLIFIERS",
+      "url": "https://shezastar.com/product-category/speakers-amplifiers/",
+      "children": [
+        {
+          "name": "Speakers",
+          "url": "https://shezastar.com/product-category/speakers-amplifiers/speakers/"
+        },
+        {
+          "name": "Amplifiers",
+          "url": "https://shezastar.com/product-category/speakers-amplifiers/amplifiers/"
+        },
+        {
+          "name": "Subwoofers",
+          "url": "https://shezastar.com/product-category/speakers-amplifiers/subwoofers/"
+        },
+        {
+          "name": "Underseat Sub",
+          "url": "https://shezastar.com/product-category/speakers-amplifiers/underseat-sub/"
+        },
+        {
+          "name": "Tweeters",
+          "url": "https://shezastar.com/product-category/speakers-amplifiers/tweeters/"
+        }
+      ]
+    },
+    {
+      "name": "LIGHTING",
+      "url": "https://shezastar.com/product-category/lighting/",
+      "children": [
+        {
+          "name": "Headlight",
+          "url": "https://shezastar.com/product-category/lighting/headlight/"
+        },
+        {
+          "name": "Tail Light",
+          "url": "https://shezastar.com/product-category/lighting/tail-light/"
+        },
+        {
+          "name": "LED Light",
+          "url": "https://shezastar.com/product-category/lighting/led-light/"
+        },
+        {
+          "name": "Fog Light",
+          "url": "https://shezastar.com/product-category/lighting/fog-light/"
+        },
+        {
+          "name": "Offroad Light",
+          "url": "https://shezastar.com/product-category/lighting/offroad-light/"
+        },
+        {
+          "name": "Car Bulbs",
+          "url": "https://shezastar.com/product-category/lighting/car-bulbs/"
+        },
+        {
+          "name": "Day Time Running Light",
+          "url": "https://shezastar.com/product-category/lighting/day-time-running-light/"
+        },
+        {
+          "name": "Interior Light",
+          "url": "https://shezastar.com/product-category/lighting/interior-light/"
+        }
+      ]
+    },
+    {
+      "name": "AUTO DETAILING",
+      "url": "https://shezastar.com/product-category/auto-detailing/",
+      "children": [
+        {
+          "name": "Car Wash",
+          "url": "https://shezastar.com/product-category/auto-detailing/car-wash/"
+        },
+        {
+          "name": "Glass Cleaner",
+          "url": "https://shezastar.com/product-category/auto-detailing/glass-cleaner/"
+        },
+        {
+          "name": "Interior Care",
+          "url": "https://shezastar.com/product-category/auto-detailing/interior-care/"
+        },
+        {
+          "name": "Exterior Care",
+          "url": "https://shezastar.com/product-category/auto-detailing/exterior-care/"
+        },
+        {
+          "name": "Wax & Polish",
+          "url": "https://shezastar.com/product-category/auto-detailing/wax-polish/"
+        },
+        {
+          "name": "Wheel & Tire Cleaner",
+          "url": "https://shezastar.com/product-category/auto-detailing/wheel-tire-cleaner/"
+        },
+        {
+          "name": "Head Light Restoration",
+          "url": "https://shezastar.com/product-category/auto-detailing/head-light-restoration/"
+        },
+        {
+          "name": "Air Freshener",
+          "url": "https://shezastar.com/product-category/auto-detailing/air-freshener/"
+        },
+        {
+          "name": "Polishing",
+          "url": "https://shezastar.com/product-category/auto-detailing/polishing/"
+        },
+        {
+          "name": "Window Tint & Accessories",
+          "url": "https://shezastar.com/product-category/auto-detailing/window-tint-accessories-auto-detailing/"
+        },
+        {
+          "name": "Fuel Treatment",
+          "url": "https://shezastar.com/product-category/auto-detailing/fuel-treatment/"
+        },
+        {
+          "name": "Other Accessories",
+          "url": "https://shezastar.com/product-category/auto-detailing/other-accessories/"
+        }
+      ]
+    },
+    {
+      "name": "CAR MULTIMEDIA",
+      "url": "https://shezastar.com/product-category/car-multimedia/",
+      "children": [
+        {
+          "name": "Regular Screen",
+          "url": "https://shezastar.com/product-category/car-multimedia/regular-screen/",
+          "children": [
+            {
+              "name": "AUDI",
+              "url": "https://shezastar.com/brand/audi/"
+            },
+            {
+              "name": "BMW",
+              "url": "https://shezastar.com/brand/bmw/"
+            },
+            {
+              "name": "CHEVROLET",
+              "url": "https://shezastar.com/brand/chevrolet/"
+            },
+            {
+              "name": "DODGE",
+              "url": "https://shezastar.com/brand/dodge/"
+            },
+            {
+              "name": "FORD",
+              "url": "https://shezastar.com/brand/ford/"
+            },
+            {
+              "name": "GMC",
+              "url": "https://shezastar.com/brand/gmc/"
+            },
+            {
+              "name": "HONDA",
+              "url": "https://shezastar.com/brand/honda/"
+            },
+            {
+              "name": "HYUNDAI",
+              "url": "https://shezastar.com/brand/hyundai/"
+            },
+            {
+              "name": "JEEP",
+              "url": "https://shezastar.com/brand/jeep/"
+            },
+            {
+              "name": "KIA",
+              "url": "https://shezastar.com/brand/kia/"
+            },
+            {
+              "name": "LEXUS",
+              "url": "https://shezastar.com/brand/lexus/"
+            },
+            {
+              "name": "MAZDA",
+              "url": "https://shezastar.com/brand/mazda/"
+            }
+          ]
+        },
+        {
+          "name": "–",
+          "url": "https://shezastar.com/product-category/car-multimedia/regular-screen/",
+          "children": [
+            {
+              "name": "MERCEDES BENZ",
+              "url": "https://shezastar.com/brand/mercedes-benz/"
+            },
+            {
+              "name": "MITSUBISHI",
+              "url": "https://shezastar.com/brand/mitsubishi/"
+            },
+            {
+              "name": "NISSAN",
+              "url": "https://shezastar.com/brand/nissan/"
+            },
+            {
+              "name": "PEUGEOT",
+              "url": "https://shezastar.com/brand/peugeot/"
+            },
+            {
+              "name": "PORSCHE",
+              "url": "https://shezastar.com/brand/porsche/"
+            },
+            {
+              "name": "RENAULT",
+              "url": "https://shezastar.com/brand/renault/"
+            },
+            {
+              "name": "SUBARU",
+              "url": "https://shezastar.com/brand/subaru/"
+            },
+            {
+              "name": "SUZUKI",
+              "url": "https://shezastar.com/brand/suzuki/"
+            },
+            {
+              "name": "TOYOTA",
+              "url": "https://shezastar.com/brand/toyota/"
+            },
+            {
+              "name": "VOLKSWAGEN",
+              "url": "https://shezastar.com/brand/volkswagen/"
+            },
+            {
+              "name": "UNIVERSAL SCREEN",
+              "url": "https://shezastar.com/brand/universal-screen/"
+            }
+          ]
+        },
+        {
+          "name": "Special Display",
+          "url": "https://shezastar.com/product-category/car-multimedia/special-display/",
+          "children": [
+            {
+              "name": "MITSUBISHI",
+              "url": "https://shezastar.com/brand/mitsubishi/"
+            },
+            {
+              "name": "TOYOTA",
+              "url": "https://shezastar.com/brand/toyota/"
+            },
+            {
+              "name": "NISSAN",
+              "url": "https://shezastar.com/brand/nissan/"
+            },
+            {
+              "name": "LEXUS",
+              "url": "https://shezastar.com/brand/lexus/"
+            },
+            {
+              "name": "PORSCHE",
+              "url": "https://shezastar.com/brand/porsche/"
+            },
+            {
+              "name": "CHEVROLET",
+              "url": "https://shezastar.com/brand/chevrolet/"
+            }
+          ]
+        },
+        {
+          "name": "Tesla Style",
+          "url": "https://shezastar.com/product-category/car-multimedia/tesla-style/",
+          "children": [
+            {
+              "name": "CHEVROLET",
+              "url": "https://shezastar.com/brand/chevrolet/"
+            },
+            {
+              "name": "FORD",
+              "url": "https://shezastar.com/brand/ford/"
+            },
+            {
+              "name": "HONDA",
+              "url": "https://shezastar.com/brand/honda/"
+            },
+            {
+              "name": "GMC",
+              "url": "https://shezastar.com/brand/gmc/"
+            },
+            {
+              "name": "HYUNDAI",
+              "url": "https://shezastar.com/brand/hyundai/"
+            },
+            {
+              "name": "JEEP",
+              "url": "https://shezastar.com/brand/jeep/"
+            },
+            {
+              "name": "KIA",
+              "url": "https://shezastar.com/brand/kia/"
+            },
+            {
+              "name": "LEXUS",
+              "url": "https://shezastar.com/brand/lexus/"
+            },
+            {
+              "name": "MITSUBISHI",
+              "url": "https://shezastar.com/brand/mitsubishi/"
+            },
+            {
+              "name": "NISSAN",
+              "url": "https://shezastar.com/brand/nissan/"
+            },
+            {
+              "name": "TOYOTA",
+              "url": "https://shezastar.com/brand/toyota/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "INTERIOR",
+      "url": "https://shezastar.com/product-category/interior/",
+      "children": [
+        {
+          "name": "Floor Mats",
+          "url": "https://shezastar.com/product-category/interior/floor-mats/"
+        },
+        {
+          "name": "Key Case",
+          "url": "https://shezastar.com/product-category/interior/key-case/"
+        },
+        {
+          "name": "Wireless Charger",
+          "url": "https://shezastar.com/product-category/interior/wireless-charger/"
+        },
+        {
+          "name": "Interior Care",
+          "url": "https://shezastar.com/product-category/interior/interior-care-interior/"
+        },
+        {
+          "name": "Steering Wheel Cover",
+          "url": "https://shezastar.com/product-category/interior/steering-wheel-cover/"
+        },
+        {
+          "name": "Steering Wheel",
+          "url": "https://shezastar.com/product-category/interior/steering-wheel/"
+        },
+        {
+          "name": "Dashboard Cover",
+          "url": "https://shezastar.com/product-category/interior/dashboard-cover/"
+        },
+        {
+          "name": "Car Organiser",
+          "url": "https://shezastar.com/product-category/interior/car-organiser/"
+        },
+        {
+          "name": "Sun Shade",
+          "url": "https://shezastar.com/product-category/interior/sun-shade/"
+        },
+        {
+          "name": "Seat Cover & Upholstery",
+          "url": "https://shezastar.com/product-category/interior/seat-cover-upholstery/"
+        },
+        {
+          "name": "Others",
+          "url": "https://shezastar.com/product-category/interior/others/"
+        }
+      ]
+    },
+    {
+      "name": "EXTERIOR",
+      "url": "https://shezastar.com/product-category/exterior/",
+      "children": [
+        {
+          "name": "Grills / Bumper & Guards",
+          "url": "https://shezastar.com/product-category/exterior/grills-bumper-guards/"
+        },
+        {
+          "name": "Antenna",
+          "url": "https://shezastar.com/product-category/exterior/antenna/"
+        },
+        {
+          "name": "Wind Deflector & Spoiler",
+          "url": "https://shezastar.com/product-category/exterior/wind-deflector-spoiler/"
+        },
+        {
+          "name": "Car Cover",
+          "url": "https://shezastar.com/product-category/exterior/car-cover/"
+        },
+        {
+          "name": "Plate Frame & EMBLEM",
+          "url": "https://shezastar.com/product-category/exterior/plate-frame-emblem/"
+        },
+        {
+          "name": "Body Kit",
+          "url": "https://shezastar.com/product-category/exterior/body-kit/"
+        },
+        {
+          "name": "Air Filter",
+          "url": "https://shezastar.com/product-category/exterior/air-filter/"
+        },
+        {
+          "name": "Chrome Trims",
+          "url": "https://shezastar.com/product-category/exterior/chrome-trims-exterior/"
+        },
+        {
+          "name": "Wiper Blade",
+          "url": "https://shezastar.com/product-category/exterior/wiper-blade/"
+        }
+      ]
+    }
+  ]
+}
