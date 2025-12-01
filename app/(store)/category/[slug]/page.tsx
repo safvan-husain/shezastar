@@ -4,6 +4,7 @@ import { Category } from '@/lib/category/model/category.model';
 import { Product } from '@/lib/product/model/product.model';
 import { AppError } from '@/lib/errors/app-error';
 import { CategoryErrorHandler, CategoryPageError } from '../components/CategoryErrorHandler';
+import { Breadcrumbs, BreadcrumbItem } from '../components/Breadcrumbs';
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -79,33 +80,75 @@ async function fetchProducts(categoryId: string): Promise<{ products: Product[];
   }
 }
 
+type CategoryLevel = 'category' | 'subCategory' | 'subSubCategory';
+
+interface CategoryMatch {
+  title: string;
+  filterId: string;
+  level: CategoryLevel;
+  breadcrumbs: BreadcrumbItem[];
+}
+
 function matchesIdentifier(identifier: string, node: { id: string; slug?: string }) {
   return node.slug === identifier || node.id === identifier;
 }
 
-function findCategoryBySlug(categories: Category[], slug: string) {
+function findCategoryBySlug(categories: Category[], slug: string): CategoryMatch | null {
   for (const category of categories) {
+    if (matchesIdentifier(slug, category)) {
+      const filterId = category.slug || category.id;
+      return {
+        title: category.name,
+        filterId,
+        level: 'category',
+        breadcrumbs: [{ label: category.name }],
+      };
+    }
+
     for (const sub of category.subCategories) {
       if (matchesIdentifier(slug, sub)) {
+        const filterId = sub.slug || sub.id;
         return {
           title: sub.name,
-          filterId: sub.id,
-          breadcrumbs: [category.name, sub.name],
+          filterId,
+          level: 'subCategory',
+          breadcrumbs: [
+            { label: category.name, href: `/category/${category.slug}` },
+            { label: sub.name },
+          ],
         };
       }
 
       const subSub = sub.subSubCategories.find((s) => matchesIdentifier(slug, s));
       if (subSub) {
+        const filterId = subSub.slug || subSub.id;
         return {
           title: subSub.name,
-          filterId: subSub.id,
-          breadcrumbs: [category.name, sub.name, subSub.name],
+          filterId,
+          level: 'subSubCategory',
+          breadcrumbs: [
+            { label: category.name, href: `/category/${category.slug}` },
+            { label: sub.name, href: `/category/${sub.slug}` },
+            { label: subSub.name },
+          ],
         };
       }
     }
   }
 
   return null;
+}
+
+function buildDescription(level: CategoryLevel, title: string, hasProducts: boolean) {
+  if (level === 'category') {
+    return `All products in ${title} and its subcategories.${hasProducts ? '' : ' No items yet.'}`;
+  }
+
+  if (level === 'subCategory') {
+    return `Products in ${title} and its subcategories.${hasProducts ? '' : ' No items yet.'}`;
+  }
+
+  return `Products in ${title}.${hasProducts ? '' : ' No items yet.'}`;
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
@@ -147,23 +190,20 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   }
 
   const { products, error: productsError } = await fetchProducts(match.filterId);
+  const description = buildDescription(match.level, match.title, products.length > 0);
 
   return (
     <div className="container mx-auto px-4 py-12 space-y-8">
       {productsError && <CategoryErrorHandler error={productsError} />}
       <div className="space-y-3">
-        {match.breadcrumbs.length > 0 && (
-          <p className="text-sm text-[var(--text-muted)]">{match.breadcrumbs.join(' / ')}</p>
-        )}
+        {match.breadcrumbs.length > 0 && <Breadcrumbs items={match.breadcrumbs} />}
         <h1 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)]">{match.title}</h1>
-        <p className="text-[var(--text-secondary)]">
-          Products matched to this subcategory.{products.length > 0 ? '' : ' No items yet.'}
-        </p>
+        <p className="text-[var(--text-secondary)]">{description}</p>
       </div>
 
       <ProductGrid
         products={products}
-        emptyMessage="No products are assigned to this subcategory yet. Add them from the admin panel."
+        emptyMessage="No products are assigned to this category yet. Add them from the admin panel."
       />
     </div>
   );

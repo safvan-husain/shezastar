@@ -426,3 +426,69 @@ export async function updateSubCategory(
 
     return toCategory(updated);
 }
+
+export async function getCategoryHierarchyIds(identifier: string): Promise<string[]> {
+    const collection = await getCollection<CategoryDocument>(COLLECTION);
+    const matchedIds = new Set<string>();
+
+    if (ObjectId.isValid(identifier)) {
+        const category = await collection.findOne({ _id: new ObjectId(identifier) });
+        if (category) {
+            matchedIds.add(category._id.toString());
+            category.subCategories?.forEach(sub => {
+                matchedIds.add(sub.id);
+                (sub.subSubCategories || []).forEach(subSub => matchedIds.add(subSub.id));
+            });
+            return Array.from(matchedIds);
+        }
+    }
+
+    const categoryBySlug = await collection.findOne({ slug: identifier });
+    if (categoryBySlug) {
+        matchedIds.add(categoryBySlug._id.toString());
+        categoryBySlug.subCategories?.forEach(sub => {
+            matchedIds.add(sub.id);
+            (sub.subSubCategories || []).forEach(subSub => matchedIds.add(subSub.id));
+        });
+        return Array.from(matchedIds);
+    }
+
+    const categoryWithSub = await collection.findOne({
+        $or: [
+            { 'subCategories.id': identifier },
+            { 'subCategories.slug': identifier },
+        ],
+    });
+    if (categoryWithSub) {
+        const subCategory = categoryWithSub.subCategories.find(
+            sub => sub.id === identifier || sub.slug === identifier
+        );
+        if (subCategory) {
+            matchedIds.add(subCategory.id);
+            (subCategory.subSubCategories || []).forEach(subSub => matchedIds.add(subSub.id));
+            return Array.from(matchedIds);
+        }
+    }
+
+    const categoryWithSubSub = await collection.findOne({
+        $or: [
+            { 'subCategories.subSubCategories.id': identifier },
+            { 'subCategories.subSubCategories.slug': identifier },
+        ],
+    });
+    if (categoryWithSubSub) {
+        for (const sub of categoryWithSubSub.subCategories) {
+            const subSub = sub.subSubCategories?.find(
+                s => s.id === identifier || s.slug === identifier
+            );
+            if (subSub) {
+                matchedIds.add(subSub.id);
+                return Array.from(matchedIds);
+            }
+        }
+    }
+
+    throw new AppError(404, 'CATEGORY_NOT_FOUND', {
+        message: `Category with identifier "${identifier}" not found`,
+    });
+}

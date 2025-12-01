@@ -8,7 +8,7 @@ vi.mock('@/lib/db/mongo-client', async () => {
 
 beforeAll(async () => {
     await db.connect();
-});
+}, 30000);
 
 afterAll(async () => {
     await db.close();

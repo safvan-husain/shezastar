@@ -1,9 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { GET as getProducts, POST as createProduct } from '@/app/api/products/route';
 import { GET as getProduct, PUT as updateProduct, DELETE as deleteProduct } from '@/app/api/products/[id]/route';
+import { clear } from '../test-db';
+import { addSubCategory, addSubSubCategory, createCategory } from '@/lib/category/category.service';
+import { createProduct as createProductService } from '@/lib/product/product.service';
 
 describe('Products API Integration', () => {
     let createdProductId: string;
+
+    beforeAll(async () => {
+        await clear();
+    });
 
     it('should create a new product', async () => {
         const productData = {
@@ -92,5 +99,71 @@ describe('Products API Integration', () => {
         const res = await getProduct(req, { params });
 
         expect(res.status).toBe(404);
+    });
+});
+
+describe('Products API Integration - Category filtering', () => {
+    let categorySlug: string;
+    let subCategorySlug: string;
+    let subSubCategorySlug: string;
+
+    beforeAll(async () => {
+        await clear();
+        const category = await createCategory({ name: 'Filter Integration Root', subCategories: [] });
+        categorySlug = category.slug;
+
+        const withSub = await addSubCategory(category.id, { name: 'Filter Integration Child' });
+        const subCategory = withSub.subCategories[0];
+        subCategorySlug = subCategory.slug;
+
+        const withSubSub = await addSubSubCategory(category.id, subCategory.id, { name: 'Filter Integration Leaf' });
+        const refreshedSub = withSubSub.subCategories.find(sub => sub.id === subCategory.id);
+        if (!refreshedSub || refreshedSub.subSubCategories.length === 0) {
+            throw new Error('Failed to create integration sub-subcategory');
+        }
+
+        subSubCategorySlug = refreshedSub.subSubCategories[0].slug;
+
+        await createProductService({
+            name: 'Integration Parent Product',
+            basePrice: 25,
+            images: [],
+            variants: [],
+            subCategoryIds: [subCategory.id],
+        });
+
+        await createProductService({
+            name: 'Integration Leaf Product',
+            basePrice: 30,
+            images: [],
+            variants: [],
+            subCategoryIds: [refreshedSub.subSubCategories[0].id],
+        });
+    });
+
+    afterAll(async () => {
+        await clear();
+    });
+
+    it('returns full hierarchy products when filtering by parent slug', async () => {
+        const req = new Request(`http://localhost/api/products?categoryId=${categorySlug}&limit=10`);
+        const res = await getProducts(req);
+        const body = await res.json();
+
+        const names = body.products.map((product: any) => product.name);
+        expect(names).toContain('Integration Parent Product');
+        expect(names).toContain('Integration Leaf Product');
+    });
+
+    it('scopes results to leaf when filtering by sub-subcategory slug', async () => {
+        const req = new Request(
+            `http://localhost/api/products?categoryId=${subSubCategorySlug}&limit=10`
+        );
+        const res = await getProducts(req);
+        const body = await res.json();
+
+        const names = body.products.map((product: any) => product.name);
+        expect(names).toContain('Integration Leaf Product');
+        expect(names).not.toContain('Integration Parent Product');
     });
 });

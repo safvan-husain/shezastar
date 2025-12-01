@@ -80,21 +80,27 @@ describe('Product Service Unit Tests', () => {
 
 describe('Product Service - Category filtering', () => {
     let categoryId: string;
+    let categorySlug: string;
     let subCategoryId: string;
+    let subCategorySlug: string;
     let subSubCategoryId: string;
+    let subSubCategorySlug: string;
 
     beforeAll(async () => {
         await clear();
 
         const category = await createCategory({ name: 'Filter Parent', subCategories: [] });
         categoryId = category.id;
+        categorySlug = category.slug;
 
         const withSubCategory = await addSubCategory(categoryId, { name: 'Filter Child' });
         subCategoryId = withSubCategory.subCategories[0].id;
+        subCategorySlug = withSubCategory.subCategories[0].slug;
 
         const withSubSubCategory = await addSubSubCategory(categoryId, subCategoryId, { name: 'Filter Leaf' });
         const subCategory = withSubSubCategory.subCategories.find(sub => sub.id === subCategoryId);
         subSubCategoryId = subCategory?.subSubCategories[0]?.id as string;
+        subSubCategorySlug = subCategory?.subSubCategories[0]?.slug as string;
         if (!subSubCategoryId) {
             throw new Error('Failed to create sub-subcategory for filtering tests');
         }
@@ -128,24 +134,24 @@ describe('Product Service - Category filtering', () => {
         await clear();
     });
 
-    it('filters by parent category id including all descendants', async () => {
-        const result = await getAllProducts(1, 20, categoryId);
+    it('filters by parent category slug including all descendants', async () => {
+        const result = await getAllProducts(1, 20, categorySlug);
         const names = result.products.map(p => p.name);
         expect(names).toContain('Parent scoped product');
         expect(names).toContain('Leaf scoped product');
         expect(names).not.toContain('Outside category product');
     });
 
-    it('filters by subcategory id including its sub-subcategories', async () => {
-        const result = await getAllProducts(1, 20, subCategoryId);
+    it('filters by subcategory slug including its sub-subcategories', async () => {
+        const result = await getAllProducts(1, 20, subCategorySlug);
         const names = result.products.map(p => p.name);
         expect(names).toContain('Parent scoped product');
         expect(names).toContain('Leaf scoped product');
         expect(names).not.toContain('Outside category product');
     });
 
-    it('filters by sub-subcategory id directly', async () => {
-        const result = await getAllProducts(1, 20, subSubCategoryId);
+    it('filters by sub-subcategory slug directly', async () => {
+        const result = await getAllProducts(1, 20, subSubCategorySlug);
         const names = result.products.map(p => p.name);
         expect(names).toContain('Leaf scoped product');
         expect(names).not.toContain('Parent scoped product');

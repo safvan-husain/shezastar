@@ -5,49 +5,9 @@ import { ProductDocument, toProduct, toProducts } from './model/product.model';
 import { CreateProductInput, UpdateProductInput, ImageMappingInput, ProductImage } from './product.schema';
 import { nanoid } from 'nanoid';
 import { deleteImages } from '@/lib/utils/file-upload';
-import { CategoryDocument } from '@/lib/category/model/category.model';
+import { getCategoryHierarchyIds } from '@/lib/category/category.service';
 
 const COLLECTION = 'products';
-
-async function resolveCategoryFilterIds(categoryId: string) {
-    const categoryCollection = await getCollection<CategoryDocument>('categories');
-    const matchedIds = new Set<string>([categoryId]);
-
-    let objectId: ObjectId | null = null;
-    try {
-        objectId = new ObjectId(categoryId);
-    } catch {
-        objectId = null;
-    }
-
-    if (objectId) {
-        const category = await categoryCollection.findOne({ _id: objectId });
-        if (category) {
-            category.subCategories?.forEach(sub => {
-                matchedIds.add(sub.id);
-                (sub.subSubCategories || []).forEach(subSub => matchedIds.add(subSub.id));
-            });
-            return Array.from(matchedIds);
-        }
-    }
-
-    const categoryWithSub = await categoryCollection.findOne({ 'subCategories.id': categoryId });
-    if (categoryWithSub) {
-        const subCategory = categoryWithSub.subCategories.find(sub => sub.id === categoryId);
-        if (subCategory) {
-            matchedIds.add(subCategory.id);
-            (subCategory.subSubCategories || []).forEach(subSub => matchedIds.add(subSub.id));
-        }
-        return Array.from(matchedIds);
-    }
-
-    const categoryWithSubSub = await categoryCollection.findOne({ 'subCategories.subSubCategories.id': categoryId });
-    if (categoryWithSubSub) {
-        return Array.from(matchedIds);
-    }
-
-    return Array.from(matchedIds);
-}
 
 export async function createProduct(input: CreateProductInput) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
@@ -115,7 +75,7 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string) 
     let filter: Record<string, any> = {};
 
     if (categoryId) {
-        const categoryFilterIds = await resolveCategoryFilterIds(categoryId);
+        const categoryFilterIds = await getCategoryHierarchyIds(categoryId);
         filter = { subCategoryIds: { $in: categoryFilterIds } };
     }
 
