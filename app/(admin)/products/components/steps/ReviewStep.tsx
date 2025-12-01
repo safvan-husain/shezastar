@@ -1,7 +1,9 @@
 // app/(admin)/products/components/steps/ReviewStep.tsx
 'use client';
 
+import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 interface ImageFile {
     id: string;
@@ -29,9 +31,100 @@ interface ReviewStepProps {
     offerPrice: string;
     images: ImageFile[];
     variants: ProductVariant[];
+    imageMappings: Record<string, string[]>;
 }
 
-export function ReviewStep({ name, description, basePrice, offerPrice, images, variants }: ReviewStepProps) {
+export function ReviewStep({
+    name,
+    description,
+    basePrice,
+    offerPrice,
+    images,
+    variants,
+    imageMappings,
+}: ReviewStepProps) {
+    const [selectedVariantItems, setSelectedVariantItems] = useState<Record<string, string | null>>(() => {
+        const initial: Record<string, string | null> = {};
+        for (const variant of variants) {
+            if (variant.selectedItems.length > 0) {
+                initial[variant.variantTypeId] = variant.selectedItems[0]?.id ?? null;
+            }
+        }
+        return initial;
+    });
+
+    const [activeImageId, setActiveImageId] = useState<string | null>(() => images[0]?.id ?? null);
+
+    const selectedItemIds = useMemo(
+        () => new Set(Object.values(selectedVariantItems).filter((id): id is string => Boolean(id))),
+        [selectedVariantItems]
+    );
+
+    const displayedImages = useMemo(() => {
+        if (images.length === 0) return [] as ImageFile[];
+
+        // No variant selection: show all images
+        if (selectedItemIds.size === 0) {
+            return images;
+        }
+
+        const selectedVariantItemIds = Array.from(selectedItemIds);
+
+        return images.filter(image => {
+            const mapped = imageMappings[image.id] || [];
+
+            // Images with no mappings show for all variants
+            if (!mapped || mapped.length === 0) {
+                return true;
+            }
+
+            // Mirror backend filterImagesByVariants semantics:
+            // image.mappedVariants is a list of "rules" (single item or combo)
+            // The image should be shown if ANY rule is satisfied.
+            return mapped.some(mappedId => {
+                // Exact single-item match
+                if (selectedVariantItemIds.includes(mappedId)) {
+                    return true;
+                }
+
+                // Combination mapping, e.g. "red+128gb"
+                const mappedItems = mappedId.split('+');
+                return mappedItems.every(item => selectedVariantItemIds.includes(item));
+            });
+        });
+    }, [images, imageMappings, selectedItemIds]);
+
+    const activeImage =
+        displayedImages.find(img => img.id === activeImageId) ??
+        displayedImages[0] ??
+        images[0] ??
+        null;
+
+    const handleVariantSelect = (variantTypeId: string, itemId: string) => {
+        setSelectedVariantItems(prev => {
+            const current = prev[variantTypeId];
+            const next: Record<string, string | null> = { ...prev };
+
+            // Toggle selection for preview: clicking again clears it
+            next[variantTypeId] = current === itemId ? null : itemId;
+            return next;
+        });
+    };
+
+    const parsedBasePrice = parseFloat(basePrice) || 0;
+    const parsedOfferPrice = offerPrice ? parseFloat(offerPrice) || 0 : null;
+
+    const variantPriceModifier = variants.reduce((total, variant) => {
+        const hasSelection = Boolean(selectedVariantItems[variant.variantTypeId]);
+        if (!hasSelection || !variant.priceModifier) return total;
+        return total + variant.priceModifier;
+    }, 0);
+
+    const effectiveBase = parsedBasePrice + variantPriceModifier;
+    const effectiveOffer = parsedOfferPrice !== null ? parsedOfferPrice + variantPriceModifier : null;
+
+    const hasVariantsWithItems = variants.some(v => v.selectedItems.length > 0);
+
     return (
         <Card>
             <div className="flex items-center gap-3 mb-6">
@@ -40,68 +133,148 @@ export function ReviewStep({ name, description, basePrice, offerPrice, images, v
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-[var(--foreground)]">Review Product</h2>
-            </div>
-            <div className="space-y-6">
-                <div className="p-5 bg-[var(--accent)] rounded-lg border border-[var(--border)]">
-                    <h3 className="font-semibold text-[var(--foreground)] mb-2 flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                        Product Name
-                    </h3>
-                    <p className="text-lg font-medium text-[var(--foreground)]">{name}</p>
+                <div>
+                    <h2 className="text-2xl font-bold text-[var(--foreground)]">Preview Product Page</h2>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                        See how customers will experience this product
+                    </p>
                 </div>
-                {description && (
-                    <div className="p-5 bg-[var(--accent)] rounded-lg border border-[var(--border)]">
-                        <h3 className="font-semibold text-[var(--foreground)] mb-2 flex items-center gap-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                            </svg>
-                            Description
-                        </h3>
-                        <p className="text-[var(--muted-foreground)]">{description}</p>
-                    </div>
-                )}
-                <div className="p-5 bg-[var(--accent)] rounded-lg border border-[var(--border)]">
-                    <h3 className="font-semibold text-[var(--foreground)] mb-3 flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Pricing
-                    </h3>
-                    <div className="flex items-baseline gap-3">
-                        {offerPrice ? (
-                            <>
-                                <span className="text-2xl font-bold text-[var(--success)]">${offerPrice}</span>
-                                <span className="text-lg text-[var(--muted-foreground)] line-through">${basePrice}</span>
-                                <span className="px-2 py-1 bg-[var(--danger)] text-[var(--text-inverted)] text-sm font-bold rounded">
-                                    {Math.round(((parseFloat(basePrice) - parseFloat(offerPrice)) / parseFloat(basePrice)) * 100)}% OFF
-                                </span>
-                            </>
+            </div>
+
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                {/* Gallery */}
+                <div className="space-y-4">
+                    <div className="aspect-[4/3] w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-subtle)] overflow-hidden flex items-center justify-center">
+                        {activeImage ? (
+                            <img
+                                src={activeImage.preview}
+                                alt={name || 'Product preview'}
+                                className="w-full h-full object-cover"
+                            />
                         ) : (
-                            <span className="text-2xl font-bold text-[var(--foreground)]">${basePrice}</span>
+                            <div className="text-sm text-[var(--text-muted)]">
+                                Product images will appear here
+                            </div>
                         )}
                     </div>
+
+                    {displayedImages.length > 1 && (
+                        <div className="flex gap-3 overflow-x-auto pb-1">
+                            {displayedImages.map(image => {
+                                const isActive = activeImage?.id === image.id;
+                                return (
+                                    <button
+                                        key={image.id}
+                                        type="button"
+                                        onClick={() => setActiveImageId(image.id)}
+                                        className={`relative rounded-lg border overflow-hidden flex-shrink-0 w-20 h-20 transition-all ${isActive
+                                            ? 'border-[var(--primary)] ring-2 ring-[var(--ring)]'
+                                            : 'border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
+                                            }`}
+                                        aria-label="Select image"
+                                    >
+                                        <img
+                                            src={image.preview}
+                                            alt="Product thumbnail"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-5 bg-[var(--accent)] rounded-lg border border-[var(--border)]">
-                        <h3 className="font-semibold text-[var(--foreground)] mb-2 flex items-center gap-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            Images
-                        </h3>
-                        <p className="text-2xl font-bold text-[var(--foreground)]">{images.length}</p>
+
+                {/* Details */}
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="text-2xl font-bold text-[var(--foreground)] mb-1">{name}</h3>
+                        {description && (
+                            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                                {description}
+                            </p>
+                        )}
                     </div>
-                    <div className="p-5 bg-[var(--accent)] rounded-lg border border-[var(--border)]">
-                        <h3 className="font-semibold text-[var(--foreground)] mb-2 flex items-center gap-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                            Variant Types
-                        </h3>
-                        <p className="text-2xl font-bold text-[var(--foreground)]">{variants.length}</p>
+
+                    <div className="space-y-1">
+                        <div className="flex items-baseline gap-3">
+                            {effectiveOffer !== null ? (
+                                <>
+                                    <span className="text-3xl font-bold text-[var(--success)]">
+                                        ${effectiveOffer.toFixed(2)}
+                                    </span>
+                                    <span className="text-lg text-[var(--muted-foreground)] line-through">
+                                        ${effectiveBase.toFixed(2)}
+                                    </span>
+                                    {effectiveBase > 0 && (
+                                        <span className="px-2 py-1 bg-[var(--danger)] text-[var(--text-inverted)] text-xs font-bold rounded">
+                                            {Math.round(((effectiveBase - effectiveOffer) / effectiveBase) * 100)}% OFF
+                                        </span>
+                                    )}
+                                </>
+                            ) : (
+                                <span className="text-3xl font-bold text-[var(--foreground)]">
+                                    ${effectiveBase.toFixed(2)}
+                                </span>
+                            )}
+                        </div>
+                        {variantPriceModifier !== 0 && (
+                            <p className="text-xs text-[var(--text-muted)]">
+                                Includes variant adjustment of {variantPriceModifier > 0 ? '+' : ''}
+                                ${variantPriceModifier.toFixed(2)} from base price
+                            </p>
+                        )}
+                    </div>
+
+                    {hasVariantsWithItems && (
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-sm font-semibold text-[var(--text-secondary)] mb-1">
+                                    Variant options
+                                </p>
+                                <p className="text-xs text-[var(--text-muted)]">
+                                    Click options to see how images respond to your mappings
+                                </p>
+                            </div>
+
+                            {variants.map(variant => {
+                                if (variant.selectedItems.length === 0) return null;
+
+                                const activeItemId = selectedVariantItems[variant.variantTypeId];
+
+                                return (
+                                    <div key={variant.variantTypeId} className="space-y-2">
+                                        <p className="text-sm font-medium text-[var(--text-secondary)]">
+                                            {variant.variantTypeName}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {variant.selectedItems.map(item => {
+                                                const isActive = activeItemId === item.id;
+                                                return (
+                                                    <Button
+                                                        key={item.id}
+                                                        type="button"
+                                                        variant={isActive ? 'primary' : 'outline'}
+                                                        size="sm"
+                                                        className="min-w-[3rem]"
+                                                        onClick={() => handleVariantSelect(variant.variantTypeId, item.id)}
+                                                    >
+                                                        {item.name}
+                                                    </Button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <div className="pt-4 border-t border-[var(--border-subtle)]">
+                        <p className="text-xs text-[var(--text-muted)]">
+                            This is a preview only. Customers will see a similar layout with cart and checkout
+                            actions on the live storefront.
+                        </p>
                     </div>
                 </div>
             </div>

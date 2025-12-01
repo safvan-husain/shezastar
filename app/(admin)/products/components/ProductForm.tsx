@@ -246,6 +246,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         offerPrice={offerPrice}
                         images={images}
                         variants={variants}
+                        imageMappings={imageMappings}
                     />
                 )}
 
