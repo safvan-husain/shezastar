@@ -1,17 +1,29 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
+import { useToast } from '@/components/ui/Toast';
+
+interface SubSubCategory {
+    id: string;
+    name: string;
+}
 
 interface SubCategory {
     id: string;
     name: string;
+    subSubCategories: SubSubCategory[];
 }
 
 interface Category {
     id: string;
     name: string;
     subCategories: SubCategory[];
+}
+
+interface CategoryOption {
+    id: string;
+    path: string[];
 }
 
 interface CategoryStepProps {
@@ -23,59 +35,141 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeIndex, setActiveIndex] = useState(0);
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const { showToast } = useToast();
 
     useEffect(() => {
         fetchCategories();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchCategories = async () => {
+        setLoading(true);
         try {
             const res = await fetch('/api/categories');
-            if (res.ok) {
-                const data = await res.json();
-                setCategories(data);
+            if (!res.ok) {
+                let data: any = {};
+                try {
+                    data = await res.json();
+                } catch {
+                    // ignore JSON parse errors
+                }
+                const message = data.message || data.error || 'Failed to load categories';
+                showToast(message, 'error', {
+                    status: res.status,
+                    body: data,
+                    url: res.url,
+                    method: 'GET',
+                });
+                return;
             }
-        } catch (err) {
-            console.error('Failed to fetch categories:', err);
+
+            const data = await res.json();
+            setCategories(data);
+        } catch (err: any) {
+            const message = err.message || 'Failed to load categories';
+            showToast(message, 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    const filteredCategories = useMemo(() => {
-        if (!searchQuery.trim()) return categories;
+    const { allOptions, optionMap } = useMemo(() => {
+        const options: CategoryOption[] = [];
+        const map = new Map<string, CategoryOption>();
 
-        const query = searchQuery.toLowerCase();
-        return categories
-            .map(cat => ({
-                ...cat,
-                subCategories: cat.subCategories.filter(sub =>
-                    sub.name.toLowerCase().includes(query) ||
-                    cat.name.toLowerCase().includes(query)
-                ),
-            }))
-            .filter(cat => cat.subCategories.length > 0);
-    }, [categories, searchQuery]);
-
-    const toggleSubCategory = (subCategoryId: string) => {
-        if (selectedSubCategoryIds.includes(subCategoryId)) {
-            onSelectionChange(selectedSubCategoryIds.filter(id => id !== subCategoryId));
-        } else {
-            onSelectionChange([...selectedSubCategoryIds, subCategoryId]);
-        }
-    };
-
-    const getSelectedSubCategoryNames = () => {
-        const names: string[] = [];
-        categories.forEach(cat => {
-            cat.subCategories.forEach(sub => {
-                if (selectedSubCategoryIds.includes(sub.id)) {
-                    names.push(`${cat.name} > ${sub.name}`);
+        categories.forEach(category => {
+            category.subCategories.forEach(sub => {
+                if (sub.subSubCategories && sub.subSubCategories.length > 0) {
+                    sub.subSubCategories.forEach(subSub => {
+                        const option: CategoryOption = {
+                            id: subSub.id,
+                            path: [category.name, sub.name, subSub.name],
+                        };
+                        options.push(option);
+                        map.set(option.id, option);
+                    });
+                } else {
+                    const option: CategoryOption = {
+                        id: sub.id,
+                        path: [category.name, sub.name],
+                    };
+                    options.push(option);
+                    map.set(option.id, option);
                 }
             });
         });
-        return names;
+
+        // Sort options by their full path for consistent display
+        options.sort((a, b) => a.path.join(' / ').localeCompare(b.path.join(' / ')));
+
+        return { allOptions: options, optionMap: map };
+    }, [categories]);
+
+    const availableOptions = useMemo(
+        () => allOptions.filter(option => !selectedSubCategoryIds.includes(option.id)),
+        [allOptions, selectedSubCategoryIds]
+    );
+
+    const filteredOptions = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return availableOptions;
+
+        return availableOptions.filter(option =>
+            option.path.some(part => part.toLowerCase().includes(query))
+        );
+    }, [availableOptions, searchQuery]);
+
+    useEffect(() => {
+        if (filteredOptions.length === 0) {
+            setActiveIndex(0);
+        } else if (activeIndex >= filteredOptions.length) {
+            setActiveIndex(0);
+        }
+    }, [filteredOptions, activeIndex]);
+
+    const handleSelect = (id: string) => {
+        if (selectedSubCategoryIds.includes(id)) return;
+
+        onSelectionChange([...selectedSubCategoryIds, id]);
+        setSearchQuery('');
+        setActiveIndex(0);
+
+        if (inputRef.current) {
+            inputRef.current.focus();
+        }
     };
+
+    const handleRemoveSelection = (id: string) => {
+        onSelectionChange(selectedSubCategoryIds.filter(selectedId => selectedId !== id));
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (filteredOptions.length === 0) return;
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setActiveIndex(prev => (prev + 1) % filteredOptions.length);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            setActiveIndex(prev => (prev - 1 + filteredOptions.length) % filteredOptions.length);
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            const option = filteredOptions[activeIndex] ?? filteredOptions[0];
+            if (option) {
+                handleSelect(option.id);
+            }
+        }
+    };
+
+    const selectedOptions = useMemo(
+        () =>
+            selectedSubCategoryIds
+                .map(id => optionMap.get(id))
+                .filter((option): option is CategoryOption => Boolean(option)),
+        [selectedSubCategoryIds, optionMap]
+    );
 
     if (loading) {
         return (
@@ -105,16 +199,18 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
                     <div>
                         <h2 className="text-xl font-semibold mb-2">Select Categories</h2>
                         <p className="text-sm text-[var(--muted-foreground)]">
-                            Choose one or more subcategories for this product
+                            Choose one or more categories (including level 3) for this product
                         </p>
                     </div>
 
                     <div className="relative">
                         <input
+                            ref={inputRef}
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search categories..."
+                            onChange={e => setSearchQuery(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Search categories by any level..."
                             className="w-full px-4 py-2 pl-10 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                         />
                         <svg
@@ -123,50 +219,79 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
                             stroke="currentColor"
                             viewBox="0 0 24 24"
                         >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                            />
                         </svg>
                     </div>
 
-                    {selectedSubCategoryIds.length > 0 && (
+                    {selectedOptions.length > 0 && (
                         <div className="p-4 bg-[var(--muted)] rounded-lg">
                             <p className="text-sm font-medium mb-2">
-                                Selected ({selectedSubCategoryIds.length}):
+                                Selected ({selectedOptions.length}):
                             </p>
                             <div className="flex flex-wrap gap-2">
-                                {getSelectedSubCategoryNames().map((name, index) => (
-                                    <span
-                                        key={index}
-                                        className="px-3 py-1 bg-[var(--primary)] text-[var(--primary-foreground)] text-sm rounded-full"
+                                {selectedOptions.map(option => (
+                                    <button
+                                        key={option.id}
+                                        type="button"
+                                        onClick={() => handleRemoveSelection(option.id)}
+                                        className="flex items-center gap-2 px-3 py-1 bg-[var(--primary)] text-[var(--primary-foreground)] text-sm rounded-full hover:bg-[var(--primary)]/90 transition-colors"
                                     >
-                                        {name}
-                                    </span>
+                                        <span>{option.path.join(' / ')}</span>
+                                        <svg
+                                            className="w-3 h-3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M6 18L18 6M6 6l12 12"
+                                            />
+                                        </svg>
+                                    </button>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {filteredCategories.map((category) => (
-                            <div key={category.id} className="border border-[var(--border)] rounded-lg p-4">
-                                <h3 className="font-semibold mb-3">{category.name}</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {category.subCategories.map((sub) => (
-                                        <label
-                                            key={sub.id}
-                                            className="flex items-center gap-2 p-2 hover:bg-[var(--muted)] rounded cursor-pointer transition-colors"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedSubCategoryIds.includes(sub.id)}
-                                                onChange={() => toggleSubCategory(sub.id)}
-                                                className="w-4 h-4 text-[var(--primary)] border-[var(--border)] rounded focus:ring-2 focus:ring-[var(--ring)]"
-                                            />
-                                            <span className="text-sm">{sub.name}</span>
-                                        </label>
-                                    ))}
-                                </div>
+                    <div className="max-h-96 overflow-y-auto border border-[var(--border)] rounded-lg">
+                        {filteredOptions.length === 0 ? (
+                            <div className="p-4 text-sm text-[var(--muted-foreground)]">
+                                {availableOptions.length === 0
+                                    ? 'All categories have been selected.'
+                                    : 'No categories match your search.'}
                             </div>
-                        ))}
+                        ) : (
+                            <ul className="divide-y divide-[var(--border)]">
+                                {filteredOptions.map((option, index) => {
+                                    const isActive = index === activeIndex;
+                                    const label = option.path.join(' / ');
+
+                                    return (
+                                        <li key={option.id}>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleSelect(option.id)}
+                                                className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${
+                                                    isActive
+                                                        ? 'bg-[var(--muted)]'
+                                                        : 'hover:bg-[var(--muted)]'
+                                                }`}
+                                            >
+                                                <span className="truncate">{label}</span>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
                     </div>
                 </div>
             </Card>
