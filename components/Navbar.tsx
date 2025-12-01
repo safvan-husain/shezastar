@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Category } from '@/lib/category/model/category.model';
+import Image from 'next/image';
 
 interface NavbarProps {
   categories: Category[];
@@ -39,8 +40,9 @@ export function Navbar({ categories }: NavbarProps) {
 
   return (
     <nav className="bg-black text-white relative z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center h-12">
+      <div className="flex items-center max-w-7xl mx-auto px-4">
+        <Image alt='shazstar logo' width={100} height={100} src={"/brand-icon.png"} />
+        <div className="flex items-center h-12 pb-2">
           {categories.map((category) => (
             <div
               key={category.id}
@@ -81,19 +83,19 @@ export function Navbar({ categories }: NavbarProps) {
                           </div>
                         </div>
                       ))}
-                  </div>
-                ) : (
-                  // Simple list for categories with only subcategories
-                  <div className="py-2 w-64">
-                    {category.subCategories.map((subCategory) => (
-                      <Link
-                        key={subCategory.id}
-                        href={`/category/${subCategory.slug ?? subCategory.id}`}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
-                      >
-                        {subCategory.name}
-                      </Link>
-                    ))}
+                    </div>
+                  ) : (
+                    // Simple list for categories with only subcategories
+                    <div className="py-2 w-64">
+                      {category.subCategories.map((subCategory) => (
+                        <Link
+                          key={subCategory.id}
+                          href={`/category/${subCategory.slug ?? subCategory.id}`}
+                          className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+                        >
+                          {subCategory.name}
+                        </Link>
+                      ))}
                     </div>
                   )}
                 </div>

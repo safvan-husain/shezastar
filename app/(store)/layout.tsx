@@ -6,9 +6,9 @@ export default function StorefrontLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="bg-white relative min-h-screen">
       <NavbarWrapper />
       {children}
-    </>
+    </div>
   );
 }
