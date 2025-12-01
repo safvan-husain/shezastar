@@ -161,7 +161,7 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
                                             type="button"
                                             onClick={() => toggleItem(variant.variantTypeId, item)}
                                             className={`px-3 py-1.5 rounded-lg border transition-colors ${variant.selectedItems.some(i => i.id === item.id)
-                                                    ? 'bg-[var(--bg-subtle)] text-[var(--text-primary)] border-[var(--border-strong)]'
+                                                    ? 'bg-[var(--border-strong)] text-[var(--text-primary)] border-[var(--border-strong)] shadow-sm'
                                                     : 'bg-[var(--bg-base)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
                                                 }`}
                                         >
