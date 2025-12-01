@@ -138,7 +138,7 @@ export default async function VariantTypesPage() {
                                 <Card key={type.id} hover>
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--ring)] flex items-center justify-center text-white font-bold text-lg">
+                                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--ring)] flex items-center justify-center text-[var(--primary-foreground)] font-bold text-lg">
                                                 {type.name.charAt(0).toUpperCase()}
                                             </div>
                                             <h2 className="text-xl font-bold text-[var(--foreground)]">{type.name}</h2>
@@ -164,7 +164,7 @@ export default async function VariantTypesPage() {
                                             {type.items.slice(0, 6).map((item: any) => (
                                                 <span
                                                     key={item.id}
-                                                    className="px-3 py-1.5 bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium rounded-full border border-[var(--border)] transition-colors hover:bg-[var(--primary)] hover:text-white"
+                                                    className="px-3 py-1.5 bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium rounded-full border border-[var(--border)] transition-colors hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]"
                                                 >
                                                     {item.name}
                                                 </span>

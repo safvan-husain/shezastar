@@ -75,8 +75,8 @@
     --foreground: var(--text-primary);
     --card: var(--bg-subtle);
     --card-foreground: var(--text-primary);
-    --primary: #ffffff;
-    --primary-foreground: #000000;
+    --primary: #d1d5db;
+    --primary-foreground: #020617;
     --secondary: #0a0a0a;
     --secondary-foreground: var(--text-secondary);
     --muted: #0a0a0a;

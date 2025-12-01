@@ -47,7 +47,7 @@ export default async function EditVariantTypePage({
                 {/* Header */}
                 <div className="mb-8">
                     <div className="flex items-center gap-4 mb-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--ring)] flex items-center justify-center text-white font-bold text-xl">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--ring)] flex items-center justify-center text-[var(--primary-foreground)] font-bold text-xl">
                             {variantType.name.charAt(0).toUpperCase()}
                         </div>
                         <div>

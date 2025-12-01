@@ -21,13 +21,13 @@ export default async function ProductsPage() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
                 {/* Header Section */}
-                <div className="mb-10">
+                <div className="mb-10 text-primary">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
                         <div>
-                            <h1 className="text-4xl font-bold text-white mb-2">
+                            <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-2">
                                 Products
                             </h1>
-                            <p className="text-white/80 text-lg">
+                            <p className="text-[var(--text-secondary)] text-lg">
                                 Manage your product catalog and inventory
                             </p>
                         </div>
@@ -134,7 +134,7 @@ export default async function ProductsPage() {
                                             </div>
                                         )}
                                         {product.offerPrice && (
-                                            <div className="absolute top-3 right-3 bg-[var(--danger)] text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                                            <div className="absolute top-3 right-3 bg-[var(--danger)] text-[var(--text-inverted)] px-3 py-1 rounded-full text-sm font-bold shadow-lg">
                                                 SALE
                                             </div>
                                         )}

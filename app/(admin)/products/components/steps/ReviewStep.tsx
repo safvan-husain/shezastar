@@ -36,7 +36,7 @@ export function ReviewStep({ name, description, basePrice, offerPrice, images, v
         <Card>
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--ring)] flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-[var(--text-inverted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
@@ -75,7 +75,7 @@ export function ReviewStep({ name, description, basePrice, offerPrice, images, v
                             <>
                                 <span className="text-2xl font-bold text-[var(--success)]">${offerPrice}</span>
                                 <span className="text-lg text-[var(--muted-foreground)] line-through">${basePrice}</span>
-                                <span className="px-2 py-1 bg-[var(--danger)] text-white text-sm font-bold rounded">
+                                <span className="px-2 py-1 bg-[var(--danger)] text-[var(--text-inverted)] text-sm font-bold rounded">
                                     {Math.round(((parseFloat(basePrice) - parseFloat(offerPrice)) / parseFloat(basePrice)) * 100)}% OFF
                                 </span>
                             </>

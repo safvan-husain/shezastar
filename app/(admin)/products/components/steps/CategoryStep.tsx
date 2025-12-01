@@ -136,7 +136,7 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
                                 {getSelectedSubCategoryNames().map((name, index) => (
                                     <span
                                         key={index}
-                                        className="px-3 py-1 bg-[var(--primary)] text-white text-sm rounded-full"
+                                        className="px-3 py-1 bg-[var(--primary)] text-[var(--primary-foreground)] text-sm rounded-full"
                                     >
                                         {name}
                                     </span>
