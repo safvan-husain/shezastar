@@ -63,7 +63,9 @@ export async function updateBooking(id: string, data: any) {
 - For tests, see `agents/testing.md`.
 
 ## Theme & Color System
-- Support both light and dark mode; use CSS variables for all colors (no hard-coded hex in components).
+- Storefront: use a single fixed palette (no light/dark toggle, no runtime color switching).
+- Admin: support both light and dark mode.
+- Use CSS variables for all colors (no hard-coded hex in components).
 - Keep the palette grayscale-only; use contextual accent colors sparingly and define them per-feature, not globally.
 
 ### Light Mode (Base Grays)
