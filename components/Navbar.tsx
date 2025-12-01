@@ -41,7 +41,9 @@ export function Navbar({ categories }: NavbarProps) {
   return (
     <nav className="bg-black text-white relative z-50">
       <div className="flex items-center max-w-7xl mx-auto px-4">
-        <Image alt='shazstar logo' width={100} height={100} src={"/brand-icon.png"} />
+        <Link href={'/'}>
+          <Image alt='shazstar logo' width={100} height={100} src={"/brand-icon.png"} />
+        </Link>
         <div className="flex items-center h-12 pb-2">
           {categories.map((category) => (
             <div
