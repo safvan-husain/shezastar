@@ -89,9 +89,9 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
         return (
           <div
             key={product.id}
-            className="group flex h-full flex-col overflow-hidden rounded-lg bg-[var(--storefront-bg)] transition-shadow hover:shadow-[var(--storefront-shadow-lg)]"
+            className="group flex h-full flex-col"
           >
-            <div className="relative aspect-[4/5] overflow-hidden bg-[var(--storefront-bg-subtle)]">
+            <div className="relative aspect-[4/3] overflow-hidden bg-[var(--storefront-bg-subtle)]">
               {primaryImage ? (
                 <Image
                   src={primaryImage.url}
@@ -99,7 +99,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                   fill
                   unoptimized
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  className="h-full rounded-md w-full object-cover transition duration-300 group-hover:scale-105"
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-[var(--storefront-text-muted)]">
@@ -118,7 +118,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 </div>
               )}
 
-              <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="absolute top-3 right-3 flex flex-col gap-2">
                 <button
                   type="button"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--storefront-button-secondary)] shadow-[var(--storefront-shadow-md)] transition hover:bg-[var(--storefront-button-secondary-hover)]"
@@ -128,7 +128,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 </button>
                 <button
                   type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--storefront-button-secondary)] shadow-[var(--storefront-shadow-md)] transition hover:bg-[var(--storefront-button-secondary-hover)]"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-grey-400 shadow-[var(--storefront-shadow-md)] transition hover:bg-[var(--storefront-button-secondary-hover)]"
                   aria-label={`Compare ${product.name}`}
                 >
                   <CompareIcon />
@@ -159,18 +159,19 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 <div className="flex items-baseline gap-2">
                   {product.offerPrice ? (
                     <>
-                      <span className="text-lg font-bold text-[var(--storefront-text-primary)]">{formatPrice(product.offerPrice)}</span>
+                      <span className="text-2xl font-semibold text-[var(--storefront-sale)]">{formatPrice(product.offerPrice)}</span>
                       <span className="text-sm text-[var(--storefront-text-muted)] line-through">{formatPrice(product.basePrice)}</span>
                     </>
                   ) : (
-                    <span className="text-lg font-bold text-[var(--storefront-text-primary)]">{formatPrice(product.basePrice)}</span>
+                    <span className="text-2xl font-semibold text-[var(--storefront-sale)]">{formatPrice(product.basePrice)}</span>
                   )}
                 </div>
 
                 <button
                   type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--storefront-bg-subtle)] text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-white"
                   aria-label={`Add ${product.name} to cart`}
+                  style={{ backgroundColor: '#e5e7eb' }}
                 >
                   <CartIcon />
                 </button>
