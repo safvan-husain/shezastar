@@ -28,9 +28,9 @@ export async function handleGetProduct(id: string) {
     }
 }
 
-export async function handleGetAllProducts(page?: number, limit?: number, subCategoryId?: string) {
+export async function handleGetAllProducts(page?: number, limit?: number, categoryId?: string) {
     try {
-        const result = await productService.getAllProducts(page, limit, subCategoryId);
+        const result = await productService.getAllProducts(page, limit, categoryId);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);
