@@ -1,9 +1,10 @@
 // app/(admin)/products/components/steps/ReviewStep.tsx
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { useEffect, useMemo, useState } from "react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 
 interface ImageFile {
     id: string;
@@ -32,6 +33,10 @@ interface ReviewStepProps {
     images: ImageFile[];
     variants: ProductVariant[];
     imageMappings: Record<string, string[]>;
+    selectedSubCategoryIds: string[];
+    installationEnabled: boolean;
+    inStorePrice: string;
+    atHomePrice: string;
 }
 
 export function ReviewStep({
@@ -42,16 +47,14 @@ export function ReviewStep({
     images,
     variants,
     imageMappings,
+    selectedSubCategoryIds,
+    installationEnabled,
+    inStorePrice,
+    atHomePrice,
 }: ReviewStepProps) {
-    const [selectedVariantItems, setSelectedVariantItems] = useState<Record<string, string | null>>(() => {
-        const initial: Record<string, string | null> = {};
-        for (const variant of variants) {
-            if (variant.selectedItems.length > 0) {
-                initial[variant.variantTypeId] = variant.selectedItems[0]?.id ?? null;
-            }
-        }
-        return initial;
-    });
+    const { showToast } = useToast();
+
+    const [selectedVariantItems, setSelectedVariantItems] = useState<Record<string, string | null>>({});
 
     const [activeImageId, setActiveImageId] = useState<string | null>(() => images[0]?.id ?? null);
 
@@ -59,6 +62,84 @@ export function ReviewStep({
         () => new Set(Object.values(selectedVariantItems).filter((id): id is string => Boolean(id))),
         [selectedVariantItems]
     );
+
+    // Resolve human-readable category paths for selected sub-category IDs
+    const [categoryLabels, setCategoryLabels] = useState<string[]>([]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadCategories() {
+            if (!selectedSubCategoryIds || selectedSubCategoryIds.length === 0) {
+                setCategoryLabels([]);
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/categories");
+                if (!res.ok) {
+                    let data: any = {};
+                    try {
+                        data = await res.json();
+                    } catch {
+                        // ignore JSON parse errors
+                    }
+                    const message = data.message || data.error || "Failed to load categories";
+                    showToast(message, "error", {
+                        status: res.status,
+                        body: data,
+                        url: res.url,
+                        method: "GET",
+                    });
+                    return;
+                }
+
+                const data: {
+                    id: string;
+                    name: string;
+                    subCategories: {
+                        id: string;
+                        name: string;
+                        subSubCategories: { id: string; name: string }[];
+                    }[];
+                }[] = await res.json();
+
+                const map = new Map<string, string[]>();
+
+                data.forEach(category => {
+                    category.subCategories.forEach(sub => {
+                        if (sub.subSubCategories && sub.subSubCategories.length > 0) {
+                            sub.subSubCategories.forEach(subSub => {
+                                map.set(subSub.id, [category.name, sub.name, subSub.name]);
+                            });
+                        } else {
+                            map.set(sub.id, [category.name, sub.name]);
+                        }
+                    });
+                });
+
+                const labels = selectedSubCategoryIds
+                    .map(id => map.get(id))
+                    .filter((path): path is string[] => Boolean(path))
+                    .map(path => path.join(" / "));
+
+                if (!cancelled) {
+                    setCategoryLabels(labels);
+                }
+            } catch (err: any) {
+                if (!cancelled) {
+                    const message = err.message || "Failed to load categories";
+                    showToast(message, "error");
+                }
+            }
+        }
+
+        loadCategories();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedSubCategoryIds, showToast]);
 
     const displayedImages = useMemo(() => {
         if (images.length === 0) return [] as ImageFile[];
@@ -88,7 +169,7 @@ export function ReviewStep({
                 }
 
                 // Combination mapping, e.g. "red+128gb"
-                const mappedItems = mappedId.split('+');
+                const mappedItems = mappedId.split("+");
                 return mappedItems.every(item => selectedVariantItemIds.includes(item));
             });
         });
@@ -122,6 +203,18 @@ export function ReviewStep({
 
     const effectiveBase = parsedBasePrice + variantPriceModifier;
     const effectiveOffer = parsedOfferPrice !== null ? parsedOfferPrice + variantPriceModifier : null;
+
+    const inStorePriceNum =
+        installationEnabled && inStorePrice !== "" ? Number(inStorePrice) : null;
+    const atHomePriceNum =
+        installationEnabled && atHomePrice !== "" ? Number(atHomePrice) : null;
+
+    const hasInStoreInstallation =
+        inStorePriceNum !== null && Number.isFinite(inStorePriceNum) && inStorePriceNum > 0;
+    const hasAtHomeInstallation =
+        atHomePriceNum !== null && Number.isFinite(atHomePriceNum) && atHomePriceNum > 0;
+
+    const baseForInstallation = effectiveOffer ?? effectiveBase;
 
     const hasVariantsWithItems = variants.some(v => v.selectedItems.length > 0);
 
@@ -193,6 +286,18 @@ export function ReviewStep({
                             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                                 {description}
                             </p>
+                        )}
+                        {categoryLabels.length > 0 && (
+                            <div className="mt-3 space-y-1">
+                                <p className="text-xs font-semibold text-[var(--text-secondary)]">
+                                    Categories
+                                </p>
+                                <ul className="space-y-0.5 text-xs text-[var(--text-muted)]">
+                                    {categoryLabels.map(label => (
+                                        <li key={label}>{label}</li>
+                                    ))}
+                                </ul>
+                            </div>
                         )}
                     </div>
 
@@ -270,7 +375,61 @@ export function ReviewStep({
                         </div>
                     )}
 
-                    <div className="pt-4 border-t border-[var(--border-subtle)]">
+                    <div className="pt-4 border-t border-[var(--border-subtle)] space-y-3">
+                        {installationEnabled && (hasInStoreInstallation || hasAtHomeInstallation) && (
+                            <div className="space-y-2">
+                                <div>
+                                    <p className="text-sm font-semibold text-[var(--text-secondary)] mb-1">
+                                        Installation options
+                                    </p>
+                                    <p className="text-xs text-[var(--text-muted)]">
+                                        Preview how installation pricing compares to the base product price.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-1 text-sm">
+                                    <div className="flex items-baseline justify-between gap-3">
+                                        <span className="text-[var(--text-secondary)]">Product only</span>
+                                        <span className="font-semibold text-[var(--foreground)]">
+                                            ${baseForInstallation.toFixed(2)}
+                                        </span>
+                                    </div>
+
+                                    {hasInStoreInstallation && inStorePriceNum !== null && (
+                                        <div className="flex items-baseline justify-between gap-3">
+                                            <span className="text-[var(--text-secondary)]">
+                                                With in-store installation
+                                            </span>
+                                            <div className="text-right">
+                                                <span className="block font-semibold text-[var(--foreground)]">
+                                                    ${(baseForInstallation + inStorePriceNum).toFixed(2)}
+                                                </span>
+                                                <span className="block text-xs text-[var(--text-muted)]">
+                                                    +${inStorePriceNum.toFixed(2)} installation
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {hasAtHomeInstallation && atHomePriceNum !== null && (
+                                        <div className="flex items-baseline justify-between gap-3">
+                                            <span className="text-[var(--text-secondary)]">
+                                                With at-home installation
+                                            </span>
+                                            <div className="text-right">
+                                                <span className="block font-semibold text-[var(--foreground)]">
+                                                    ${(baseForInstallation + atHomePriceNum).toFixed(2)}
+                                                </span>
+                                                <span className="block text-xs text-[var(--text-muted)]">
+                                                    +${atHomePriceNum.toFixed(2)} installation
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         <p className="text-xs text-[var(--text-muted)]">
                             This is a preview only. Customers will see a similar layout with cart and checkout
                             actions on the live storefront.

@@ -247,6 +247,10 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         images={images}
                         variants={variants}
                         imageMappings={imageMappings}
+                        selectedSubCategoryIds={subCategoryIds}
+                        installationEnabled={installationEnabled}
+                        inStorePrice={inStorePrice}
+                        atHomePrice={atHomePrice}
                     />
                 )}
 
