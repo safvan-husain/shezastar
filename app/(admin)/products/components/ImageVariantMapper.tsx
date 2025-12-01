@@ -44,12 +44,23 @@ function DraggableVariantTag({ item, variantTypeName }: { item: VariantItem; var
             className={`px-3 py-1.5 bg-[var(--bg-subtle)] text-[var(--text-primary)] rounded-lg cursor-move select-none border border-[var(--border-subtle)] ${isDragging ? 'opacity-50' : ''
                 }`}
         >
-            {item.name}
+            <span className="text-xs text-[var(--text-secondary)] mr-1">{variantTypeName}:</span>
+            <span className="text-sm text-[var(--text-primary)]">{item.name}</span>
         </div>
     );
 }
 
-function DroppableImage({ image, mappedItems }: { image: ImageFile; mappedItems: string[] }) {
+function DroppableImage({
+    image,
+    mappedItems,
+    mappedItemDetails,
+    onRemoveMapping,
+}: {
+    image: ImageFile;
+    mappedItems: string[];
+    mappedItemDetails: { id: string; displayName: string }[];
+    onRemoveMapping: (variantItemId: string) => void;
+}) {
     const { setNodeRef, isOver } = useDroppable({
         id: image.id,
     });
@@ -60,6 +71,12 @@ function DroppableImage({ image, mappedItems }: { image: ImageFile; mappedItems:
             className={`relative border-2 rounded-lg overflow-hidden transition-colors ${isOver ? 'border-[var(--border-strong)] bg-[var(--bg-subtle)]' : 'border-[var(--border-subtle)]'
                 }`}
         >
+            <div
+                className={`absolute inset-0 flex items-center justify-center bg-[var(--bg-subtle)] bg-opacity-80 text-sm text-[var(--text-secondary)] font-medium transition-opacity ${isOver ? 'opacity-100' : 'opacity-0'
+                    } pointer-events-none`}
+            >
+                Drop to map
+            </div>
             <img
                 src={image.preview}
                 alt="Product"
@@ -68,12 +85,20 @@ function DroppableImage({ image, mappedItems }: { image: ImageFile; mappedItems:
             {mappedItems.length > 0 && (
                 <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 p-2">
                     <div className="flex flex-wrap gap-1">
-                        {mappedItems.map(itemId => (
+                        {mappedItemDetails.map(item => (
                             <span
-                                key={itemId}
-                                className="px-2 py-0.5 bg-[var(--bg-subtle)] text-[var(--text-primary)] text-xs rounded border border-[var(--border-subtle)]"
+                                key={item.id}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--bg-subtle)] text-[var(--text-primary)] text-xs rounded border border-[var(--border-subtle)]"
                             >
-                                {itemId}
+                                <span>{item.displayName}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => onRemoveMapping(item.id)}
+                                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                                    aria-label={`Remove ${item.displayName} from image`}
+                                >
+                                    ×
+                                </button>
                             </span>
                         ))}
                     </div>
@@ -86,6 +111,7 @@ function DroppableImage({ image, mappedItems }: { image: ImageFile; mappedItems:
 export function ImageVariantMapper({ images, variants, mappings, onChange }: ImageVariantMapperProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [showBulkMapping, setShowBulkMapping] = useState(false);
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string);
@@ -100,24 +126,30 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
         const imageId = over.id as string;
         const variantItemId = active.id as string;
 
-        // Get current mappings for this image
-        const currentMappings = mappings[imageId] || [];
-
-        // Toggle the variant item
-        const newMappings = currentMappings.includes(variantItemId)
-            ? currentMappings.filter(id => id !== variantItemId)
-            : [...currentMappings, variantItemId];
-
-        onChange({
-            ...mappings,
-            [imageId]: newMappings,
-        });
+        // Add the variant item to the image mapping (no toggle on drop)
+        const currentMappings = new Set(mappings[imageId] || []);
+        if (!currentMappings.has(variantItemId)) {
+            currentMappings.add(variantItemId);
+            onChange({
+                ...mappings,
+                [imageId]: Array.from(currentMappings),
+            });
+        }
     };
 
     const clearMapping = (imageId: string) => {
         const newMappings = { ...mappings };
         delete newMappings[imageId];
         onChange(newMappings);
+    };
+
+    const removeMapping = (imageId: string, variantItemId: string) => {
+        const currentMappings = mappings[imageId] || [];
+        const newMappings = currentMappings.filter(id => id !== variantItemId);
+        onChange({
+            ...mappings,
+            [imageId]: newMappings,
+        });
     };
 
     const toggleItemSelection = (itemId: string) => {
@@ -142,6 +174,15 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
         });
 
         setSelectedItems(new Set());
+    };
+
+    const handleToggleBulk = () => {
+        setShowBulkMapping(prev => {
+            if (prev) {
+                setSelectedItems(new Set());
+            }
+            return !prev;
+        });
     };
 
     if (images.length === 0) {
@@ -173,15 +214,17 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
         }))
     );
 
+    const variantLookup = new Map(allVariantItems.map(item => [item.id, item]));
+
     return (
         <div className="space-y-6">
             <Card>
                 <h3 className="text-lg font-semibold mb-4">How to Map Images to Variants</h3>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-[var(--text-secondary)]">
-                    <li>Drag a variant tag and drop it on an image to map them</li>
-                    <li>Or select multiple variants and click "Map Selected" on an image</li>
+                    <li>Drag a variant tag and drop it on an image to map them (primary flow)</li>
+                    <li>Use the chip "×" or "Clear" to remove a mapping</li>
                     <li>Images with no mappings will show for all variant combinations</li>
-                    <li>When multiple variants are mapped, the image shows only for that combination</li>
+                    <li>Need bulk mapping? Expand the optional Bulk Mapping panel</li>
                 </ol>
             </Card>
 
@@ -189,10 +232,21 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                 <div className="grid md:grid-cols-2 gap-6">
                     {/* Variant Items Panel */}
                     <Card>
-                        <h3 className="text-lg font-semibold mb-4">Variant Items</h3>
-                        <p className="text-sm text-[var(--text-secondary)] mb-4">
-                            Drag these onto images or select multiple and use "Map Selected"
-                        </p>
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                            <div>
+                                <h3 className="text-lg font-semibold">Variant Items</h3>
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                    Drag these onto images; bulk mapping is optional
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleToggleBulk}
+                                className="text-xs px-2 py-1 bg-[var(--bg-subtle)] text-[var(--text-primary)] rounded hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)]"
+                            >
+                                {showBulkMapping ? 'Hide Bulk Mapping' : 'Show Bulk Mapping'}
+                            </button>
+                        </div>
 
                         {variants.map(variant => (
                             <div key={variant.variantTypeId} className="mb-4">
@@ -202,12 +256,14 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                                 <div className="flex flex-wrap gap-2">
                                     {variant.selectedItems.map(item => (
                                         <div key={item.id} className="relative">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedItems.has(item.id)}
-                                                onChange={() => toggleItemSelection(item.id)}
-                                                className="absolute top-1 left-1 z-10"
-                                            />
+                                            {showBulkMapping && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedItems.has(item.id)}
+                                                    onChange={() => toggleItemSelection(item.id)}
+                                                    className="absolute top-1 left-1 z-10"
+                                                />
+                                            )}
                                             <DraggableVariantTag
                                                 item={item}
                                                 variantTypeName={variant.variantTypeName}
@@ -218,7 +274,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                             </div>
                         ))}
 
-                        {selectedItems.size > 0 && (
+                        {showBulkMapping && selectedItems.size > 0 && (
                             <div className="mt-4 p-3 bg-[var(--bg-subtle)] rounded-lg border border-[var(--border-subtle)]">
                                 <p className="text-sm font-medium text-[var(--text-primary)]">
                                     {selectedItems.size} item{selectedItems.size > 1 ? 's' : ''} selected
@@ -240,25 +296,22 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                         <div className="grid grid-cols-2 gap-4">
                             {images.map(image => {
                                 const imageMappings = mappings[image.id] || [];
-                                const mappedItemNames = imageMappings
-                                    .map(id => allVariantItems.find(item => item.id === id)?.displayName)
-                                    .filter(Boolean);
+                                const mappedItemDetails = imageMappings
+                                    .map(id => variantLookup.get(id))
+                                    .filter((item): item is typeof allVariantItems[number] => Boolean(item));
 
                                 return (
                                     <div key={image.id} className="space-y-2">
-                                        <DroppableImage image={image} mappedItems={imageMappings} />
+                                        <DroppableImage
+                                            image={image}
+                                            mappedItems={imageMappings}
+                                            mappedItemDetails={mappedItemDetails}
+                                            onRemoveMapping={variantId => removeMapping(image.id, variantId)}
+                                        />
 
                                         <div className="space-y-1">
-                                            {mappedItemNames.length > 0 && (
-                                                <div className="text-xs">
-                                                    {mappedItemNames.map((name, i) => (
-                                                        <div key={i} className="text-[var(--text-secondary)]">{name}</div>
-                                                    ))}
-                                                </div>
-                                            )}
-
                                             <div className="flex gap-2">
-                                                {selectedItems.size > 0 && (
+                                                {showBulkMapping && selectedItems.size > 0 && (
                                                     <button
                                                         type="button"
                                                         onClick={() => mapSelectedToImage(image.id)}
@@ -288,7 +341,7 @@ export function ImageVariantMapper({ images, variants, mappings, onChange }: Ima
                 <DragOverlay>
                     {activeId ? (
                         <div className="px-3 py-1.5 bg-[var(--bg-subtle)] text-[var(--text-primary)] rounded-lg border border-[var(--border-subtle)]">
-                            {allVariantItems.find(item => item.id === activeId)?.name}
+                            {variantLookup.get(activeId)?.displayName || variantLookup.get(activeId)?.name}
                         </div>
                     ) : null}
                 </DragOverlay>
