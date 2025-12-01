@@ -19,9 +19,9 @@ export async function handleCreateCategory(input: unknown) {
     }
 }
 
-export async function handleGetCategory(id: string) {
+export async function handleGetCategory(identifier: string) {
     try {
-        const result = await categoryService.getCategory(id);
+        const result = await categoryService.getCategory(identifier);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);

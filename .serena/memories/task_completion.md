@@ -1,0 +1,3 @@
+- After implementing changes, run relevant `npm run test`/`test:unit`/`test:integration` plus `npm run lint` depending on area touched.
+- Verify admin UI flows via Next.js dev server (`npm run dev`) and ensure toasts surface backend errors per frontend guide.
+- Keep MongoDB running (MONGODB_URI) for any feature touching persistence.

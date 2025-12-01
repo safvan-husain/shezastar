@@ -100,12 +100,16 @@ export async function createCategory(input: CreateCategoryInput) {
     return toCategory(created);
 }
 
-export async function getCategory(id: string) {
+export async function getCategory(identifier: string) {
     const collection = await getCollection<CategoryDocument>(COLLECTION);
 
-    const objectId = parseObjectId(id);
-
-    const doc = await collection.findOne({ _id: objectId });
+    let doc: CategoryDocument | null = null;
+    if (ObjectId.isValid(identifier)) {
+        doc = await collection.findOne({ _id: new ObjectId(identifier) });
+    }
+    if (!doc) {
+        doc = await collection.findOne({ slug: identifier });
+    }
     if (!doc) {
         throw new AppError(404, 'CATEGORY_NOT_FOUND');
     }

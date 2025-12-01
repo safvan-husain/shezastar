@@ -1,0 +1,4 @@
+- Folder shape: `app/(admin)` holds admin pages (products, variant-types) and `app/api/**` route handlers.
+- Domain logic under `lib/<feature>` (schema/service/controller/model) with DB helpers in `lib/db` and shared errors in `lib/errors`.
+- Shared UI in `components/` (`components/ui` for reusable pieces), feature-specific UI inside route folders under `app`.
+- Assets/public uploads under `public/uploads/`; scripts/tests under `scripts/` and `test/` respectively.

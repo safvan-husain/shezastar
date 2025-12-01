@@ -1,0 +1,5 @@
+- Install deps: `npm install`.
+- Dev server: `npm run dev` (Next.js w/ Mongo connection from `.env.local`).
+- Build prod: `npm run build`; start prod: `npm start`.
+- Lint: `npm run lint`.
+- Tests: `npm run test` (all vitest), `npm run test:unit`, `npm run test:integration`.

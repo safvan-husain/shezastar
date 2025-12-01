@@ -1,0 +1,3 @@
+- Follow AGENTS guides: backend strictly layered (routes only I/O, controllers validate w/ Zod, services enforce business rules + MongoDB access, models map data). Use `AppError` for failures.
+- Frontend: prefer server components, respect Next.js 16 conventions (`params`/`searchParams` as promises, use Cache Components). Client components must surface API errors via toast helpers (never swallow failures). Server data fetches should return error objects for client ErrorHandler.
+- Naming: `<feature>.controller/service/schema.ts`, domain models under `lib/<feature>/model/`. Use Tailwind tokens + grayscale palette rules from `agents/frontend.md`. Comments only when logic is non-obvious.

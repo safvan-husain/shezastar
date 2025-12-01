@@ -103,6 +103,13 @@ describe('Category API Integration - Three Level Categories', () => {
         expect(getRes.status).toBe(200);
         expect(getBody.subCategories.length).toBe(0);
 
+        const slugGetReq = new Request(`http://localhost/api/categories/${createdBody.slug}`);
+        const slugGetParams = Promise.resolve({ id: createdBody.slug });
+        const slugGetRes = await getCategory(slugGetReq, { params: slugGetParams });
+        const slugGetBody = await slugGetRes.json();
+        expect(slugGetRes.status).toBe(200);
+        expect(slugGetBody.id).toBe(categoryId);
+
         const deleteReq = new Request(`http://localhost/api/categories/${categoryId}`, {
             method: 'DELETE',
         });

@@ -63,4 +63,10 @@ describe('Category Service - Three Level Hierarchy', () => {
             addSubSubCategory(categoryId, subCategoryId, { name: 'Formal' })
         ).rejects.toThrow(AppError);
     });
+
+    it('should fetch a category by slug as well as id', async () => {
+        const category = await createCategory({ name: 'Gaming', subCategories: [] });
+        const fetched = await getCategory(category.slug);
+        expect(fetched.id).toBe(category.id);
+    });
 });

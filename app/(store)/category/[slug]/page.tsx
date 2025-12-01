@@ -79,10 +79,14 @@ async function fetchProducts(categoryId: string): Promise<{ products: Product[];
   }
 }
 
+function matchesIdentifier(identifier: string, node: { id: string; slug?: string }) {
+  return node.slug === identifier || node.id === identifier;
+}
+
 function findCategoryBySlug(categories: Category[], slug: string) {
   for (const category of categories) {
     for (const sub of category.subCategories) {
-      if (sub.id === slug) {
+      if (matchesIdentifier(slug, sub)) {
         return {
           title: sub.name,
           filterId: sub.id,
@@ -90,7 +94,7 @@ function findCategoryBySlug(categories: Category[], slug: string) {
         };
       }
 
-      const subSub = sub.subSubCategories.find((s) => s.id === slug);
+      const subSub = sub.subSubCategories.find((s) => matchesIdentifier(slug, s));
       if (subSub) {
         return {
           title: subSub.name,

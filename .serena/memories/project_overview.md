@@ -1,0 +1,2 @@
+- Purpose: ShezaStar is an admin-focused product management system for vehicle electronic gadgets with multi-image uploads, drag-and-drop variant mapping, and CRUD for products/variant types.
+- Stack: Next.js 16 App Router w/ React 19, Tailwind CSS UI, MongoDB data layer, Zod validation, Sharp image processing, dnd-kit for drag/drop. Clean layered backend (routes → controllers → services → models).
