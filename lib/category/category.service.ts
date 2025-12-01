@@ -1,16 +1,28 @@
 // lib/category/category.service.ts
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
-import { CategoryDocument, toCategory, toCategories } from './model/category.model';
+import {
+    CategoryDocument,
+    CategorySubCategory,
+    CategorySubSubCategory,
+    toCategory,
+    toCategories,
+} from './model/category.model';
 import {
     CreateCategoryInput,
     UpdateCategoryInput,
     AddSubCategoryInput,
     AddSubSubCategoryInput,
     UpdateSubCategoryInput,
-    SubCategory,
+    SubCategory as SchemaSubCategory,
+    SubSubCategory as SchemaSubSubCategory,
 } from './category.schema';
 import { nanoid } from 'nanoid';
+import {
+    getCategorySlug,
+    getSubCategorySlug,
+    getSubSubCategorySlug,
+} from './slug';
 
 const COLLECTION = 'categories';
 
@@ -22,11 +34,40 @@ function parseObjectId(id: string) {
     }
 }
 
-function normalizeSubCategories(subCategories: SubCategory[] = []) {
-    return subCategories.map(sub => ({
-        ...sub,
-        subSubCategories: sub.subSubCategories ?? [],
-    }));
+type NestedSubCategory = SchemaSubCategory | CategorySubCategory;
+type NestedSubSubCategory = SchemaSubSubCategory | CategorySubSubCategory;
+
+function normalizeSubSubCategory(
+    categoryName: string,
+    subCategoryName: string,
+    subSubCategory: NestedSubSubCategory
+): CategorySubSubCategory {
+    return {
+        id: subSubCategory.id,
+        name: subSubCategory.name,
+        slug: getSubSubCategorySlug(categoryName, subCategoryName, subSubCategory.name),
+    };
+}
+
+function normalizeSubCategory(
+    categoryName: string,
+    subCategory: NestedSubCategory
+): CategorySubCategory {
+    return {
+        id: subCategory.id,
+        name: subCategory.name,
+        slug: getSubCategorySlug(categoryName, subCategory.name),
+        subSubCategories: (subCategory.subSubCategories ?? []).map(subSub =>
+            normalizeSubSubCategory(categoryName, subCategory.name, subSub)
+        ),
+    };
+}
+
+function normalizeSubCategories(
+    categoryName: string,
+    subCategories: NestedSubCategory[] = []
+): CategorySubCategory[] {
+    return subCategories.map(sub => normalizeSubCategory(categoryName, sub));
 }
 
 export async function createCategory(input: CreateCategoryInput) {
@@ -43,7 +84,8 @@ export async function createCategory(input: CreateCategoryInput) {
     const now = new Date();
     const doc: Omit<CategoryDocument, '_id'> = {
         name: input.name,
-        subCategories: normalizeSubCategories(input.subCategories),
+        slug: getCategorySlug(input.name),
+        subCategories: normalizeSubCategories(input.name, input.subCategories),
         createdAt: now,
         updatedAt: now,
     };
@@ -97,12 +139,21 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
         }
     }
 
-    const updateDoc: any = {
+    const updateDoc: Partial<Omit<CategoryDocument, '_id'>> = {
         updatedAt: new Date(),
     };
+    const nextCategoryName = input.name ?? existing.name;
 
-    if (input.name) updateDoc.name = input.name;
-    if (input.subCategories) updateDoc.subCategories = normalizeSubCategories(input.subCategories);
+    if (input.name) {
+        updateDoc.name = input.name;
+        updateDoc.slug = getCategorySlug(input.name);
+    }
+
+    if (input.subCategories) {
+        updateDoc.subCategories = normalizeSubCategories(nextCategoryName, input.subCategories);
+    } else if (input.name) {
+        updateDoc.subCategories = normalizeSubCategories(nextCategoryName, existing.subCategories);
+    }
 
     await collection.updateOne({ _id: objectId }, { $set: updateDoc });
 
@@ -140,7 +191,7 @@ export async function addSubCategory(id: string, input: AddSubCategoryInput) {
     }
 
     // Check if subcategory name already exists in this category
-    const subCategories = normalizeSubCategories(existing.subCategories);
+    const subCategories = normalizeSubCategories(existing.name, existing.subCategories);
     const nameExists = subCategories.some(sub => sub.name === input.name);
     if (nameExists) {
         throw new AppError(400, 'SUBCATEGORY_EXISTS', {
@@ -148,9 +199,10 @@ export async function addSubCategory(id: string, input: AddSubCategoryInput) {
         });
     }
 
-    const newSubCategory = {
+    const newSubCategory: CategorySubCategory = {
         id: nanoid(),
         name: input.name,
+        slug: getSubCategorySlug(existing.name, input.name),
         subSubCategories: [],
     };
 
@@ -182,7 +234,7 @@ export async function removeSubCategory(id: string, subCategoryId: string) {
         throw new AppError(404, 'CATEGORY_NOT_FOUND');
     }
 
-    const subCategories = normalizeSubCategories(existing.subCategories);
+    const subCategories = normalizeSubCategories(existing.name, existing.subCategories);
     const updatedSubCategories = subCategories.filter(sub => sub.id !== subCategoryId);
 
     if (updatedSubCategories.length === subCategories.length) {
@@ -217,7 +269,7 @@ export async function addSubSubCategory(
         throw new AppError(404, 'CATEGORY_NOT_FOUND');
     }
 
-    const subCategories = normalizeSubCategories(existing.subCategories);
+    const subCategories = normalizeSubCategories(existing.name, existing.subCategories);
     const subCategory = subCategories.find(sub => sub.id === subCategoryId);
     if (!subCategory) {
         throw new AppError(404, 'SUBCATEGORY_NOT_FOUND');
@@ -230,9 +282,10 @@ export async function addSubSubCategory(
         });
     }
 
-    const newSubSubCategory = {
+    const newSubSubCategory: CategorySubSubCategory = {
         id: nanoid(),
         name: input.name,
+        slug: getSubSubCategorySlug(existing.name, subCategory.name, input.name),
     };
 
     subCategory.subSubCategories.push(newSubSubCategory);
@@ -268,7 +321,7 @@ export async function removeSubSubCategory(
         throw new AppError(404, 'CATEGORY_NOT_FOUND');
     }
 
-    const subCategories = normalizeSubCategories(existing.subCategories);
+    const subCategories = normalizeSubCategories(existing.name, existing.subCategories);
     const subCategory = subCategories.find(sub => sub.id === subCategoryId);
     if (!subCategory) {
         throw new AppError(404, 'SUBCATEGORY_NOT_FOUND');
@@ -314,7 +367,7 @@ export async function updateSubCategory(
         throw new AppError(404, 'CATEGORY_NOT_FOUND');
     }
 
-    const subCategories = normalizeSubCategories(existing.subCategories);
+    const subCategories = normalizeSubCategories(existing.name, existing.subCategories);
     const subCategoryIndex = subCategories.findIndex(sub => sub.id === subCategoryId);
     if (subCategoryIndex === -1) {
         throw new AppError(404, 'SUBCATEGORY_NOT_FOUND');
@@ -339,11 +392,16 @@ export async function updateSubCategory(
         }
     }
 
-    const updatedSubCategory: SubCategory = {
-        ...subCategories[subCategoryIndex],
-        ...(input.name ? { name: input.name } : {}),
-        ...(input.subSubCategories ? { subSubCategories: input.subSubCategories } : {}),
-    };
+    const currentSubCategory = subCategories[subCategoryIndex];
+    const nextSubCategoryName = input.name ?? currentSubCategory.name;
+    const nextSubSubCategories: NestedSubSubCategory[] =
+        input.subSubCategories ?? currentSubCategory.subSubCategories;
+
+    const updatedSubCategory = normalizeSubCategory(existing.name, {
+        ...currentSubCategory,
+        name: nextSubCategoryName,
+        subSubCategories: nextSubSubCategories,
+    });
 
     subCategories[subCategoryIndex] = updatedSubCategory;
 

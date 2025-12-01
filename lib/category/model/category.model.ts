@@ -1,26 +1,55 @@
 // lib/category/model/category.model.ts
 import { ObjectId } from 'mongodb';
-import { SubCategory, SubSubCategory } from '../category.schema';
+import { getCategorySlug, getSubCategorySlug, getSubSubCategorySlug } from '../slug';
 
-function normalizeSubSubCategories(subSubCategories?: SubSubCategory[]) {
-    return subSubCategories ?? [];
+export interface CategorySubSubCategory {
+    id: string;
+    name: string;
+    slug: string;
 }
 
-function normalizeSubCategory(subCategory: SubCategory): SubCategory {
+export interface CategorySubCategory {
+    id: string;
+    name: string;
+    slug: string;
+    subSubCategories: CategorySubSubCategory[];
+}
+
+function normalizeSubSubCategories(
+    categoryName: string,
+    subCategoryName: string,
+    subSubCategories?: CategorySubSubCategory[]
+) {
+    return (subSubCategories ?? []).map(subSub => ({
+        ...subSub,
+        slug: subSub.slug ?? getSubSubCategorySlug(categoryName, subCategoryName, subSub.name),
+    }));
+}
+
+function normalizeSubCategory(
+    categoryName: string,
+    subCategory: CategorySubCategory
+): CategorySubCategory {
     return {
         ...subCategory,
-        subSubCategories: normalizeSubSubCategories(subCategory.subSubCategories),
+        slug: subCategory.slug ?? getSubCategorySlug(categoryName, subCategory.name),
+        subSubCategories: normalizeSubSubCategories(
+            categoryName,
+            subCategory.name,
+            subCategory.subSubCategories
+        ),
     };
 }
 
-function normalizeSubCategories(subCategories: SubCategory[]) {
-    return subCategories.map(normalizeSubCategory);
+function normalizeSubCategories(categoryName: string, subCategories: CategorySubCategory[]) {
+    return subCategories.map(subCategory => normalizeSubCategory(categoryName, subCategory));
 }
 
 export interface CategoryDocument {
     _id: ObjectId;
     name: string;
-    subCategories: SubCategory[];
+    slug: string;
+    subCategories: CategorySubCategory[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -28,7 +57,8 @@ export interface CategoryDocument {
 export interface Category {
     id: string;
     name: string;
-    subCategories: SubCategory[];
+    slug: string;
+    subCategories: CategorySubCategory[];
     createdAt: string;
     updatedAt: string;
 }
@@ -37,7 +67,8 @@ export function toCategory(doc: CategoryDocument): Category {
     return {
         id: doc._id.toString(),
         name: doc.name,
-        subCategories: normalizeSubCategories(doc.subCategories),
+        slug: doc.slug ?? getCategorySlug(doc.name),
+        subCategories: normalizeSubCategories(doc.name, doc.subCategories),
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
