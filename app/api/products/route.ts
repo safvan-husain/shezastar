@@ -11,8 +11,9 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
+    const subCategoryId = searchParams.get('subCategoryId') || undefined;
 
-    const { status, body } = await handleGetAllProducts(page, limit);
+    const { status, body } = await handleGetAllProducts(page, limit, subCategoryId);
     return NextResponse.json(body, { status });
 }
 

@@ -67,13 +67,14 @@ export async function getProduct(id: string) {
     return toProduct(doc);
 }
 
-export async function getAllProducts(page = 1, limit = 20) {
+export async function getAllProducts(page = 1, limit = 20, subCategoryId?: string) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
     const skip = (page - 1) * limit;
+    const filter = subCategoryId ? { subCategoryIds: subCategoryId } : {};
     const [docs, total] = await Promise.all([
-        collection.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
-        collection.countDocuments({}),
+        collection.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+        collection.countDocuments(filter),
     ]);
 
     return {

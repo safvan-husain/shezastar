@@ -72,7 +72,7 @@ export function Navbar({ categories }: NavbarProps) {
                             {subCategory.subSubCategories.map((subSubCategory) => (
                               <Link
                                 key={subSubCategory.id}
-                                href={`/categories/${category.id}/${subCategory.id}/${subSubCategory.id}`}
+                                href={`/category/${subSubCategory.id}`}
                                 className="block text-gray-300 hover:text-white text-sm py-1 transition-colors"
                               >
                                 {subSubCategory.name}
@@ -81,19 +81,19 @@ export function Navbar({ categories }: NavbarProps) {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  ) : (
-                    // Simple list for categories with only subcategories
-                    <div className="py-2 w-64">
-                      {category.subCategories.map((subCategory) => (
-                        <Link
-                          key={subCategory.id}
-                          href={`/categories/${category.id}/${subCategory.id}`}
-                          className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
-                        >
-                          {subCategory.name}
-                        </Link>
-                      ))}
+                  </div>
+                ) : (
+                  // Simple list for categories with only subcategories
+                  <div className="py-2 w-64">
+                    {category.subCategories.map((subCategory) => (
+                      <Link
+                        key={subCategory.id}
+                        href={`/category/${subCategory.id}`}
+                        className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+                      >
+                        {subCategory.name}
+                      </Link>
+                    ))}
                     </div>
                   )}
                 </div>
