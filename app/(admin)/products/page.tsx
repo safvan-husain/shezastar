@@ -2,24 +2,66 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
+import { Product } from '@/lib/product/model/product.model';
 
-async function getProducts() {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/products`, {
-        cache: 'no-store',
-    });
+interface ProductListResponse {
+    products: Product[];
+    pagination: { total: number };
+}
 
-    if (!res.ok) {
-        return { products: [], pagination: { total: 0 } };
+async function getProducts(): Promise<{ products: Product[]; pagination: { total: number }; error: ToastErrorPayload | null }> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const url = `${baseUrl}/api/products`;
+
+    try {
+        const res = await fetch(url, {
+            cache: 'no-store',
+        });
+
+        if (!res.ok) {
+            let body: any = {};
+            try {
+                body = await res.json();
+            } catch {
+                body = { error: 'Failed to parse response body' };
+            }
+
+            return {
+                products: [],
+                pagination: { total: 0 },
+                error: {
+                    message: body.message || body.error || 'Failed to load products',
+                    status: res.status,
+                    body,
+                    url: res.url,
+                    method: 'GET',
+                },
+            };
+        }
+
+        const data = (await res.json()) as ProductListResponse;
+        return { ...data, error: null };
+    } catch (error) {
+        return {
+            products: [],
+            pagination: { total: 0 },
+            error: {
+                message: error instanceof Error ? error.message : 'Failed to load products',
+                body: error instanceof Error ? { stack: error.stack } : { error },
+                url,
+                method: 'GET',
+            },
+        };
     }
-
-    return res.json();
 }
 
 export default async function ProductsPage() {
-    const { products } = await getProducts();
+    const { products, error } = await getProducts();
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
+                {error && <ErrorToastHandler error={error} />}
                 {/* Header Section */}
                 <div className="mb-10 text-primary">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
@@ -44,7 +86,25 @@ export default async function ProductsPage() {
                 </div>
 
                 {/* Content Section */}
-                {products.length === 0 ? (
+                {error ? (
+                    <Card className="text-center py-16">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-20 h-20 rounded-full bg-[var(--muted)] flex items-center justify-center">
+                                <svg className="w-10 h-10 text-[var(--muted-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 11-12.728 0m12.728 0L12 12m0 0L5.636 5.636" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">
+                                    Unable to load products
+                                </h3>
+                                <p className="text-[var(--muted-foreground)] mb-6 max-w-md">
+                                    Please try again later. Use the toast details to report the failure if it keeps happening.
+                                </p>
+                            </div>
+                        </div>
+                    </Card>
+                ) : products.length === 0 ? (
                     <Card className="text-center py-16">
                         <div className="flex flex-col items-center gap-4">
                             <div className="w-20 h-20 rounded-full bg-[var(--muted)] flex items-center justify-center">
@@ -87,7 +147,7 @@ export default async function ProductsPage() {
                                     <div>
                                         <p className="text-sm opacity-90 mb-1">Total Images</p>
                                         <p className="text-3xl font-bold">
-                                            {products.reduce((sum: number, p: any) => sum + (p.images?.length || 0), 0)}
+                                            {products.reduce((sum: number, p: Product) => sum + (p.images?.length || 0), 0)}
                                         </p>
                                     </div>
                                     <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center">
@@ -102,7 +162,7 @@ export default async function ProductsPage() {
                                     <div>
                                         <p className="text-sm opacity-90 mb-1">With Variants</p>
                                         <p className="text-3xl font-bold">
-                                            {products.filter((p: any) => p.variants?.length > 0).length}
+                                            {products.filter((p: Product) => p.variants?.length > 0).length}
                                         </p>
                                     </div>
                                     <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center">
@@ -116,7 +176,7 @@ export default async function ProductsPage() {
 
                         {/* Products Grid */}
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
-                            {products.map((product: any) => (
+                            {products.map((product: Product) => (
                                 <Card key={product.id} className="overflow-hidden p-2">
                                     {/* Product Image */}
                                     <div className="relative bg-[var(--muted)] overflow-hidden aspect-square">

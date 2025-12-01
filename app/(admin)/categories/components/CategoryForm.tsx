@@ -132,14 +132,14 @@ export function CategoryForm({ initialData }: CategoryFormProps) {
             return;
         }
 
+        const url = initialData?.id
+            ? `/api/categories/${initialData.id}`
+            : '/api/categories';
+        const method = initialData?.id ? 'PUT' : 'POST';
+
         setLoading(true);
 
         try {
-            const url = initialData?.id
-                ? `/api/categories/${initialData.id}`
-                : '/api/categories';
-            const method = initialData?.id ? 'PUT' : 'POST';
-
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
@@ -171,7 +171,11 @@ export function CategoryForm({ initialData }: CategoryFormProps) {
             router.refresh();
         } catch (err: any) {
             const message = err.message || 'An unexpected error occurred';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url,
+                method,
+                body: { error: message },
+            });
             setError(message);
             setLoading(false);
         }

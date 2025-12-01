@@ -69,7 +69,11 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
             setCategories(data);
         } catch (err: any) {
             const message = err.message || 'Failed to load categories';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url: '/api/categories',
+                method: 'GET',
+                body: { error: message },
+            });
         } finally {
             setLoading(false);
         }

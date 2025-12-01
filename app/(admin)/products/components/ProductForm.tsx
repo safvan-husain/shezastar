@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/Toast';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ImagesStep } from './steps/ImagesStep';
 import { CategoryStep } from './steps/CategoryStep';
@@ -37,6 +38,7 @@ interface ProductFormProps {
 
 export function ProductForm({ initialData }: ProductFormProps) {
     const router = useRouter();
+    const { showToast } = useToast();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -68,6 +70,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
     const handleSubmit = async () => {
         setError('');
+        const requestUrl = initialData?.id ? `/api/products/${initialData.id}` : '/api/products';
+        const requestMethod = initialData?.id ? 'PUT' : 'POST';
         setLoading(true);
 
         try {
@@ -113,23 +117,44 @@ export function ProductForm({ initialData }: ProductFormProps) {
             });
             formData.append('newImagesCount', newImages.length.toString());
 
-            const url = initialData?.id ? `/api/products/${initialData.id}` : '/api/products';
-            const method = initialData?.id ? 'PUT' : 'POST';
-
-            const res = await fetch(url, {
-                method,
+            const res = await fetch(requestUrl, {
+                method: requestMethod,
                 body: formData,
             });
 
             if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Failed to save product');
+                let data: any = {};
+                try {
+                    data = await res.json();
+                } catch {
+                    data = { error: 'Failed to parse response body' };
+                }
+
+                const message = data.message || data.error || 'Failed to save product';
+                showToast(message, 'error', {
+                    status: res.status,
+                    body: data,
+                    url: res.url,
+                    method: requestMethod,
+                });
+                setError(message);
+                setLoading(false);
+                return;
             }
 
+            showToast(
+                initialData?.id ? 'Product updated successfully' : 'Product created successfully',
+                'success'
+            );
             router.push('/products');
             router.refresh();
         } catch (err: any) {
             setError(err.message);
+            showToast(err.message || 'Failed to save product', 'error', {
+                url: requestUrl,
+                method: requestMethod,
+                body: { error: err.message },
+            });
             setLoading(false);
         }
     };
@@ -141,18 +166,42 @@ export function ProductForm({ initialData }: ProductFormProps) {
         setLoading(true);
 
         try {
-            const res = await fetch(`/api/products/${initialData.id}`, {
-                method: 'DELETE',
+            const url = `/api/products/${initialData.id}`;
+            const method = 'DELETE';
+            const res = await fetch(url, {
+                method,
             });
 
             if (!res.ok) {
-                throw new Error('Failed to delete product');
+                let data: any = {};
+                try {
+                    data = await res.json();
+                } catch {
+                    data = { error: 'Failed to parse response body' };
+                }
+
+                const message = data.message || data.error || 'Failed to delete product';
+                showToast(message, 'error', {
+                    status: res.status,
+                    body: data,
+                    url: res.url,
+                    method,
+                });
+                setError(message);
+                setLoading(false);
+                return;
             }
 
+            showToast('Product deleted successfully', 'success');
             router.push('/products');
             router.refresh();
         } catch (err: any) {
             setError(err.message);
+            showToast(err.message || 'Failed to delete product', 'error', {
+                url,
+                method,
+                body: { error: err.message },
+            });
             setLoading(false);
         }
     };

@@ -1,20 +1,21 @@
-// app/(admin)/variant-types/components/VariantTypesClient.tsx
 'use client';
 
 import { useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
 
-interface VariantTypesClientProps {
-    error?: {
-        message: string;
-        status?: number;
-        body?: unknown;
-        url?: string;
-        method?: string;
-    };
+export interface ToastErrorPayload {
+    message: string;
+    status?: number;
+    body?: unknown;
+    url?: string;
+    method?: string;
 }
 
-export function VariantTypesErrorHandler({ error }: VariantTypesClientProps) {
+interface ErrorToastHandlerProps {
+    error?: ToastErrorPayload | null;
+}
+
+export function ErrorToastHandler({ error }: ErrorToastHandlerProps) {
     const { showToast } = useToast();
 
     useEffect(() => {

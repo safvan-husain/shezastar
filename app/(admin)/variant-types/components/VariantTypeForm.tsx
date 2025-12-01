@@ -60,14 +60,15 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
             return;
         }
 
+        const url = initialData?.id
+            ? `/api/variant-types/${initialData.id}`
+            : '/api/variant-types';
+
+        const method = initialData?.id ? 'PUT' : 'POST';
+
         setLoading(true);
 
         try {
-            const url = initialData?.id
-                ? `/api/variant-types/${initialData.id}`
-                : '/api/variant-types';
-
-            const method = initialData?.id ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
                 method,
@@ -100,7 +101,11 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
             router.refresh();
         } catch (err: any) {
             const errorMessage = err.message || 'An unexpected error occurred';
-            showToast(errorMessage, 'error');
+            showToast(errorMessage, 'error', {
+                url,
+                method,
+                body: { error: errorMessage },
+            });
             setError(errorMessage);
             setLoading(false);
         }
@@ -113,11 +118,14 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
             return;
         }
 
+        const url = `/api/variant-types/${initialData.id}`;
+        const method = 'DELETE';
+
         setLoading(true);
 
         try {
-            const res = await fetch(`/api/variant-types/${initialData.id}`, {
-                method: 'DELETE',
+            const res = await fetch(url, {
+                method,
             });
 
             if (!res.ok) {
@@ -142,7 +150,11 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
             router.refresh();
         } catch (err: any) {
             const errorMessage = err.message || 'An unexpected error occurred';
-            showToast(errorMessage, 'error');
+            showToast(errorMessage, 'error', {
+                url,
+                method,
+                body: { error: errorMessage },
+            });
             setError(errorMessage);
             setLoading(false);
         }

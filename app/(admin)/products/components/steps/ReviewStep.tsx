@@ -128,8 +128,12 @@ export function ReviewStep({
                 }
             } catch (err: any) {
                 if (!cancelled) {
-                    const message = err.message || "Failed to load categories";
-                    showToast(message, "error");
+                    const message = err?.message || "Failed to load categories";
+                    showToast(message, "error", {
+                        url: '/api/categories',
+                        method: 'GET',
+                        body: { error: message },
+                    });
                 }
             }
         }

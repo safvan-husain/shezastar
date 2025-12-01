@@ -36,31 +36,54 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/variant-types')
-            .then(async res => {
+        let cancelled = false;
+
+        async function loadVariantTypes() {
+            try {
+                const res = await fetch('/api/variant-types');
                 if (!res.ok) {
-                    const data = await res.json();
+                    let data: any = {};
+                    try {
+                        data = await res.json();
+                    } catch {
+                        data = { error: 'Failed to parse response body' };
+                    }
                     const errorMessage = data.message || data.error || 'Failed to load variant types';
-                    
+
                     showToast(errorMessage, 'error', {
                         status: res.status,
                         body: data,
                         url: res.url,
                         method: 'GET',
                     });
-                    
-                    throw new Error(errorMessage);
+
+                    return;
                 }
-                return res.json();
-            })
-            .then(data => {
-                setVariantTypes(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error('Failed to load variant types:', err);
-                setLoading(false);
-            });
+
+                const data = await res.json();
+                if (!cancelled) {
+                    setVariantTypes(data);
+                }
+            } catch (err: any) {
+                if (!cancelled) {
+                    const message = err?.message || 'Failed to load variant types';
+                    showToast(message, 'error', {
+                        url: '/api/variant-types',
+                        method: 'GET',
+                        body: { error: message },
+                    });
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        loadVariantTypes();
+        return () => {
+            cancelled = true;
+        };
     }, [showToast]);
 
     const addVariant = (variantType: VariantType) => {

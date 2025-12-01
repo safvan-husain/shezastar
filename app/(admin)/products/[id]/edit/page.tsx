@@ -1,17 +1,51 @@
 // app/(admin)/products/[id]/edit/page.tsx
 import Link from 'next/link';
 import { ProductForm } from '../../components/ProductForm';
+import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 
-async function getProduct(id: string) {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/products/${id}`, {
-        cache: 'no-store',
-    });
+type ProductFormData = NonNullable<Parameters<typeof ProductForm>[0]['initialData']>;
 
-    if (!res.ok) {
-        throw new Error('Failed to fetch product');
+async function getProduct(id: string): Promise<{ product: ProductFormData | null; error: ToastErrorPayload | null }> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const url = `${baseUrl}/api/products/${id}`;
+
+    try {
+        const res = await fetch(url, {
+            cache: 'no-store',
+        });
+
+        if (!res.ok) {
+            let body: any = {};
+            try {
+                body = await res.json();
+            } catch {
+                body = { error: 'Failed to parse response body' };
+            }
+
+            return {
+                product: null,
+                error: {
+                    message: body.message || body.error || 'Failed to load product',
+                    status: res.status,
+                    body,
+                    url: res.url,
+                    method: 'GET',
+                },
+            };
+        }
+
+        return { product: (await res.json()) as ProductFormData, error: null };
+    } catch (error) {
+        return {
+            product: null,
+            error: {
+                message: error instanceof Error ? error.message : 'Failed to load product',
+                body: error instanceof Error ? { stack: error.stack } : { error },
+                url,
+                method: 'GET',
+            },
+        };
     }
-
-    return res.json();
 }
 
 export default async function EditProductPage({
@@ -20,11 +54,12 @@ export default async function EditProductPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
-    const product = await getProduct(id);
+    const { product, error } = await getProduct(id);
 
     return (
         <div className="min-h-screen bg-[var(--background)]">
             <div className="container mx-auto px-4 py-8 max-w-6xl">
+                {error && <ErrorToastHandler error={error} />}
                 {/* Breadcrumb */}
                 <nav className="flex items-center gap-2 text-sm text-[var(--muted-foreground)] mb-6">
                     <Link href="/products" className="hover:text-[var(--foreground)] transition-colors">
@@ -33,7 +68,7 @@ export default async function EditProductPage({
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                    <span className="text-[var(--foreground)] font-medium">{product.name}</span>
+                    <span className="text-[var(--foreground)] font-medium">{product?.name ?? 'Product'}</span>
                 </nav>
 
                 {/* Header */}
@@ -49,7 +84,7 @@ export default async function EditProductPage({
                                 Edit Product
                             </h1>
                             <p className="text-[var(--muted-foreground)] mt-1">
-                                Update {product.name} details, images, and variants
+                                {product ? `Update ${product.name} details, images, and variants` : 'Unable to load this product right now'}
                             </p>
                         </div>
                     </div>
@@ -57,7 +92,13 @@ export default async function EditProductPage({
                 </div>
 
                 {/* Form */}
-                <ProductForm initialData={product} />
+                {product ? (
+                    <ProductForm initialData={product} />
+                ) : (
+                    <div className="rounded-xl border-2 border-[var(--border-subtle)] p-4 text-[var(--muted-foreground)]">
+                        Unable to load this product. Try again later and copy the toast details for debugging.
+                    </div>
+                )}
             </div>
         </div>
     );

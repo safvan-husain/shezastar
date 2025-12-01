@@ -13,3 +13,5 @@ Examples:
 - Test work → read `testing.md` plus the domain guide it exercises.
 
 **Global rule:** Never swallow data-fetching or API errors. Surface every failure to the UI through the toast system (server components should return error objects and let a client `ErrorHandler` trigger `showToast`). This keeps the operator aware of the full response body/status for debugging.
+
+### Use `Serena` mcp for code navigation if available.

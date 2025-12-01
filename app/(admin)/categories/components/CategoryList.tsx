@@ -62,7 +62,11 @@ export function CategoryList() {
             setCategories(data);
         } catch (err: any) {
             const message = err.message || 'Failed to load categories';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url: '/api/categories',
+                method: 'GET',
+                body: { error: message },
+            });
         } finally {
             setLoading(false);
         }
@@ -116,7 +120,11 @@ export function CategoryList() {
             setCategories(prev => prev.filter(category => category.id !== id));
         } catch (err: any) {
             const message = err.message || 'Failed to delete category';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url: `/api/categories/${id}`,
+                method: 'DELETE',
+                body: { error: message },
+            });
         } finally {
             setActionLoading(null);
         }
@@ -151,7 +159,11 @@ export function CategoryList() {
             setNewSubCategoryNames(prev => ({ ...prev, [categoryId]: '' }));
         } catch (err: any) {
             const message = err.message || 'Failed to add subcategory';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url: `/api/categories/${categoryId}/subcategories`,
+                method: 'POST',
+                body: { error: message },
+            });
         } finally {
             setActionLoading(null);
         }
@@ -182,7 +194,11 @@ export function CategoryList() {
             updateCategoryState(data);
         } catch (err: any) {
             const message = err.message || 'Failed to delete subcategory';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url: `/api/categories/${categoryId}/subcategories/${subCategoryId}`,
+                method: 'DELETE',
+                body: { error: message },
+            });
         } finally {
             setActionLoading(null);
         }
@@ -217,7 +233,11 @@ export function CategoryList() {
             showToast('Subcategory updated', 'success');
         } catch (err: any) {
             const message = err.message || 'Failed to update subcategory';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url: `/api/categories/${categoryId}/subcategories/${subCategoryId}`,
+                method: 'PUT',
+                body: { error: message },
+            });
         } finally {
             setActionLoading(null);
         }
@@ -256,7 +276,11 @@ export function CategoryList() {
             showToast('Level 3 category added', 'success');
         } catch (err: any) {
             const message = err.message || 'Failed to add level 3 category';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url: `/api/categories/${categoryId}/subcategories/${subCategoryId}/subsubcategories`,
+                method: 'POST',
+                body: { error: message },
+            });
         } finally {
             setActionLoading(null);
         }
@@ -296,7 +320,11 @@ export function CategoryList() {
             setNewSubSubCategoryNames(prev => ({ ...prev, [key]: '' }));
         } catch (err: any) {
             const message = err.message || 'Failed to remove level 3 category';
-            showToast(message, 'error');
+            showToast(message, 'error', {
+                url: `/api/categories/${categoryId}/subcategories/${subCategoryId}/subsubcategories/${subSubCategoryId}`,
+                method: 'DELETE',
+                body: { error: message },
+            });
         } finally {
             setActionLoading(null);
         }
