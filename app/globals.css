@@ -51,6 +51,34 @@
   --success: #000000;
   --warning: #404040;
   --danger: #000000;
+
+  /* Storefront-specific tokens (ALWAYS LIGHT MODE - no dark mode support) */
+  --storefront-bg: #ffffff;
+  --storefront-bg-subtle: #f9fafb;
+  --storefront-bg-hover: #f3f4f6;
+  
+  --storefront-text-primary: #111827;
+  --storefront-text-secondary: #6b7280;
+  --storefront-text-muted: #9ca3af;
+  
+  --storefront-border: #e5e7eb;
+  --storefront-border-light: #f3f4f6;
+  
+  --storefront-sale: #dc2626;
+  --storefront-sale-bg: #fee2e2;
+  --storefront-sale-text: #991b1b;
+  
+  --storefront-button-primary: #111827;
+  --storefront-button-primary-hover: #1f2937;
+  --storefront-button-secondary: #ffffff;
+  --storefront-button-secondary-hover: #f9fafb;
+  
+  --storefront-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --storefront-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --storefront-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  
+  --storefront-indicator: rgba(0, 0, 0, 0.2);
+  --storefront-indicator-active: #111827;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -90,6 +118,9 @@
     --success: #ffffff;
     --warning: #d4d4d4;
     --danger: #ffffff;
+
+    /* Storefront tokens remain LIGHT MODE even in dark mode */
+    /* DO NOT override storefront variables - they are always light */
   }
 }
 

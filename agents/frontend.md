@@ -64,10 +64,53 @@ export async function updateBooking(id: string, data: any) {
 - For tests, see `agents/testing.md`.
 
 ## Theme & Color System
-- Storefront: use a single fixed palette (no light/dark toggle, no runtime color switching).
-- Admin: support both light and dark mode.
+- **Storefront**: ALWAYS LIGHT MODE ONLY. Use `--storefront-*` CSS variables exclusively. No dark mode support.
+- **Admin**: Support both light and dark mode using standard `--bg-*`, `--text-*`, `--border-*` variables.
 - Use CSS variables for all colors (no hard-coded hex in components).
 - Keep the palette grayscale-only; use contextual accent colors sparingly and define them per-feature, not globally.
+
+### Storefront Color System (Light Mode Only)
+The storefront uses a dedicated color system that remains light regardless of system preferences. All storefront components MUST use these variables:
+
+**Backgrounds:**
+- `--storefront-bg`: `#ffffff` (card/product backgrounds)
+- `--storefront-bg-subtle`: `#f9fafb` (image placeholders, subtle sections)
+- `--storefront-bg-hover`: `#f3f4f6` (hover states)
+
+**Text:**
+- `--storefront-text-primary`: `#111827` (product names, prices)
+- `--storefront-text-secondary`: `#6b7280` (descriptions, labels)
+- `--storefront-text-muted`: `#9ca3af` (meta info, placeholders)
+
+**Borders:**
+- `--storefront-border`: `#e5e7eb` (card borders, dividers)
+- `--storefront-border-light`: `#f3f4f6` (subtle separators)
+
+**Buttons:**
+- `--storefront-button-primary`: `#111827` (cart button, primary actions)
+- `--storefront-button-primary-hover`: `#1f2937`
+- `--storefront-button-secondary`: `#ffffff` (wishlist, compare buttons)
+- `--storefront-button-secondary-hover`: `#f9fafb`
+
+**Sale/Pricing:**
+- `--storefront-sale`: `#dc2626` (sale badges, discount prices)
+- `--storefront-sale-bg`: `#fee2e2` (sale badge backgrounds)
+- `--storefront-sale-text`: `#991b1b` (sale text on light backgrounds)
+
+**Shadows:**
+- `--storefront-shadow-sm`: `0 1px 2px 0 rgb(0 0 0 / 0.05)`
+- `--storefront-shadow-md`: `0 4px 6px -1px rgb(0 0 0 / 0.1)`
+- `--storefront-shadow-lg`: `0 10px 15px -3px rgb(0 0 0 / 0.1)`
+
+**Image Indicators:**
+- `--storefront-indicator`: `rgba(0, 0, 0, 0.2)` (inactive dots)
+- `--storefront-indicator-active`: `#111827` (active dot)
+
+**Usage Rules:**
+- Never use `--bg-*`, `--text-*`, or `--border-*` in storefront components
+- Never add dark mode overrides for `--storefront-*` variables
+- All storefront pages/components should use these dedicated variables
+- Admin components should NOT use `--storefront-*` variables
 
 ### Light Mode (Base Grays)
 - Backgrounds:
