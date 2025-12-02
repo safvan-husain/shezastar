@@ -7,38 +7,28 @@ interface ProductGridProps {
   emptyMessage?: string;
 }
 
+// Create formatter once to ensure consistency between server and client
+const configuredCurrency = process.env.NEXT_PUBLIC_CURRENCY?.toUpperCase() || 'USD';
+
+let priceFormatter: Intl.NumberFormat;
+try {
+  priceFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: configuredCurrency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+} catch {
+  priceFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 function formatPrice(value: number) {
-  // Create formatter on-demand to avoid hydration mismatches
-  const configuredCurrency = process.env.NEXT_PUBLIC_CURRENCY?.toUpperCase();
-  
-  let formatter: Intl.NumberFormat;
-  
-  if (configuredCurrency && configuredCurrency !== 'USD') {
-    try {
-      formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: configuredCurrency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    } catch {
-      formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    }
-  } else {
-    formatter = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-  
-  return formatter.format(value);
+  return priceFormatter.format(value);
 }
 
 function HeartIcon() {
