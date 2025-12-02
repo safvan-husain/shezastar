@@ -82,7 +82,7 @@ describe('App Settings API Integration', () => {
             body: JSON.stringify(payload),
         });
 
-        const res = await PATCH(req, { params: { id: createdBannerId } });
+        const res = await PATCH(req, { params: Promise.resolve({ id: createdBannerId }) });
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -124,7 +124,7 @@ describe('App Settings API Integration', () => {
             body: JSON.stringify(payload),
         });
 
-        const res = await PATCH(req, { params: { id: createdBannerId } });
+        const res = await PATCH(req, { params: Promise.resolve({ id: createdBannerId }) });
         expect(res.status).toBe(400);
     });
 
@@ -158,7 +158,7 @@ describe('App Settings API Integration', () => {
             body: JSON.stringify(payload),
         });
 
-        const res = await PATCH(req, { params: { id: 'non-existent-id' } });
+        const res = await PATCH(req, { params: Promise.resolve({ id: 'non-existent-id' }) });
         expect(res.status).toBe(404);
     });
 
@@ -167,7 +167,7 @@ describe('App Settings API Integration', () => {
             method: 'DELETE',
         });
 
-        const res = await DELETE(req, { params: { id: createdBannerId } });
+        const res = await DELETE(req, { params: Promise.resolve({ id: createdBannerId }) });
         const body = await res.json();
 
         expect(res.status).toBe(200);
