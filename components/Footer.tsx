@@ -131,7 +131,7 @@ export function Footer({ categories }: FooterProps) {
                 BILZ MEDIA LLC
               </a>
             </p>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:flex gap-2">
               <div className="px-3 py-1 bg-white rounded text-xs font-semibold text-gray-800">VISA</div>
               <div className="px-3 py-1 bg-white rounded text-xs font-semibold text-gray-800">Mastercard</div>
               <div className="px-3 py-1 bg-white rounded text-xs font-semibold text-gray-800">PayPal</div>

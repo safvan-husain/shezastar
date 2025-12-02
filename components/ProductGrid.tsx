@@ -7,28 +7,25 @@ interface ProductGridProps {
   emptyMessage?: string;
 }
 
-// Create formatter once to ensure consistency between server and client
-const configuredCurrency = process.env.NEXT_PUBLIC_CURRENCY?.toUpperCase() || 'USD';
-
-let priceFormatter: Intl.NumberFormat;
-try {
-  priceFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: configuredCurrency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-} catch {
-  priceFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
+// Create formatter with explicit locale to ensure consistency between server and client
 function formatPrice(value: number) {
-  return priceFormatter.format(value);
+  const configuredCurrency = process.env.NEXT_PUBLIC_CURRENCY?.toUpperCase() || 'USD';
+  
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: configuredCurrency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
 }
 
 function HeartIcon() {
