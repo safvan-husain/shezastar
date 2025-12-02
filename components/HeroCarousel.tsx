@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import type { HeroBannerWithId } from '@/lib/app-settings/app-settings.schema';
+import { PyramidText } from './PyramidText';
 
 interface HeroCarouselProps {
   banners: HeroBannerWithId[];
@@ -73,7 +74,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
           className="object-cover"
         />
         {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* Content */}
@@ -87,9 +88,10 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
           </div>
 
           {/* Title */}
-          <h1 className="mx-auto  max-w-6xl mb-6 text-4xl font-bold leading-tight text-white sm:text-5xl md:text-6xl lg:text-8xl">
-            {currentBanner.title}
-          </h1>
+          <PyramidText 
+            text={currentBanner.title}
+            className="mx-auto max-w-6xl mb-6 text-4xl font-bold leading-tight text-white sm:text-5xl md:text-6xl lg:text-8xl"
+          />
 
           {/* Description */}
           <p className="mx-auto mb-8 max-w-2xl text-base text-[ #f3f4f6b7] sm:text-lg md:text-xl">
