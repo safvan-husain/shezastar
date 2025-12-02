@@ -9,7 +9,15 @@ export const HeroBannerSchema = z.object({
     offerLabel: z.string().min(1, 'Offer label is required'),
 });
 
+export const HeroBannerWithIdSchema = HeroBannerSchema.extend({
+    id: z.string().min(1, 'ID is required'),
+});
+
+export const CreateHeroBannerSchema = HeroBannerSchema;
+
 export const UpdateHeroBannerSchema = HeroBannerSchema;
 
 export type HeroBanner = z.infer<typeof HeroBannerSchema>;
+export type HeroBannerWithId = z.infer<typeof HeroBannerWithIdSchema>;
+export type CreateHeroBannerInput = z.infer<typeof CreateHeroBannerSchema>;
 export type UpdateHeroBannerInput = z.infer<typeof UpdateHeroBannerSchema>;

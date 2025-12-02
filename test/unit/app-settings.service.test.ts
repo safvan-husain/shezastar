@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { getAppSettings, updateHeroBanner } from '@/lib/app-settings/app-settings.service';
+import {
+    getAppSettings,
+    getHeroBanners,
+    createHeroBanner,
+    updateHeroBanner,
+    deleteHeroBanner,
+} from '@/lib/app-settings/app-settings.service';
 import { AppError } from '@/lib/errors/app-error';
 import { clear } from '../test-db';
 
@@ -12,13 +18,13 @@ describe('App Settings Service Unit Tests', () => {
         await clear();
     });
 
-    it('should return default settings when none exist', async () => {
+    it('should return default settings with empty hero banners array', async () => {
         const result = await getAppSettings();
-        expect(result.homeHeroBanner).toBeUndefined();
+        expect(result.homeHeroBanners).toEqual([]);
         expect(result.id).toBeDefined();
     });
 
-    it('should update hero banner settings', async () => {
+    it('should create a new hero banner with nano ID', async () => {
         const input = {
             imagePath: '/images/hero.jpg',
             title: 'Summer Sale',
@@ -28,12 +34,77 @@ describe('App Settings Service Unit Tests', () => {
             offerLabel: '50% OFF',
         };
 
-        const result = await updateHeroBanner(input);
-        expect(result.homeHeroBanner).toMatchObject(input);
-        expect(result.id).toBeDefined();
+        const result = await createHeroBanner(input);
+        expect(result.homeHeroBanners).toHaveLength(1);
+        expect(result.homeHeroBanners[0]).toMatchObject(input);
+        expect(result.homeHeroBanners[0].id).toBeDefined();
+        expect(typeof result.homeHeroBanners[0].id).toBe('string');
     });
 
-    it('should throw error if offerPrice >= price', async () => {
+    it('should get all hero banners', async () => {
+        const banners = await getHeroBanners();
+        expect(banners).toHaveLength(1);
+        expect(banners[0].title).toBe('Summer Sale');
+    });
+
+    it('should create multiple hero banners', async () => {
+        const input = {
+            imagePath: '/images/winter.jpg',
+            title: 'Winter Sale',
+            description: 'New season deals',
+            price: 200,
+            offerPrice: 150,
+            offerLabel: '25% OFF',
+        };
+
+        await createHeroBanner(input);
+        const banners = await getHeroBanners();
+        expect(banners).toHaveLength(2);
+    });
+
+    it('should update a specific hero banner by ID', async () => {
+        const banners = await getHeroBanners();
+        const bannerId = banners[0].id;
+
+        const updateInput = {
+            imagePath: '/images/updated.jpg',
+            title: 'Updated Sale',
+            description: 'Updated description',
+            price: 300,
+            offerPrice: 200,
+            offerLabel: 'UPDATED',
+        };
+
+        const result = await updateHeroBanner(bannerId, updateInput);
+        const updatedBanner = result.homeHeroBanners.find(b => b.id === bannerId);
+        expect(updatedBanner).toMatchObject(updateInput);
+    });
+
+    it('should throw error when updating non-existent banner', async () => {
+        const input = {
+            imagePath: '/images/test.jpg',
+            title: 'Test',
+            description: 'Test',
+            price: 100,
+            offerPrice: 50,
+            offerLabel: 'TEST',
+        };
+
+        await expect(updateHeroBanner('non-existent-id', input)).rejects.toThrow(AppError);
+        await expect(updateHeroBanner('non-existent-id', input)).rejects.toThrow('BANNER_NOT_FOUND');
+    });
+
+    it('should delete a hero banner by ID', async () => {
+        const banners = await getHeroBanners();
+        const bannerId = banners[0].id;
+
+        await deleteHeroBanner(bannerId);
+        const updatedBanners = await getHeroBanners();
+        expect(updatedBanners).toHaveLength(1);
+        expect(updatedBanners.find(b => b.id === bannerId)).toBeUndefined();
+    });
+
+    it('should throw error if offerPrice >= price on create', async () => {
         const input = {
             imagePath: '/images/hero.jpg',
             title: 'Invalid Sale',
@@ -43,22 +114,24 @@ describe('App Settings Service Unit Tests', () => {
             offerLabel: 'NO DISCOUNT',
         };
 
-        await expect(updateHeroBanner(input)).rejects.toThrow(AppError);
-        await expect(updateHeroBanner(input)).rejects.toThrow('INVALID_OFFER_PRICE');
+        await expect(createHeroBanner(input)).rejects.toThrow(AppError);
+        await expect(createHeroBanner(input)).rejects.toThrow('INVALID_OFFER_PRICE');
     });
 
-    it('should get updated settings after update', async () => {
+    it('should throw error if offerPrice >= price on update', async () => {
+        const banners = await getHeroBanners();
+        const bannerId = banners[0].id;
+
         const input = {
-            imagePath: '/images/new-hero.jpg',
-            title: 'Winter Sale',
-            description: 'New season deals',
-            price: 200,
+            imagePath: '/images/hero.jpg',
+            title: 'Invalid Sale',
+            description: 'Bad pricing',
+            price: 100,
             offerPrice: 150,
-            offerLabel: '25% OFF',
+            offerLabel: 'INVALID',
         };
 
-        await updateHeroBanner(input);
-        const result = await getAppSettings();
-        expect(result.homeHeroBanner).toMatchObject(input);
+        await expect(updateHeroBanner(bannerId, input)).rejects.toThrow(AppError);
+        await expect(updateHeroBanner(bannerId, input)).rejects.toThrow('INVALID_OFFER_PRICE');
     });
 });

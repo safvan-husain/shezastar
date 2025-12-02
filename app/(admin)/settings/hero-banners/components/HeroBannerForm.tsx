@@ -3,33 +3,56 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
-import { HeroBanner, UpdateHeroBannerInput, UpdateHeroBannerSchema } from '@/lib/app-settings/app-settings.schema';
+import {
+    HeroBanner,
+    CreateHeroBannerInput,
+    UpdateHeroBannerInput,
+    CreateHeroBannerSchema,
+    UpdateHeroBannerSchema,
+} from '@/lib/app-settings/app-settings.schema';
 
 interface HeroBannerFormProps {
-    initialData: HeroBanner;
+    mode: 'create' | 'edit';
+    initialData?: HeroBanner;
+    bannerId?: string;
+    onSuccess?: () => void;
 }
 
-export default function HeroBannerForm({ initialData }: HeroBannerFormProps) {
-    const router = useRouter();
+export default function HeroBannerForm({ mode, initialData, bannerId, onSuccess }: HeroBannerFormProps) {
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const defaultValues: HeroBanner = initialData || {
+        imagePath: '',
+        title: '',
+        description: '',
+        price: 0,
+        offerPrice: 0,
+        offerLabel: '',
+    };
 
     const {
         register,
         handleSubmit,
         formState: { errors },
-    } = useForm<UpdateHeroBannerInput>({
-        resolver: zodResolver(UpdateHeroBannerSchema),
-        defaultValues: initialData,
+    } = useForm<CreateHeroBannerInput | UpdateHeroBannerInput>({
+        resolver: zodResolver(mode === 'create' ? CreateHeroBannerSchema : UpdateHeroBannerSchema),
+        defaultValues,
     });
 
-    const onSubmit = async (data: UpdateHeroBannerInput) => {
+    const onSubmit = async (data: CreateHeroBannerInput | UpdateHeroBannerInput) => {
         setIsSubmitting(true);
         try {
-            const response = await fetch('/api/admin/settings/hero-banner', {
-                method: 'PATCH',
+            const url =
+                mode === 'create'
+                    ? '/api/admin/settings/hero-banners'
+                    : `/api/admin/settings/hero-banners/${bannerId}`;
+
+            const method = mode === 'create' ? 'POST' : 'PATCH';
+
+            const response = await fetch(url, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -39,11 +62,14 @@ export default function HeroBannerForm({ initialData }: HeroBannerFormProps) {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || 'Failed to update settings');
+                throw new Error(result.message || `Failed to ${mode} banner`);
             }
 
-            showToast('Hero banner updated successfully', 'success');
-            router.refresh();
+            showToast(
+                mode === 'create' ? 'Banner created successfully' : 'Banner updated successfully',
+                'success'
+            );
+            onSuccess?.();
         } catch (error: any) {
             showToast(error.message || 'Something went wrong', 'error');
         } finally {
@@ -52,7 +78,16 @@ export default function HeroBannerForm({ initialData }: HeroBannerFormProps) {
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-[var(--bg-elevated)] p-6 rounded-lg shadow-md border border-[var(--border-subtle)]">
+        <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6 bg-[var(--bg-elevated)] p-6 rounded-lg shadow-md border border-[var(--border-subtle)]"
+        >
+            <div className="mb-4">
+                <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+                    {mode === 'create' ? 'Create New Banner' : 'Edit Banner'}
+                </h2>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                     <label htmlFor="imagePath" className="block text-sm font-medium text-[var(--text-secondary)]">
@@ -157,7 +192,7 @@ export default function HeroBannerForm({ initialData }: HeroBannerFormProps) {
                     disabled={isSubmitting}
                     className="px-6 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                    {isSubmitting ? 'Saving...' : mode === 'create' ? 'Create Banner' : 'Save Changes'}
                 </button>
             </div>
         </form>

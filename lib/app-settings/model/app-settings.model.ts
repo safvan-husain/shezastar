@@ -1,16 +1,16 @@
 import { ObjectId } from 'mongodb';
-import { HeroBanner } from '../app-settings.schema';
+import { HeroBannerWithId } from '../app-settings.schema';
 
 export interface AppSettingsDocument {
     _id: ObjectId;
-    homeHeroBanner?: HeroBanner;
+    homeHeroBanners: HeroBannerWithId[];
     createdAt: Date;
     updatedAt: Date;
 }
 
 export interface AppSettings {
     id: string;
-    homeHeroBanner?: HeroBanner;
+    homeHeroBanners: HeroBannerWithId[];
     createdAt: string;
     updatedAt: string;
 }
@@ -18,7 +18,7 @@ export interface AppSettings {
 export function toAppSettings(doc: AppSettingsDocument): AppSettings {
     return {
         id: doc._id.toString(),
-        homeHeroBanner: doc.homeHeroBanner,
+        homeHeroBanners: doc.homeHeroBanners || [],
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
@@ -26,6 +26,6 @@ export function toAppSettings(doc: AppSettingsDocument): AppSettings {
 
 export function getDefaultSettings(): Omit<AppSettings, 'id' | 'createdAt' | 'updatedAt'> {
     return {
-        homeHeroBanner: undefined,
+        homeHeroBanners: [],
     };
 }
