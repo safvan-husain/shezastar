@@ -7,6 +7,24 @@
 - **Schemas (`*.schema.ts`)**: Zod shapes for inputs/outputs; types via `z.infer`.
 - **Models (`model/*.model.ts`)**: domain types and mappers (DB → domain JSON); no DB calls here.
 
+## Next.js 15+ Async Params
+**Breaking change:** Dynamic route `params` are now Promises in both API routes and page components.
+
+```ts
+// ❌ Old (Next.js 14 and earlier)
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const data = await fetchData(params.id);
+}
+
+// ✅ New (Next.js 15+)
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const data = await fetchData(id);
+}
+```
+
+**Why:** Next.js now defers param resolution for better streaming/performance. Always `await params` before accessing properties in both API routes and page/layout components.
+
 ## Data Layer
 - MongoDB only (no Prisma). Place adapters/helpers in `lib/db/` (e.g., `mongo-client.ts`, `<feature>-db.ts`).
 - Services may import DB utilities directly; routes/controllers must not.
