@@ -34,6 +34,12 @@ export default function AdminLayout({
                                 >
                                     Variant Types
                                 </Link>
+                                <Link
+                                    href="/settings"
+                                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                                >
+                                    Settings
+                                </Link>
                             </div>
                         </div>
                     </div>
