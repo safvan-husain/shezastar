@@ -142,12 +142,12 @@ export function Navbar({ categories }: NavbarProps) {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden"
+            className="fixed inset-0 bg-black/40 z-50 lg:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
           
           {/* Slide-in Menu */}
-          <div className="fixed top-0 right-0 bottom-0 w-80 bg-gray-900 z-50 overflow-y-auto md:hidden shadow-xl">
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-gray-900 z-50 overflow-y-auto lg:hidden shadow-xl">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <h2 className="text-lg font-semibold">Menu</h2>
