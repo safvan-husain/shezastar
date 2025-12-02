@@ -28,7 +28,8 @@ describe('Product Service Unit Tests', () => {
             description: 'Description',
             basePrice: 100,
             images: [],
-            variants: []
+            variants: [],
+            subCategoryIds: []
         };
 
         const result = await createProduct(input);
@@ -44,7 +45,8 @@ describe('Product Service Unit Tests', () => {
             basePrice: 100,
             offerPrice: 100,
             images: [],
-            variants: []
+            variants: [],
+            subCategoryIds: []
         };
 
         await expect(createProduct(input)).rejects.toThrow(AppError);
