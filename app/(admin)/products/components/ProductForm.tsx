@@ -84,7 +84,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
             if (offerPrice) formData.append('offerPrice', offerPrice);
             formData.append('variants', JSON.stringify(variants));
             formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
-            
+
             // Add installation service data
             const installationService = {
                 enabled: installationEnabled,
@@ -164,10 +164,10 @@ export function ProductForm({ initialData }: ProductFormProps) {
         if (!confirm('Are you sure you want to delete this product?')) return;
 
         setLoading(true);
+        const url = `/api/products/${initialData.id}`;
+        const method = 'DELETE';
 
         try {
-            const url = `/api/products/${initialData.id}`;
-            const method = 'DELETE';
             const res = await fetch(url, {
                 method,
             });
