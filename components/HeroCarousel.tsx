@@ -82,7 +82,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
         <div className="container mx-auto px-4 text-center">
           {/* Offer Label */}
           <div className='flex items-center justify-center'>
-            <p className="mb-4 py-1 px-3 rounded-full text-xs font-bold text-yellow-400 bg-neutral-800/70">
+            <p className="mt-4 py-1 px-3 rounded-full text-xs font-bold text-yellow-400 bg-neutral-800/70">
               {currentBanner.offerLabel}
             </p>
           </div>
