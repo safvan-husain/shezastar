@@ -7,39 +7,38 @@ interface ProductGridProps {
   emptyMessage?: string;
 }
 
-const fallbackCurrencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const configuredCurrency = process.env.NEXT_PUBLIC_CURRENCY?.toUpperCase();
-
-const currencyFormatter =
-  configuredCurrency && configuredCurrency !== 'USD'
-    ? (() => {
-      try {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: configuredCurrency,
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-      } catch {
-        return fallbackCurrencyFormatter;
-      }
-    })()
-    : fallbackCurrencyFormatter;
-
-const overlayBadgeClass =
-  'inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-inverted)]';
-
-const iconButtonClass =
-  'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--storefront-icon-border)] bg-[var(--storefront-icon-surface)] text-[var(--text-primary)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-strong)]';
-
 function formatPrice(value: number) {
-  return currencyFormatter.format(value);
+  // Create formatter on-demand to avoid hydration mismatches
+  const configuredCurrency = process.env.NEXT_PUBLIC_CURRENCY?.toUpperCase();
+  
+  let formatter: Intl.NumberFormat;
+  
+  if (configuredCurrency && configuredCurrency !== 'USD') {
+    try {
+      formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: configuredCurrency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    } catch {
+      formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+  } else {
+    formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+  
+  return formatter.format(value);
 }
 
 function HeartIcon() {
