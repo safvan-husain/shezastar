@@ -1,4 +1,3 @@
-// app/(admin)/products/components/steps/ReviewStep.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

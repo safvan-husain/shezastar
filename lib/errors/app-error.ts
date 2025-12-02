@@ -1,4 +1,6 @@
 // lib/errors/app-error.ts
+import { ZodError } from 'zod';
+
 export class AppError extends Error {
     constructor(
         public status: number,
@@ -17,6 +19,16 @@ export function catchError(err: unknown): { status: number; body: any } {
             body: {
                 error: err.code,
                 details: err.details,
+            },
+        };
+    }
+
+    if (err instanceof ZodError) {
+        return {
+            status: 400,
+            body: {
+                error: 'VALIDATION_ERROR',
+                details: err.errors,
             },
         };
     }
