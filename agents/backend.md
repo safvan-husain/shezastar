@@ -43,8 +43,27 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 - Files: `auth.service.ts`, `auth.schema.ts`, `auth.controller.ts`, `model/user.model.ts`.
 - Services use verb names (`createUser`), controllers use `handleXxx` (`handleLogin`), schemas use PascalCase (`LoginSchema`).
 
+## Cache Revalidation
+After mutations (POST/PATCH/DELETE), revalidate affected pages:
+
+```ts
+import { revalidatePath } from 'next/cache';
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const { status, body: result } = await handleCreate(body);
+  // Include route group in path, specify 'page' type
+  revalidatePath('/(admin)/items', 'page');
+  return NextResponse.json(result, { status });
+}
+```
+
+**Important:** Match the full route path including route groups like `(admin)`. Use `'page'` type to revalidate specific pages or `'layout'` for layouts.
+
+Use `revalidateTag()` for tag-based caching (with `'use cache'` + `cacheTag()`).
+
 ## Flow Snapshot
-`Request → route handler → controller.validate → service → model transforms → controller result → NextResponse`
+`Request → route handler → controller.validate → service → model transforms → controller result → revalidate cache → NextResponse`
 
 ## Feature Checklist
 1. Create `lib/<feature>/` with schema, service, controller, models, index.

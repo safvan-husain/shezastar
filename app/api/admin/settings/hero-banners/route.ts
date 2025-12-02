@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { handleGetHeroBanners, handleCreateHeroBanner } from '@/lib/app-settings/app-settings.controller';
 
 export async function GET() {
@@ -9,5 +10,6 @@ export async function GET() {
 export async function POST(req: Request) {
     const body = await req.json();
     const { status, body: result } = await handleCreateHeroBanner(body);
+    revalidatePath('/(admin)/settings/hero-banners', 'page');
     return NextResponse.json(result, { status });
 }

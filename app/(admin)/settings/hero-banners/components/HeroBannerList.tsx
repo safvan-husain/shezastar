@@ -18,6 +18,11 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
     const [isCreating, setIsCreating] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
+    // Sync local state when initialBanners changes after router.refresh()
+    if (initialBanners !== banners && !isCreating && !editingBanner) {
+        setBanners(initialBanners);
+    }
+
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this banner?')) {
             return;
