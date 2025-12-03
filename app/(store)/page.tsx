@@ -2,7 +2,8 @@ import { Product } from "@/lib/product/model/product.model";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ErrorToastHandler, type ToastErrorPayload } from "@/components/ErrorToastHandler";
 import { HeroCarousel } from "@/components/HeroCarousel";
-import type { HeroBannerWithId } from "@/lib/app-settings/app-settings.schema";
+import { CardView } from "@/components/CardView";
+import type { HeroBannerWithId, CustomCard } from "@/lib/app-settings/app-settings.schema";
 
 type ErrorBody = {
   message?: string;
@@ -92,17 +93,74 @@ async function fetchProducts(): Promise<{ products: Product[]; error: ToastError
   }
 }
 
+async function fetchCustomCards(): Promise<{ cards: CustomCard[]; error: ToastErrorPayload | null }> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const url = `${baseUrl}/api/admin/settings/custom-cards`;
+
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      let body: ErrorBody = {};
+      try {
+        body = await res.json();
+      } catch {
+        body = { error: "Failed to parse response body" };
+      }
+
+      return {
+        cards: [],
+        error: {
+          message: body.message || body.error || "Failed to load custom cards",
+          status: res.status,
+          body,
+          url: res.url,
+          method: "GET",
+        },
+      };
+    }
+
+    const data = await res.json();
+    // Convert object to array of non-null cards
+    const cardsArray = Object.values(data).filter((card): card is CustomCard => card !== null);
+    return { cards: cardsArray, error: null };
+  } catch (error) {
+    return {
+      cards: [],
+      error: {
+        message: error instanceof Error ? error.message : "Failed to load custom cards",
+        body: error instanceof Error ? { stack: error.stack } : { error },
+        url,
+        method: "GET",
+      },
+    };
+  }
+}
+
 export default async function Home() {
-  const [{ banners, error: heroBannersError }, { products, error: productsError }] = await Promise.all([
-    fetchHeroBanners(),
-    fetchProducts(),
-  ]);
+  const [
+    { banners, error: heroBannersError },
+    { products, error: productsError },
+    { cards, error: customCardsError },
+  ] = await Promise.all([fetchHeroBanners(), fetchProducts(), fetchCustomCards()]);
+
+  // Split cards into three views
+  const twoItemCards = cards.slice(0, 2);
+  const threeItemCards = cards.slice(2, 5);
+  const oneItemCard = cards.slice(5, 6);
 
   return (
     <div className="min-h-screen">
       {/* Hero Banner Section */}
       {banners.length > 0 && <HeroCarousel banners={banners} />}
       {heroBannersError && <ErrorToastHandler error={heroBannersError} />}
+
+      {/* Two-Item Card View - Below Hero */}
+      {twoItemCards.length > 0 && (
+        <section className="container mx-auto px-4 py-8">
+          <CardView cards={twoItemCards} />
+        </section>
+      )}
+      {customCardsError && <ErrorToastHandler error={customCardsError} />}
 
       {/* Product Catalog Section */}
       <section id="catalog" className="container mx-auto px-4 py-12 space-y-6">
@@ -130,6 +188,20 @@ export default async function Home() {
           />
         )}
       </section>
+
+      {/* Three-Item Card View - Below Product Grid */}
+      {threeItemCards.length > 0 && (
+        <section className="container mx-auto px-4 py-8">
+          <CardView cards={threeItemCards} />
+        </section>
+      )}
+
+      {/* One-Item Card View - At Bottom */}
+      {oneItemCard.length > 0 && (
+        <section className="container mx-auto px-4 py-8 pb-12">
+          <CardView cards={oneItemCard} />
+        </section>
+      )}
     </div>
   );
 }
