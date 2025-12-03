@@ -1,7 +1,7 @@
 // app/(admin)/variant-types/components/VariantTypeForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -32,14 +32,31 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const addItem = () => {
         if (!newItemName.trim()) return;
 
         setItems([...items, { id: nanoid(), name: newItemName.trim() }]);
         setNewItemName('');
         setSuccess('Item added successfully');
-        setTimeout(() => setSuccess(''), 2000);
+        if (successTimeoutRef.current) {
+            clearTimeout(successTimeoutRef.current);
+            successTimeoutRef.current = null;
+        }
+        successTimeoutRef.current = setTimeout(() => {
+            setSuccess('');
+            successTimeoutRef.current = null;
+        }, 2000);
     };
+
+    useEffect(() => {
+        return () => {
+            if (successTimeoutRef.current) {
+                clearTimeout(successTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const removeItem = (id: string) => {
         setItems(items.filter(item => item.id !== id));
@@ -228,7 +245,12 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
                         placeholder="Add item (e.g., Red, Large, 128GB)"
                         value={newItemName}
                         onChange={(e) => setNewItemName(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem())}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault()
+                                addItem()
+                            }
+                        }}
                     />
                     <Button type="button" onClick={addItem} className="whitespace-nowrap">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,7 +302,34 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
             </Card>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3 pt-4">
+            <div className="flex flex-wrap gap-3 pt-4 items-center justify-between">
+                <div className="flex flex-wrap gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        onClick={() => router.push('/variant-types')}
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Cancel
+                    </Button>
+                    {initialData?.id && (
+                        <Button
+                            type="button"
+                            variant="danger"
+                            size="lg"
+                            onClick={handleDelete}
+                            disabled={loading}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Delete Variant Type
+                        </Button>
+                    )}
+                </div>
                 <Button type="submit" disabled={loading} size="lg">
                     {loading ? (
                         <>
@@ -299,32 +348,6 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
                         </>
                     )}
                 </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    onClick={() => router.push('/variant-types')}
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    Cancel
-                </Button>
-                {initialData?.id && (
-                    <Button
-                        type="button"
-                        variant="danger"
-                        size="lg"
-                        onClick={handleDelete}
-                        disabled={loading}
-                        className="ml-auto"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete Variant Type
-                    </Button>
-                )}
             </div>
         </form>
     );
