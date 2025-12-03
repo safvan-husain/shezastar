@@ -33,14 +33,18 @@ export async function saveImage(file: File): Promise<string> {
     const filename = `${fileId}${ext}`;
     const filepath = path.join(UPLOAD_DIR, filename);
 
-    // Process and optimize image
-    await sharp(buffer)
-        .resize(1200, 1200, {
-            fit: 'inside',
-            withoutEnlargement: true,
-        })
-        .jpeg({ quality: 85 })
-        .toFile(filepath);
+    try {
+        // Process and optimize image
+        await sharp(buffer)
+            .resize(1200, 1200, {
+                fit: 'inside',
+                withoutEnlargement: true,
+            })
+            .jpeg({ quality: 85 })
+            .toFile(filepath);
+    } catch (error) {
+        throw new Error(`Failed to process image: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
     return `/uploads/${filename}`;
 }

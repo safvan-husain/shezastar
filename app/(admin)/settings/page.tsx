@@ -23,6 +23,15 @@ export default function SettingsPage() {
                         Configure the six optional custom cards that appear throughout the experience.
                     </p>
                 </Link>
+                <Link
+                    href="/settings/featured-products"
+                    className="block p-6 bg-[var(--bg-elevated)] rounded-lg shadow-md hover:shadow-lg transition-shadow border border-[var(--border-subtle)]"
+                >
+                    <h2 className="text-xl font-semibold mb-2">Featured Products</h2>
+                    <p className="text-[var(--text-secondary)]">
+                        Manage the featured products displayed on the home page.
+                    </p>
+                </Link>
             </div>
         </div>
     );
