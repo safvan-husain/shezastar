@@ -28,7 +28,6 @@ function createErrorPayload(error: unknown, override?: Partial<ProductPageError>
 async function fetchProduct(id: string): Promise<{ product: Product | null; error: ProductPageError | null }> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   const url = `${baseUrl}/api/products/${encodeURIComponent(id)}`;
-  console.log(url)
   const timeoutMs = Number(process.env.PRODUCT_FETCH_TIMEOUT_MS ?? 5000);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -36,7 +35,6 @@ async function fetchProduct(id: string): Promise<{ product: Product | null; erro
   try {
     const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
     if (!res.ok) {
-      console.log(`res not ok`)
       let body: any;
       try {
         body = await res.json();

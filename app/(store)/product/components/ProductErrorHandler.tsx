@@ -19,16 +19,11 @@ export function ProductErrorHandler({ error }: ProductErrorHandlerProps) {
   const { showToast } = useToast();
 
   useEffect(() => {
-    showToast({
-      title: 'Error Loading Product',
-      message: error.message,
-      variant: 'error',
-      details: {
-        status: error.status,
-        body: error.body,
-        url: error.url,
-        method: error.method,
-      },
+    showToast('Error Loading Product', 'error', {
+      status: error.status,
+      body: error.body,
+      url: error.url,
+      method: error.method,
     });
   }, [error, showToast]);
 
