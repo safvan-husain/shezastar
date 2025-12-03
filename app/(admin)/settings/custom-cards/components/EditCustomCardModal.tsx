@@ -76,9 +76,9 @@ export default function EditCustomCardModal({
 
             const result = await res.json();
             onSave(result.customCards);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+            setError(message);        } finally {
             setIsLoading(false);
         }
     };
