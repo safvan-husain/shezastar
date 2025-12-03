@@ -7,25 +7,8 @@ interface ProductGridProps {
   emptyMessage?: string;
 }
 
-// Create formatter with explicit locale to ensure consistency between server and client
 function formatPrice(value: number) {
-  const configuredCurrency = process.env.NEXT_PUBLIC_CURRENCY?.toUpperCase() || 'USD';
-  
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: configuredCurrency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  }
+  return `AED ${value.toFixed(2)}`;
 }
 
 function HeartIcon() {

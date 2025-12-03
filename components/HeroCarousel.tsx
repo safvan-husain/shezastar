@@ -9,27 +9,8 @@ interface HeroCarouselProps {
   banners: HeroBannerWithId[];
 }
 
-const configuredCurrency = process.env.NEXT_PUBLIC_CURRENCY?.toUpperCase() || 'USD';
-
-let priceFormatter: Intl.NumberFormat;
-try {
-  priceFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: configuredCurrency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-} catch {
-  priceFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
 function formatPrice(value: number) {
-  return priceFormatter.format(value);
+  return `AED ${value.toFixed(2)}`;
 }
 
 export function HeroCarousel({ banners }: HeroCarouselProps) {
