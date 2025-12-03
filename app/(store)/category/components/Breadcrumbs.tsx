@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 export interface BreadcrumbItem {
+  id: string;
   label: string;
   href?: string;
 }
@@ -16,7 +17,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (
-            <li key={`${item.label}-${index}`} className="flex items-center gap-2">
+            <li key={item.id} className="flex items-center gap-2">
               {item.href && !isLast ? (
                 <Link
                   href={item.href}

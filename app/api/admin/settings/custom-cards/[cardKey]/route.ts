@@ -22,13 +22,25 @@ export async function POST(
 ) {
     const { cardKey } = await params;
     const body = await request.json();
-    const result = await handleCreateCustomCard(cardKey, body);
     try {
-        revalidatePath('/', 'layout');
+        const result = await handleCreateCustomCard(cardKey, body);
+        try {
+            revalidatePath('/', 'layout');
+        } catch (error) {
+            // Ignore revalidation errors
+        }
+        return NextResponse.json(result.body, { status: result.status });
     } catch (error) {
-        // Ignore revalidation errors
+        console.error('[custom-cards POST]', error);
+        const status =
+            typeof (error as { status?: number }).status === 'number'
+                ? (error as { status: number }).status
+                : 500;
+        const errorBody =
+            (error as { body?: unknown }).body ??
+            (error instanceof Error ? { message: error.message } : { message: 'Unexpected error' });
+        return NextResponse.json(errorBody, { status });
     }
-    return NextResponse.json(result.body, { status: result.status });
 }
 
 export async function PUT(
@@ -37,13 +49,25 @@ export async function PUT(
 ) {
     const { cardKey } = await params;
     const body = await request.json();
-    const result = await handleUpdateCustomCard(cardKey, body);
     try {
-        revalidatePath('/', 'layout');
+        const result = await handleUpdateCustomCard(cardKey, body);
+        try {
+            revalidatePath('/', 'layout');
+        } catch (error) {
+            // Ignore revalidation errors
+        }
+        return NextResponse.json(result.body, { status: result.status });
     } catch (error) {
-        // Ignore revalidation errors
+        console.error('[custom-cards PUT]', error);
+        const status =
+            typeof (error as { status?: number }).status === 'number'
+                ? (error as { status: number }).status
+                : 500;
+        const errorBody =
+            (error as { body?: unknown }).body ??
+            (error instanceof Error ? { message: error.message } : { message: 'Unexpected error' });
+        return NextResponse.json(errorBody, { status });
     }
-    return NextResponse.json(result.body, { status: result.status });
 }
 
 export async function DELETE(
@@ -51,11 +75,23 @@ export async function DELETE(
     { params }: { params: Promise<{ cardKey: string }> }
 ) {
     const { cardKey } = await params;
-    const result = await handleDeleteCustomCard(cardKey);
     try {
-        revalidatePath('/', 'layout');
+        const result = await handleDeleteCustomCard(cardKey);
+        try {
+            revalidatePath('/', 'layout');
+        } catch (error) {
+            // Ignore revalidation errors
+        }
+        return NextResponse.json(result.body, { status: result.status });
     } catch (error) {
-        // Ignore revalidation errors
+        console.error('[custom-cards DELETE]', error);
+        const status =
+            typeof (error as { status?: number }).status === 'number'
+                ? (error as { status: number }).status
+                : 500;
+        const errorBody =
+            (error as { body?: unknown }).body ??
+            (error instanceof Error ? { message: error.message } : { message: 'Unexpected error' });
+        return NextResponse.json(errorBody, { status });
     }
-    return NextResponse.json(result.body, { status: result.status });
 }

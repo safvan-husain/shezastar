@@ -44,9 +44,12 @@ function createErrorPayload(error: unknown, override?: Partial<CategoryPageError
 async function fetchProducts(categoryId: string): Promise<{ products: Product[]; error: CategoryPageError | null }> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   const url = `${baseUrl}/api/products?categoryId=${encodeURIComponent(categoryId)}&limit=200`;
+  const timeoutMs = Number(process.env.CATEGORY_FETCH_TIMEOUT_MS ?? 5000);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
     if (!res.ok) {
       let body: any;
       try {
@@ -70,6 +73,15 @@ async function fetchProducts(categoryId: string): Promise<{ products: Product[];
     const data = await res.json();
     return { products: data.products ?? [], error: null };
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        products: [],
+        error: createErrorPayload(error, {
+          message: 'Timed out while loading products for this category',
+          url,
+        }),
+      };
+    }
     return {
       products: [],
       error: createErrorPayload(error, {
@@ -77,6 +89,8 @@ async function fetchProducts(categoryId: string): Promise<{ products: Product[];
         url,
       }),
     };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -101,7 +115,7 @@ function findCategoryBySlug(categories: Category[], slug: string): CategoryMatch
         title: category.name,
         filterId,
         level: 'category',
-        breadcrumbs: [{ label: category.name }],
+        breadcrumbs: [{ id: category.id, label: category.name }],
       };
     }
 
@@ -113,8 +127,8 @@ function findCategoryBySlug(categories: Category[], slug: string): CategoryMatch
           filterId,
           level: 'subCategory',
           breadcrumbs: [
-            { label: category.name, href: `/category/${category.slug}` },
-            { label: sub.name },
+            { id: category.slug || category.id, label: category.name, href: `/category/${category.slug}` },
+            { id: sub.slug || sub.id, label: sub.name },
           ],
         };
       }
@@ -127,9 +141,9 @@ function findCategoryBySlug(categories: Category[], slug: string): CategoryMatch
           filterId,
           level: 'subSubCategory',
           breadcrumbs: [
-            { label: category.name, href: `/category/${category.slug}` },
-            { label: sub.name, href: `/category/${sub.slug}` },
-            { label: subSub.name },
+            { id: category.slug || category.id, label: category.name, href: `/category/${category.slug}` },
+            { id: sub.slug || sub.id, label: sub.name, href: `/category/${sub.slug}` },
+            { id: subSub.slug || subSub.id, label: subSub.name },
           ],
         };
       }
