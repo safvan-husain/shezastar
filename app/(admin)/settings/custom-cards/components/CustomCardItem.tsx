@@ -7,9 +7,10 @@ interface CustomCardItemProps {
     card: CustomCard | null;
     onEdit: () => void;
     onDelete: () => void;
+    isDeleting?: boolean;
 }
 
-export default function CustomCardItem({ cardKey, card, onEdit, onDelete }: CustomCardItemProps) {
+export default function CustomCardItem({ cardKey, card, onEdit, onDelete, isDeleting }: CustomCardItemProps) {
     const isOccupied = !!card;
 
     return (
@@ -70,8 +71,21 @@ export default function CustomCardItem({ cardKey, card, onEdit, onDelete }: Cust
                             <Button variant="outline" size="sm" onClick={onEdit} className="flex-1">
                                 Edit
                             </Button>
-                            <Button variant="danger" size="sm" onClick={onDelete} className="flex-1">
-                                Delete
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={onDelete}
+                                disabled={isDeleting}
+                                className="flex-1"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--text-inverted)] border-t-transparent" />
+                                        Deleting
+                                    </>
+                                ) : (
+                                    'Delete'
+                                )}
                             </Button>
                         </div>
                     </div>
