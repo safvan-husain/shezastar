@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { HeroBannerWithId } from '@/lib/app-settings/app-settings.schema';
@@ -9,6 +9,7 @@ import HeroBannerForm from './HeroBannerForm';
 interface HeroBannerListProps {
     initialBanners: HeroBannerWithId[];
 }
+
 
 export default function HeroBannerList({ initialBanners }: HeroBannerListProps) {
     const router = useRouter();
@@ -19,10 +20,11 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     // Sync local state when initialBanners changes after router.refresh()
-    if (initialBanners !== banners && !isCreating && !editingBanner) {
-        setBanners(initialBanners);
-    }
-
+    useEffect(() => {
+        if (!isCreating && !editingBanner) {
+            setBanners(initialBanners);
+        }
+    }, [initialBanners, isCreating, editingBanner]);
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this banner?')) {
             return;
@@ -43,7 +45,8 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
             setBanners(banners.filter(b => b.id !== id));
             router.refresh();
         } catch (error: any) {
-            showToast(error.message || 'Something went wrong', 'error');
+            const message = error instanceof Error ? error.message : 'Something went wrong';
+            showToast(message, "error");
         } finally {
             setDeletingId(null);
         }
