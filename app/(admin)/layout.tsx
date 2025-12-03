@@ -1,11 +1,14 @@
 // app/(admin)/layout.tsx
 import Link from 'next/link';
 
-export default function AdminLayout({
+import { requireAdminAuth } from '@/lib/auth/admin-auth';
+
+export default async function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    await requireAdminAuth();
     return (
         <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
             <nav className="backdrop-blur-sm shadow-lg border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
