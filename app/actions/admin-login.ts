@@ -8,7 +8,7 @@ import {
     verifyAdminPassword,
 } from '@/lib/auth/admin-auth';
 
-export async function adminLogin(formData: FormData) {
+export async function adminLogin(_initialState: unknown, formData: FormData) {
     const password = formData.get('password');
     if (!password || typeof password !== 'string') {
         return { error: 'Password is required.' };
@@ -22,7 +22,8 @@ export async function adminLogin(formData: FormData) {
     if (!verifyAdminPassword(password, admin)) {
         return { error: 'Invalid password.' };
     }
+    console.log('Admin logged in successfully.');
 
-    setAdminSessionCookie(admin._id.toString());
+    await setAdminSessionCookie(admin._id.toString());
     redirect('/products');
 }
