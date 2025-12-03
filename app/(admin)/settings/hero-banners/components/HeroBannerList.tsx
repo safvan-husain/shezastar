@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { HeroBannerWithId } from '@/lib/app-settings/app-settings.schema';
 import HeroBannerForm from './HeroBannerForm';
 
@@ -18,6 +19,7 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
     const [editingBanner, setEditingBanner] = useState<HeroBannerWithId | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [confirmingBanner, setConfirmingBanner] = useState<HeroBannerWithId | null>(null);
 
     // Sync local state when initialBanners changes after router.refresh()
     useEffect(() => {
@@ -25,14 +27,12 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
             setBanners(initialBanners);
         }
     }, [initialBanners, isCreating, editingBanner]);
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this banner?')) {
-            return;
-        }
+    const handleDelete = async () => {
+        if (!confirmingBanner) return;
 
-        setDeletingId(id);
+        setDeletingId(confirmingBanner.id);
         try {
-            const response = await fetch(`/api/admin/settings/hero-banners/${id}`, {
+            const response = await fetch(`/api/admin/settings/hero-banners/${confirmingBanner.id}`, {
                 method: 'DELETE',
             });
 
@@ -42,7 +42,8 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
             }
 
             showToast('Banner deleted successfully', 'success');
-            setBanners(banners.filter(b => b.id !== id));
+            setBanners(banners.filter(b => b.id !== confirmingBanner.id));
+            setConfirmingBanner(null);
             router.refresh();
         } catch (error: any) {
             const message = error instanceof Error ? error.message : 'Something went wrong';
@@ -162,7 +163,7 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
                                         Edit
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(banner.id)}
+                                        onClick={() => setConfirmingBanner(banner)}
                                         disabled={deletingId === banner.id}
                                         className="flex-1 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                                     >
@@ -174,6 +175,17 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
                     ))}
                 </div>
             )}
+
+            <ConfirmDialog
+                isOpen={Boolean(confirmingBanner)}
+                onClose={() => setConfirmingBanner(null)}
+                onConfirm={handleDelete}
+                title="Delete hero banner"
+                message={`Are you sure you want to delete "${confirmingBanner?.title}"? This action cannot be undone.`}
+                confirmText="Delete"
+                variant="danger"
+                isLoading={Boolean(deletingId)}
+            />
         </div>
     );
 }

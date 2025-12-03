@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Product } from '@/lib/product/model/product.model';
 import AddFeaturedProductModal from './AddFeaturedProductModal';
 
@@ -16,6 +17,7 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
     const [products, setProducts] = useState(initialProducts);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [confirmingProduct, setConfirmingProduct] = useState<Product | null>(null);
 
     // Sync local state when initialProducts changes after router.refresh()
     useEffect(() => {
@@ -24,14 +26,12 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
         }
     }, [initialProducts, isModalOpen]);
 
-    const handleRemove = async (productId: string) => {
-        if (!confirm('Are you sure you want to remove this product from featured list?')) {
-            return;
-        }
+    const handleRemove = async () => {
+        if (!confirmingProduct) return;
 
-        setDeletingId(productId);
+        setDeletingId(confirmingProduct.id);
         try {
-            const response = await fetch(`/api/admin/settings/featured-products/${productId}`, {
+            const response = await fetch(`/api/admin/settings/featured-products/${confirmingProduct.id}`, {
                 method: 'DELETE',
             });
 
@@ -41,7 +41,8 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
             }
 
             showToast('Product removed from featured list', 'success');
-            setProducts(products.filter(p => p.id !== productId));
+            setProducts(products.filter(p => p.id !== confirmingProduct.id));
+            setConfirmingProduct(null);
             router.refresh();
         } catch (error: any) {
             const message = error instanceof Error ? error.message : 'Something went wrong';
@@ -128,7 +129,7 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => handleRemove(product.id)}
+                                    onClick={() => setConfirmingProduct(product)}
                                     disabled={deletingId === product.id}
                                     className="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                                 >
@@ -147,6 +148,17 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
                     currentFeaturedIds={products.map(p => p.id)}
                 />
             )}
+
+            <ConfirmDialog
+                isOpen={Boolean(confirmingProduct)}
+                onClose={() => setConfirmingProduct(null)}
+                onConfirm={handleRemove}
+                title="Remove featured product"
+                message={`Are you sure you want to remove "${confirmingProduct?.name}" from the featured list? This action can be undone by adding it back.`}
+                confirmText="Remove"
+                variant="danger"
+                isLoading={Boolean(deletingId)}
+            />
         </div>
     );
 }

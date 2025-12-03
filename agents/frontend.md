@@ -5,6 +5,10 @@
 - Use friendly messages; never silently fail or only log. Success mutations should show success toasts.
 - Server components fetching data should return error objects and delegate to a client `ErrorHandler` that triggers the toast.
 
+## Confirmation Dialogs
+- Never use browser `confirm()` or `alert()`. Use `ConfirmDialog` from `@/components/ui/ConfirmDialog`.
+- Track confirming item with state, pass to dialog with `isOpen={Boolean(confirmingItem)}`, `title`, `message`, `variant` ('danger'|'primary'), and `isLoading`.
+
 ## Next.js 16 + Cache Components (from docs)
 - Enable `cacheComponents: true` in `next.config.ts` before using `use cache`.
 - Add `'use cache'` at file/component/function scope to cache the output; arguments and captured values become the cache key.
