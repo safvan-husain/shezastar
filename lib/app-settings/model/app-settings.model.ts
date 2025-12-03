@@ -1,9 +1,10 @@
 import { ObjectId } from 'mongodb';
-import { HeroBannerWithId } from '../app-settings.schema';
+import { HeroBannerWithId, CustomCards } from '../app-settings.schema';
 
 export interface AppSettingsDocument {
     _id: ObjectId;
     homeHeroBanners: HeroBannerWithId[];
+    customCards: CustomCards;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -11,14 +12,27 @@ export interface AppSettingsDocument {
 export interface AppSettings {
     id: string;
     homeHeroBanners: HeroBannerWithId[];
+    customCards: CustomCards;
     createdAt: string;
     updatedAt: string;
 }
 
 export function toAppSettings(doc: AppSettingsDocument): AppSettings {
+    const defaultCards = {
+        card1: null,
+        card2: null,
+        card3: null,
+        card4: null,
+        card5: null,
+        card6: null,
+    };
+
+    const mergedCards = { ...defaultCards, ...(doc.customCards || {}) };
+
     return {
         id: doc._id.toString(),
         homeHeroBanners: doc.homeHeroBanners || [],
+        customCards: mergedCards,
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
@@ -27,5 +41,13 @@ export function toAppSettings(doc: AppSettingsDocument): AppSettings {
 export function getDefaultSettings(): Omit<AppSettings, 'id' | 'createdAt' | 'updatedAt'> {
     return {
         homeHeroBanners: [],
+        customCards: {
+            card1: null,
+            card2: null,
+            card3: null,
+            card4: null,
+            card5: null,
+            card6: null,
+        },
     };
 }

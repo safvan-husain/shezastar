@@ -36,6 +36,7 @@ export async function clear() {
     }
 
     const db = mongoClient.db(TEST_DB_NAME);
+    console.log(`DEBUG: Connecting to DB: ${TEST_DB_NAME}`);
     const collections = await db.collections();
     for (const collection of collections) {
         await collection.deleteMany({});

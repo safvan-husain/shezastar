@@ -1,7 +1,7 @@
 import { getCollection } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { AppSettingsDocument, toAppSettings, getDefaultSettings } from './model/app-settings.model';
-import { CreateHeroBannerInput, UpdateHeroBannerInput } from './app-settings.schema';
+import { CreateHeroBannerInput, UpdateHeroBannerInput, CreateCustomCardInput, UpdateCustomCardInput, CustomCard } from './app-settings.schema';
 import { nanoid } from 'nanoid';
 
 const COLLECTION = 'appSettings';
@@ -136,4 +136,144 @@ export async function deleteHeroBanner(id: string) {
     }
 
     return toAppSettings(result);
+}
+
+// Custom Cards Service Methods
+const VALID_CARD_KEYS = ['card1', 'card2', 'card3', 'card4', 'card5', 'card6'] as const;
+type CardKey = typeof VALID_CARD_KEYS[number];
+
+function isValidCardKey(key: string): key is CardKey {
+    return VALID_CARD_KEYS.includes(key as CardKey);
+}
+
+export async function createCustomCard(cardKey: string, input: CreateCustomCardInput) {
+    if (!isValidCardKey(cardKey)) {
+        throw new AppError(400, 'INVALID_CARD_KEY', {
+            message: `Invalid card key. Must be one of: ${VALID_CARD_KEYS.join(', ')}`,
+        });
+    }
+
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+
+    // Check if card already exists (not null)
+    const existing = await collection.findOne({});
+    if (existing?.customCards?.[cardKey]) {
+        throw new AppError(400, 'CARD_ALREADY_EXISTS', {
+            message: `Card ${cardKey} already exists. Use update instead.`,
+        });
+    }
+
+    // Create or update with the new card
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $set: {
+                [`customCards.${cardKey}`]: input,
+                updatedAt: now,
+            },
+            $setOnInsert: {
+                createdAt: now,
+                homeHeroBanners: [],
+            },
+        },
+        {
+            upsert: true,
+            returnDocument: 'after',
+        }
+    );
+
+    if (!result) {
+        throw new AppError(500, 'FAILED_TO_CREATE_CARD');
+    }
+
+    return toAppSettings(result);
+}
+
+export async function updateCustomCard(cardKey: string, input: UpdateCustomCardInput) {
+    if (!isValidCardKey(cardKey)) {
+        throw new AppError(400, 'INVALID_CARD_KEY', {
+            message: `Invalid card key. Must be one of: ${VALID_CARD_KEYS.join(', ')}`,
+        });
+    }
+
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+
+    // Check if card exists (not null)
+    const existing = await collection.findOne({});
+    if (!existing?.customCards?.[cardKey]) {
+        throw new AppError(404, 'CARD_NOT_FOUND', {
+            message: `Card ${cardKey} not found`,
+        });
+    }
+
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $set: {
+                [`customCards.${cardKey}`]: input,
+                updatedAt: now,
+            },
+        },
+        {
+            returnDocument: 'after',
+        }
+    );
+
+    if (!result) {
+        throw new AppError(404, 'CARD_NOT_FOUND', {
+            message: `Card ${cardKey} not found`,
+        });
+    }
+
+    return toAppSettings(result);
+}
+
+export async function deleteCustomCard(cardKey: string) {
+    if (!isValidCardKey(cardKey)) {
+        throw new AppError(400, 'INVALID_CARD_KEY', {
+            message: `Invalid card key. Must be one of: ${VALID_CARD_KEYS.join(', ')}`,
+        });
+    }
+
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+
+    // Set card to null (idempotent operation)
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $set: {
+                [`customCards.${cardKey}`]: null,
+                updatedAt: now,
+            },
+        },
+        {
+            returnDocument: 'after',
+        }
+    );
+
+    if (!result) {
+        // If document doesn't exist, the card is effectively deleted (null)
+        return getAppSettings();
+    }
+
+    return toAppSettings(result);
+}
+
+export async function getCustomCard(cardKey: string): Promise<CustomCard | null> {
+    if (!isValidCardKey(cardKey)) {
+        throw new AppError(400, 'INVALID_CARD_KEY', {
+            message: `Invalid card key. Must be one of: ${VALID_CARD_KEYS.join(', ')}`,
+        });
+    }
+
+    const settings = await getAppSettings();
+    return settings.customCards[cardKey];
+}
+
+export async function getCustomCards() {
+    const settings = await getAppSettings();
+    return settings.customCards;
 }

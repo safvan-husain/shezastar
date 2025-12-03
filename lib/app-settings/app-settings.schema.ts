@@ -21,3 +21,29 @@ export type HeroBanner = z.infer<typeof HeroBannerSchema>;
 export type HeroBannerWithId = z.infer<typeof HeroBannerWithIdSchema>;
 export type CreateHeroBannerInput = z.infer<typeof CreateHeroBannerSchema>;
 export type UpdateHeroBannerInput = z.infer<typeof UpdateHeroBannerSchema>;
+
+// Custom Cards Schema
+export const CustomCardSchema = z.object({
+    title: z.string().min(1, 'Title is required'),
+    subtitle: z.string().min(1, 'Subtitle is required'),
+    imagePath: z.string().min(1, 'Image path is required'),
+    offerLabel: z.string().min(1, 'Offer label is required'),
+    urlLink: z.string().url('Must be a valid URL'),
+});
+
+export const CustomCardsSchema = z.object({
+    card1: CustomCardSchema.nullable(),
+    card2: CustomCardSchema.nullable(),
+    card3: CustomCardSchema.nullable(),
+    card4: CustomCardSchema.nullable(),
+    card5: CustomCardSchema.nullable(),
+    card6: CustomCardSchema.nullable(),
+});
+
+export const CreateCustomCardSchema = CustomCardSchema;
+export const UpdateCustomCardSchema = CustomCardSchema;
+
+export type CustomCard = z.infer<typeof CustomCardSchema>;
+export type CustomCards = z.infer<typeof CustomCardsSchema>;
+export type CreateCustomCardInput = z.infer<typeof CreateCustomCardSchema>;
+export type UpdateCustomCardInput = z.infer<typeof UpdateCustomCardSchema>;
