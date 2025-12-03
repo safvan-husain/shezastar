@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Button } from '@/components/ui/Button';
 import { Product } from '@/lib/product/model/product.model';
 import AddFeaturedProductModal from './AddFeaturedProductModal';
 
@@ -112,7 +113,7 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
                                         {product.description}
                                     </p>
                                 )}
-                                <div className="flex items-center gap-2 mb-4">
+                                <div className="flex items-center gap-2 pb-3 border-b border-[var(--border)]">
                                     {product.offerPrice ? (
                                         <>
                                             <span className="text-lg font-bold text-[var(--success)]">
@@ -128,13 +129,19 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
                                         </span>
                                     )}
                                 </div>
-                                <button
+
+                                <Button
                                     onClick={() => setConfirmingProduct(product)}
                                     disabled={deletingId === product.id}
-                                    className="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                    variant="danger"
+                                    size="sm"
+                                    className="w-full mt-4"
                                 >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
                                     {deletingId === product.id ? 'Removing...' : 'Remove'}
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     ))}
