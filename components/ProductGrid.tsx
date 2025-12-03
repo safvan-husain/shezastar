@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Product } from '@/lib/product/model/product.model';
 import { Card } from './ui/Card';
 
@@ -56,8 +57,9 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
         const imageIndicators = Math.min(product.images?.length ?? 0, 4);
 
         return (
-          <div
+          <Link
             key={product.id}
+            href={`/product/${product.id}`}
             className="group flex h-full flex-col"
           >
             <div className="relative aspect-[4/3] overflow-hidden bg-[var(--storefront-bg-subtle)]">
@@ -146,7 +148,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 </button>
               </div>
             </div>
-          </div>
+          </Link>
         );
       })}
     </div>
