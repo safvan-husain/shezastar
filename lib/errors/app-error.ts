@@ -17,6 +17,7 @@ export function catchError(err: unknown): { status: number; body: any } {
         return {
             status: err.status,
             body: {
+                code: err.code,
                 error: err.code,
                 details: err.details,
             },
@@ -27,6 +28,7 @@ export function catchError(err: unknown): { status: number; body: any } {
         return {
             status: 400,
             body: {
+                code: 'VALIDATION_ERROR',
                 error: 'VALIDATION_ERROR',
                 details: err.errors,
             },
@@ -37,6 +39,7 @@ export function catchError(err: unknown): { status: number; body: any } {
         return {
             status: 500,
             body: {
+                code: 'INTERNAL_SERVER_ERROR',
                 error: 'INTERNAL_SERVER_ERROR',
                 message: err.message,
             },
@@ -46,6 +49,7 @@ export function catchError(err: unknown): { status: number; body: any } {
     return {
         status: 500,
         body: {
+            code: 'UNKNOWN_ERROR',
             error: 'UNKNOWN_ERROR',
         },
     };

@@ -1,5 +1,5 @@
 import { catchError } from '@/lib/errors/app-error';
-import { CreateHeroBannerSchema, UpdateHeroBannerSchema, CreateCustomCardSchema, UpdateCustomCardSchema } from './app-settings.schema';
+import { CreateHeroBannerSchema, UpdateHeroBannerSchema, CreateCustomCardSchema, UpdateCustomCardSchema, AddFeaturedProductSchema } from './app-settings.schema';
 import * as appSettingsService from './app-settings.service';
 
 export async function handleGetAppSettings() {
@@ -103,3 +103,34 @@ export async function handleGetCustomCards() {
         return catchError(err);
     }
 }
+
+// Featured Products Controller Methods
+
+export async function handleGetFeaturedProducts() {
+    try {
+        const result = await appSettingsService.getFeaturedProducts();
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleAddFeaturedProduct(input: unknown) {
+    try {
+        const parsed = AddFeaturedProductSchema.parse(input);
+        const result = await appSettingsService.addFeaturedProduct(parsed.productId);
+        return { status: 201, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleRemoveFeaturedProduct(productId: string) {
+    try {
+        const result = await appSettingsService.removeFeaturedProduct(productId);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+

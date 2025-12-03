@@ -11,8 +11,14 @@ export async function connect() {
     if (mongoClient) return;
 
     if (MONGODB_URI) {
-        mongoClient = await MongoClient.connect(MONGODB_URI);
-        return;
+        try {
+            mongoClient = await MongoClient.connect(MONGODB_URI);
+            console.log(`Connected to DB: ${TEST_DB_NAME}`);
+            return;
+        } catch (error) {
+            console.error(`Failed to connect to DB: ${TEST_DB_NAME}`);
+            throw error;
+        }
     }
 
     // mongoServer = await MongoMemoryServer.create({
@@ -36,7 +42,6 @@ export async function clear() {
     }
 
     const db = mongoClient.db(TEST_DB_NAME);
-    console.log(`DEBUG: Connecting to DB: ${TEST_DB_NAME}`);
     const collections = await db.collections();
     for (const collection of collections) {
         await collection.deleteMany({});

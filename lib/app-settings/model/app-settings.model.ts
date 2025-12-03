@@ -5,6 +5,7 @@ export interface AppSettingsDocument {
     _id: ObjectId;
     homeHeroBanners: HeroBannerWithId[];
     customCards: CustomCards;
+    featuredProductIds: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -13,6 +14,7 @@ export interface AppSettings {
     id: string;
     homeHeroBanners: HeroBannerWithId[];
     customCards: CustomCards;
+    featuredProductIds: string[];
     createdAt: string;
     updatedAt: string;
 }
@@ -33,6 +35,7 @@ export function toAppSettings(doc: AppSettingsDocument): AppSettings {
         id: doc._id.toString(),
         homeHeroBanners: doc.homeHeroBanners || [],
         customCards: mergedCards,
+        featuredProductIds: doc.featuredProductIds || [],
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
@@ -49,5 +52,6 @@ export function getDefaultSettings(): Omit<AppSettings, 'id' | 'createdAt' | 'up
             card5: null,
             card6: null,
         },
+        featuredProductIds: [],
     };
 }

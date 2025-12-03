@@ -47,3 +47,12 @@ export type CustomCard = z.infer<typeof CustomCardSchema>;
 export type CustomCards = z.infer<typeof CustomCardsSchema>;
 export type CreateCustomCardInput = z.infer<typeof CreateCustomCardSchema>;
 export type UpdateCustomCardInput = z.infer<typeof UpdateCustomCardSchema>;
+
+// Featured Products Schema
+export const FeaturedProductIdSchema = z.string().min(1, 'Product ID is required');
+
+export const AddFeaturedProductSchema = z.object({
+    productId: FeaturedProductIdSchema,
+});
+
+export type AddFeaturedProductInput = z.infer<typeof AddFeaturedProductSchema>;

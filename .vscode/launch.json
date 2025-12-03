@@ -1,13 +1,33 @@
 {
   "version": "0.2.0",
   "configurations": [
-     {
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Current Test File",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": [
+        "run",
+        "${file}"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": [
+        "--inspect-brk"
+      ]
+    },
+    {
       "name": "Next.js: debug full stack",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/node_modules/next/dist/bin/next",
-      "runtimeArgs": ["--inspect"],
-      "skipFiles": ["<node_internals>/**"],
+      "runtimeArgs": [
+        "--inspect"
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
       "serverReadyAction": {
         "action": "debugWithEdge",
         "killOnServerStop": true,
@@ -17,4 +37,4 @@
       }
     }
   ]
-}   
+}

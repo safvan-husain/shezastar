@@ -3,9 +3,20 @@ import { AppError } from '@/lib/errors/app-error';
 import { AppSettingsDocument, toAppSettings, getDefaultSettings } from './model/app-settings.model';
 import { CreateHeroBannerInput, UpdateHeroBannerInput, CreateCustomCardInput, UpdateCustomCardInput, CustomCard } from './app-settings.schema';
 import { nanoid } from 'nanoid';
+import { getProduct } from '@/lib/product/product.service';
+import { Product } from '@/lib/product/model/product.model';
 
 const COLLECTION = 'appSettings';
 const SETTINGS_ID = 'app-settings-singleton';
+
+function getResultDocument<T>(result: T | { value?: T | null } | null | undefined): T | null {
+    if (!result) return null;
+    if (typeof result === 'object' && result !== null && 'value' in result) {
+        const docResult = result as { value?: T | null };
+        return docResult.value ?? null;
+    }
+    return result as T;
+}
 
 export async function getAppSettings() {
     const collection = await getCollection<AppSettingsDocument>(COLLECTION);
@@ -64,11 +75,13 @@ export async function createHeroBanner(input: CreateHeroBannerInput) {
         }
     );
 
-    if (!result) {
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
         throw new AppError(500, 'FAILED_TO_CREATE_BANNER');
     }
 
-    return toAppSettings(result);
+    return toAppSettings(updatedDoc);
 }
 
 export async function updateHeroBanner(id: string, input: UpdateHeroBannerInput) {
@@ -100,13 +113,15 @@ export async function updateHeroBanner(id: string, input: UpdateHeroBannerInput)
         }
     );
 
-    if (!result) {
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
         throw new AppError(404, 'BANNER_NOT_FOUND', {
             message: 'Hero banner not found',
         });
     }
 
-    return toAppSettings(result);
+    return toAppSettings(updatedDoc);
 }
 
 export async function deleteHeroBanner(id: string) {
@@ -129,13 +144,15 @@ export async function deleteHeroBanner(id: string) {
         }
     );
 
-    if (!result) {
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
         throw new AppError(404, 'BANNER_NOT_FOUND', {
             message: 'Hero banner not found',
         });
     }
 
-    return toAppSettings(result);
+    return toAppSettings(updatedDoc);
 }
 
 // Custom Cards Service Methods
@@ -183,11 +200,13 @@ export async function createCustomCard(cardKey: string, input: CreateCustomCardI
         }
     );
 
-    if (!result) {
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
         throw new AppError(500, 'FAILED_TO_CREATE_CARD');
     }
 
-    return toAppSettings(result);
+    return toAppSettings(updatedDoc);
 }
 
 export async function updateCustomCard(cardKey: string, input: UpdateCustomCardInput) {
@@ -221,13 +240,15 @@ export async function updateCustomCard(cardKey: string, input: UpdateCustomCardI
         }
     );
 
-    if (!result) {
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
         throw new AppError(404, 'CARD_NOT_FOUND', {
             message: `Card ${cardKey} not found`,
         });
     }
 
-    return toAppSettings(result);
+    return toAppSettings(updatedDoc);
 }
 
 export async function deleteCustomCard(cardKey: string) {
@@ -254,12 +275,14 @@ export async function deleteCustomCard(cardKey: string) {
         }
     );
 
-    if (!result) {
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
         // If document doesn't exist, the card is effectively deleted (null)
         return getAppSettings();
     }
 
-    return toAppSettings(result);
+    return toAppSettings(updatedDoc);
 }
 
 export async function getCustomCard(cardKey: string): Promise<CustomCard | null> {
@@ -277,3 +300,111 @@ export async function getCustomCards() {
     const settings = await getAppSettings();
     return settings.customCards;
 }
+
+// Featured Products Service Methods
+
+export async function getFeaturedProducts(): Promise<Product[]> {
+    const settings = await getAppSettings();
+    const productIds = settings.featuredProductIds || [];
+
+    // Fetch all products and filter out invalid ones
+    const products = await Promise.all(
+        productIds.map(async (id) => {
+            try {
+                return await getProduct(id);
+            } catch (error) {
+                // Product not found or invalid ID, filter it out
+                return null;
+            }
+        })
+    );
+
+    return products.filter((p): p is Product => p !== null);
+}
+
+export async function addFeaturedProduct(productId: string) {
+    // Validate product exists
+    await getProduct(productId); // Throws if not found
+
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+
+    const existing = await collection.findOne({});
+
+    // Check if already featured
+    if (existing?.featuredProductIds?.includes(productId)) {
+        throw new AppError(400, 'PRODUCT_ALREADY_FEATURED', {
+            message: 'Product is already in featured list',
+        });
+    }
+
+    // No settings document yet: create one with defaults
+    if (!existing) {
+        const defaultSettings = getDefaultSettings();
+        const docToInsert: Omit<AppSettingsDocument, '_id'> = {
+            ...defaultSettings,
+            featuredProductIds: [productId],
+            createdAt: now,
+            updatedAt: now,
+        };
+
+        const insertResult = await collection.insertOne(docToInsert as any);
+        return toAppSettings({
+            ...docToInsert,
+            _id: insertResult.insertedId,
+        });
+    }
+
+    const result = await collection.findOneAndUpdate(
+        { _id: existing._id },
+        {
+            $addToSet: {
+                featuredProductIds: productId,
+            },
+            $set: {
+                updatedAt: now,
+            },
+        },
+        {
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        throw new AppError(500, 'FAILED_TO_ADD_FEATURED_PRODUCT');
+    }
+
+    return toAppSettings(updatedDoc);
+}
+
+export async function removeFeaturedProduct(productId: string) {
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $pull: {
+                featuredProductIds: productId,
+            },
+            $set: {
+                updatedAt: now,
+            },
+        },
+        {
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        // If document doesn't exist, return default settings
+        return getAppSettings();
+    }
+
+    return toAppSettings(updatedDoc);
+}
+
