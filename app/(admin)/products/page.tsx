@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 import { Product } from '@/lib/product/model/product.model';
+import { ProductCardImage } from './components/ProductCardImage';
 
 interface ProductListResponse {
     products: Product[];
@@ -181,17 +182,9 @@ export default async function ProductsPage() {
                                     {/* Product Image */}
                                     <div className="relative bg-[var(--muted)] overflow-hidden aspect-square">
                                         {product.images && product.images.length > 0 ? (
-                                            <img
-                                                src={product.images[0].url}
-                                                alt={product.name}
-                                                className="w-full h-full object-cover"
-                                            />
+                                            <ProductCardImage src={product.images[0].url} alt={product.name} />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <svg className="w-16 h-16 text-[var(--muted-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                            </div>
+                                            <ProductCardImage alt={product.name} />
                                         )}
                                         {product.offerPrice && (
                                             <div className="absolute top-3 right-3 bg-[var(--danger)] text-[var(--text-inverted)] px-3 py-1 rounded-full text-sm font-bold shadow-lg">
