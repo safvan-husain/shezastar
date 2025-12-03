@@ -11,11 +11,7 @@ export function CardView({ cards }: CardViewProps) {
 
   // Single card layout - horizontal full width
   if (cards.length === 1) {
-    return (
-      <div className="w-full">
-        <CardItem card={cards[0]} layout="horizontal" />
-      </div>
-    );
+    return <CardItem card={cards[0]} layout="horizontal" />;
   }
 
   // Two cards layout - even split
@@ -52,7 +48,7 @@ function CardItem({ card, layout }: CardItemProps) {
     <Link
       href={card.urlLink}
       className={`
-        group relative overflow-hidden rounded-lg 
+        group relative overflow-hidden rounded-lg block
         border border-[var(--storefront-border)] hover:shadow-lg transition-all
         ${isHorizontal ? "min-h-[250px]" : "min-h-[400px]"}
       `}
