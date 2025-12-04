@@ -6,6 +6,7 @@ import {
     handleUpdateCustomCard,
     handleDeleteCustomCard
 } from '@/lib/app-settings/app-settings.controller';
+import { saveImage, deleteImage } from '@/lib/utils/file-upload';
 
 export async function GET(
     request: Request,
@@ -21,9 +22,26 @@ export async function POST(
     { params }: { params: Promise<{ cardKey: string }> }
 ) {
     const { cardKey } = await params;
-    const body = await request.json();
     try {
-        const result = await handleCreateCustomCard(cardKey, body);
+        const formData = await request.formData();
+        const imageFile = formData.get('image') as File | null;
+        const imagePath = formData.get('imagePath') as string | null;
+
+        let finalImagePath = imagePath;
+
+        if (imageFile) {
+            finalImagePath = await saveImage(imageFile);
+        }
+
+        const payload = {
+            title: formData.get('title'),
+            subtitle: formData.get('subtitle'),
+            imagePath: finalImagePath,
+            offerLabel: formData.get('offerLabel'),
+            urlLink: formData.get('urlLink'),
+        };
+
+        const result = await handleCreateCustomCard(cardKey, payload);
         try {
             revalidatePath('/', 'layout');
         } catch (error) {
@@ -48,9 +66,34 @@ export async function PUT(
     { params }: { params: Promise<{ cardKey: string }> }
 ) {
     const { cardKey } = await params;
-    const body = await request.json();
     try {
-        const result = await handleUpdateCustomCard(cardKey, body);
+        const formData = await request.formData();
+        const imageFile = formData.get('image') as File | null;
+        const imagePath = formData.get('imagePath') as string | null;
+
+        let finalImagePath = imagePath;
+
+        if (imageFile) {
+            // Get existing card to delete old image
+            const existingCardResult = await handleGetCustomCard(cardKey);
+            const existingCard = existingCardResult.body;
+
+            if (existingCard && existingCard.imagePath) {
+                await deleteImage(existingCard.imagePath);
+            }
+
+            finalImagePath = await saveImage(imageFile);
+        }
+
+        const payload = {
+            title: formData.get('title'),
+            subtitle: formData.get('subtitle'),
+            imagePath: finalImagePath,
+            offerLabel: formData.get('offerLabel'),
+            urlLink: formData.get('urlLink'),
+        };
+
+        const result = await handleUpdateCustomCard(cardKey, payload);
         try {
             revalidatePath('/', 'layout');
         } catch (error) {
@@ -76,6 +119,14 @@ export async function DELETE(
 ) {
     const { cardKey } = await params;
     try {
+        // Get existing card to delete image
+        const existingCardResult = await handleGetCustomCard(cardKey);
+        const existingCard = existingCardResult.body;
+
+        if (existingCard && existingCard.imagePath) {
+            await deleteImage(existingCard.imagePath);
+        }
+
         const result = await handleDeleteCustomCard(cardKey);
         try {
             revalidatePath('/', 'layout');

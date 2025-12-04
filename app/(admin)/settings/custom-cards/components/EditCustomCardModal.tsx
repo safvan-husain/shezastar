@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { SingleImageUploader } from '@/components/ui/SingleImageUploader';
 import { CustomCard, CustomCards } from '@/lib/app-settings/app-settings.schema';
 
 interface EditCustomCardModalProps {
@@ -26,6 +27,7 @@ export default function EditCustomCardModal({
         offerLabel: '',
         urlLink: '',
     });
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -47,11 +49,16 @@ export default function EditCustomCardModal({
                 urlLink: '',
             });
         }
+        setImageFile(null);
     }, [existingCard, isOpen]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleImageChange = (file: File | null) => {
+        setImageFile(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -61,12 +68,22 @@ export default function EditCustomCardModal({
 
         try {
             const method = existingCard ? 'PUT' : 'POST';
+            const data = new FormData();
+
+            data.append('title', formData.title);
+            data.append('subtitle', formData.subtitle);
+            data.append('offerLabel', formData.offerLabel);
+            data.append('urlLink', formData.urlLink);
+
+            if (imageFile) {
+                data.append('image', imageFile);
+            } else if (formData.imagePath) {
+                data.append('imagePath', formData.imagePath);
+            }
+
             const res = await fetch(`/api/admin/settings/custom-cards/${cardKey}`, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
+                body: data,
             });
 
             if (!res.ok) {
@@ -78,7 +95,8 @@ export default function EditCustomCardModal({
             onSave(result.customCards);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'An unexpected error occurred';
-            setError(message);        } finally {
+            setError(message);
+        } finally {
             setIsLoading(false);
         }
     };
@@ -110,13 +128,10 @@ export default function EditCustomCardModal({
                     placeholder="e.g. Up to 50% off"
                 />
 
-                <Input
-                    label="Image Path"
-                    name="imagePath"
-                    value={formData.imagePath}
-                    onChange={handleChange}
-                    required
-                    placeholder="/images/banner.jpg"
+                <SingleImageUploader
+                    label="Card Image"
+                    value={imageFile ? URL.createObjectURL(imageFile) : formData.imagePath}
+                    onChange={handleImageChange}
                 />
 
                 <Input

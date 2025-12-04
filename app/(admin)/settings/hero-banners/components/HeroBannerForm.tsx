@@ -2,8 +2,9 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
+import { SingleImageUploader } from '@/components/ui/SingleImageUploader';
 import {
     HeroBanner,
     CreateHeroBannerInput,
@@ -22,6 +23,7 @@ interface HeroBannerFormProps {
 export default function HeroBannerForm({ mode, initialData, bannerId, onSuccess }: HeroBannerFormProps) {
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
 
     const defaultValues: HeroBanner = initialData || {
         imagePath: '',
@@ -35,11 +37,30 @@ export default function HeroBannerForm({ mode, initialData, bannerId, onSuccess 
     const {
         register,
         handleSubmit,
+        setValue,
+        watch,
         formState: { errors },
     } = useForm<CreateHeroBannerInput | UpdateHeroBannerInput>({
         resolver: zodResolver(mode === 'create' ? CreateHeroBannerSchema : UpdateHeroBannerSchema),
         defaultValues,
     });
+
+    const currentImagePath = watch('imagePath');
+
+    const handleImageChange = (file: File | null) => {
+        setImageFile(file);
+        if (file) {
+            // We set a temporary path or just keep it empty, validation might fail if empty.
+            // But since we handle FormData, we can bypass validation or ensure schema allows empty if file is present.
+            // However, the schema requires imagePath.
+            // We can set a dummy value to satisfy client-side validation if needed, 
+            // or we rely on the fact that we are sending FormData.
+            // Let's set a dummy value if it's empty.
+            setValue('imagePath', file.name, { shouldValidate: true });
+        } else if (!initialData?.imagePath) {
+            setValue('imagePath', '', { shouldValidate: true });
+        }
+    };
 
     const onSubmit = async (data: CreateHeroBannerInput | UpdateHeroBannerInput) => {
         setIsSubmitting(true);
@@ -51,12 +72,22 @@ export default function HeroBannerForm({ mode, initialData, bannerId, onSuccess 
 
             const method = mode === 'create' ? 'POST' : 'PATCH';
 
+            const formData = new FormData();
+            formData.append('title', data.title);
+            formData.append('description', data.description);
+            formData.append('price', String(data.price));
+            formData.append('offerPrice', String(data.offerPrice));
+            formData.append('offerLabel', data.offerLabel);
+
+            if (imageFile) {
+                formData.append('image', imageFile);
+            } else if (data.imagePath) {
+                formData.append('imagePath', data.imagePath);
+            }
+
             const response = await fetch(url, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
+                body: formData,
             });
 
             const result = await response.json();
@@ -90,19 +121,15 @@ export default function HeroBannerForm({ mode, initialData, bannerId, onSuccess 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                    <label htmlFor="imagePath" className="block text-sm font-medium text-[var(--text-secondary)]">
-                        Image Path
-                    </label>
-                    <input
-                        id="imagePath"
-                        type="text"
-                        {...register('imagePath')}
-                        className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
-                        placeholder="/images/hero.jpg"
+                    <SingleImageUploader
+                        label="Banner Image"
+                        value={imageFile ? URL.createObjectURL(imageFile) : currentImagePath}
+                        onChange={handleImageChange}
+                        error={errors.imagePath?.message}
                     />
-                    {errors.imagePath && (
-                        <p className="text-red-500 text-xs mt-1">{errors.imagePath.message}</p>
-                    )}
+                    {/* Hidden input to register imagePath for validation if needed, 
+                        though SingleImageUploader handles visual feedback. 
+                        We keep it registered via setValue but no visual input. */}
                 </div>
 
                 <div className="space-y-2">

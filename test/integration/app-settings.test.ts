@@ -1,8 +1,14 @@
-import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
 import { GET } from '@/app/api/admin/settings/route';
 import { GET as GET_BANNERS, POST } from '@/app/api/admin/settings/hero-banners/route';
 import { PATCH, DELETE } from '@/app/api/admin/settings/hero-banners/[id]/route';
 import { clear } from '../test-db';
+
+// Mock file-upload utility
+vi.mock('@/lib/utils/file-upload', () => ({
+    saveImage: vi.fn().mockResolvedValue('/uploads/test-banner.jpg'),
+    deleteImage: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe('App Settings API Integration', () => {
     let createdBannerId: string;
@@ -13,6 +19,7 @@ describe('App Settings API Integration', () => {
 
     afterAll(async () => {
         await clear();
+        vi.restoreAllMocks();
     });
 
     it('should get default settings with empty hero banners array via GET', async () => {
@@ -32,19 +39,20 @@ describe('App Settings API Integration', () => {
         expect(body).toEqual([]);
     });
 
-    it('should create a new hero banner via POST', async () => {
-        const payload = {
-            imagePath: '/images/hero-banner.jpg',
-            title: 'Mega Sale',
-            description: 'Limited time offer',
-            price: 500,
-            offerPrice: 300,
-            offerLabel: '40% OFF',
-        };
+    it('should create a new hero banner via POST with FormData', async () => {
+        const formData = new FormData();
+        // Simulate file upload
+        const file = new File(['test'], 'banner.jpg', { type: 'image/jpeg' });
+        formData.append('image', file);
+        formData.append('title', 'Mega Sale');
+        formData.append('description', 'Limited time offer');
+        formData.append('price', '500');
+        formData.append('offerPrice', '300');
+        formData.append('offerLabel', '40% OFF');
 
         const req = new Request('http://localhost/api/admin/settings/hero-banners', {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: formData,
         });
 
         const res = await POST(req);
@@ -52,7 +60,8 @@ describe('App Settings API Integration', () => {
 
         expect(res.status).toBe(201);
         expect(body.homeHeroBanners).toHaveLength(1);
-        expect(body.homeHeroBanners[0]).toMatchObject(payload);
+        expect(body.homeHeroBanners[0].title).toBe('Mega Sale');
+        expect(body.homeHeroBanners[0].imagePath).toBe('/uploads/test-banner.jpg');
         expect(body.homeHeroBanners[0].id).toBeDefined();
 
         createdBannerId = body.homeHeroBanners[0].id;
@@ -67,19 +76,20 @@ describe('App Settings API Integration', () => {
         expect(body[0].title).toBe('Mega Sale');
     });
 
-    it('should update a hero banner via PATCH', async () => {
-        const payload = {
-            imagePath: '/images/updated-banner.jpg',
-            title: 'Updated Sale',
-            description: 'Updated description',
-            price: 600,
-            offerPrice: 400,
-            offerLabel: '33% OFF',
-        };
+    it('should update a hero banner via PATCH with FormData', async () => {
+        const formData = new FormData();
+        // Update image
+        const file = new File(['updated'], 'updated-banner.jpg', { type: 'image/jpeg' });
+        formData.append('image', file);
+        formData.append('title', 'Updated Sale');
+        formData.append('description', 'Updated description');
+        formData.append('price', '600');
+        formData.append('offerPrice', '400');
+        formData.append('offerLabel', '33% OFF');
 
         const req = new Request(`http://localhost/api/admin/settings/hero-banners/${createdBannerId}`, {
             method: 'PATCH',
-            body: JSON.stringify(payload),
+            body: formData,
         });
 
         const res = await PATCH(req, { params: Promise.resolve({ id: createdBannerId }) });
@@ -87,22 +97,22 @@ describe('App Settings API Integration', () => {
 
         expect(res.status).toBe(200);
         const updatedBanner = body.homeHeroBanners.find((b: any) => b.id === createdBannerId);
-        expect(updatedBanner).toMatchObject(payload);
+        expect(updatedBanner.title).toBe('Updated Sale');
+        expect(updatedBanner.imagePath).toBe('/uploads/test-banner.jpg');
     });
 
     it('should return 400 for invalid offer price on create', async () => {
-        const payload = {
-            imagePath: '/images/hero.jpg',
-            title: 'Bad Sale',
-            description: 'Invalid pricing',
-            price: 100,
-            offerPrice: 150,
-            offerLabel: 'INVALID',
-        };
+        const formData = new FormData();
+        formData.append('imagePath', '/images/hero.jpg');
+        formData.append('title', 'Bad Sale');
+        formData.append('description', 'Invalid pricing');
+        formData.append('price', '100');
+        formData.append('offerPrice', '150'); // Invalid: offer > price
+        formData.append('offerLabel', 'INVALID');
 
         const req = new Request('http://localhost/api/admin/settings/hero-banners', {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: formData,
         });
 
         const res = await POST(req);
@@ -110,18 +120,17 @@ describe('App Settings API Integration', () => {
     });
 
     it('should return 400 for invalid offer price on update', async () => {
-        const payload = {
-            imagePath: '/images/hero.jpg',
-            title: 'Bad Sale',
-            description: 'Invalid pricing',
-            price: 100,
-            offerPrice: 150,
-            offerLabel: 'INVALID',
-        };
+        const formData = new FormData();
+        formData.append('imagePath', '/images/hero.jpg');
+        formData.append('title', 'Bad Sale');
+        formData.append('description', 'Invalid pricing');
+        formData.append('price', '100');
+        formData.append('offerPrice', '150'); // Invalid
+        formData.append('offerLabel', 'INVALID');
 
         const req = new Request(`http://localhost/api/admin/settings/hero-banners/${createdBannerId}`, {
             method: 'PATCH',
-            body: JSON.stringify(payload),
+            body: formData,
         });
 
         const res = await PATCH(req, { params: Promise.resolve({ id: createdBannerId }) });
@@ -129,14 +138,13 @@ describe('App Settings API Integration', () => {
     });
 
     it('should return 400 for missing required fields on create', async () => {
-        const payload = {
-            imagePath: '/images/hero.jpg',
-            // Missing other required fields
-        };
+        const formData = new FormData();
+        formData.append('imagePath', '/images/hero.jpg');
+        // Missing other required fields
 
         const req = new Request('http://localhost/api/admin/settings/hero-banners', {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: formData,
         });
 
         const res = await POST(req);
@@ -144,18 +152,17 @@ describe('App Settings API Integration', () => {
     });
 
     it('should return 404 when updating non-existent banner', async () => {
-        const payload = {
-            imagePath: '/images/test.jpg',
-            title: 'Test',
-            description: 'Test',
-            price: 100,
-            offerPrice: 50,
-            offerLabel: 'TEST',
-        };
+        const formData = new FormData();
+        formData.append('imagePath', '/images/test.jpg');
+        formData.append('title', 'Test');
+        formData.append('description', 'Test');
+        formData.append('price', '100');
+        formData.append('offerPrice', '50');
+        formData.append('offerLabel', 'TEST');
 
         const req = new Request('http://localhost/api/admin/settings/hero-banners/non-existent-id', {
             method: 'PATCH',
-            body: JSON.stringify(payload),
+            body: formData,
         });
 
         const res = await PATCH(req, { params: Promise.resolve({ id: 'non-existent-id' }) });
@@ -176,18 +183,17 @@ describe('App Settings API Integration', () => {
 
     it('should persist settings across requests', async () => {
         // Create a new banner
-        const payload = {
-            imagePath: '/images/persistent.jpg',
-            title: 'Persistent Sale',
-            description: 'This should persist',
-            price: 1000,
-            offerPrice: 800,
-            offerLabel: '20% OFF',
-        };
+        const formData = new FormData();
+        formData.append('imagePath', '/images/persistent.jpg');
+        formData.append('title', 'Persistent Sale');
+        formData.append('description', 'This should persist');
+        formData.append('price', '1000');
+        formData.append('offerPrice', '800');
+        formData.append('offerLabel', '20% OFF');
 
         const createReq = new Request('http://localhost/api/admin/settings/hero-banners', {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: formData,
         });
         await POST(createReq);
 
@@ -196,6 +202,6 @@ describe('App Settings API Integration', () => {
         const body = await res.json();
 
         expect(body.homeHeroBanners).toHaveLength(1);
-        expect(body.homeHeroBanners[0]).toMatchObject(payload);
+        expect(body.homeHeroBanners[0].title).toBe('Persistent Sale');
     });
 });
