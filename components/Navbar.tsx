@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Category } from '@/lib/category/model/category.model';
 import Image from 'next/image';
+import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 
 interface NavbarProps {
@@ -15,6 +16,8 @@ export function Navbar({ categories }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { items } = useStorefrontWishlist();
+  const wishlistCount = items.length;
   const { totalItems } = useStorefrontCart();
 
   const handleMouseEnter = (categoryId: string) => {
@@ -84,52 +87,67 @@ export function Navbar({ categories }: NavbarProps) {
                 </svg>
               </button>
 
-              {activeDropdown === category.id && category.subCategories.length > 0 && (
-                <div className="absolute top-full left-0 bg-neutral-600 rounded-md shadow-lg min-w-max">
-                  {hasSubSubCategories(category) ? (
-                    // Multi-column layout for categories with sub-subcategories
-                    <div className="grid grid-cols-4 gap-4 p-6 w-[800px]">
-                      {category.subCategories.map((subCategory) => (
-                        <div key={subCategory.id} className="space-y-2">
-                          <h3 className="text-white px-2 font-medium text-sm uppercase tracking-wide border-b border-gray-700 pb-2">
-                            {subCategory.name}
-                          </h3>
-                          <div className="space-y-1">
-                            {subCategory.subSubCategories.map((subSubCategory) => (
-                              <Link
-                                key={subSubCategory.id}
-                                href={`/category/${subSubCategory.slug ?? subSubCategory.id}`}
-                                className="block px-2 text-gray-300 hover:text-white hover:bg-gray-800 text-sm py-1 transition-colors"
-                              >
-                                {subSubCategory.name}
-                              </Link>
-                            ))}
+                {activeDropdown === category.id && category.subCategories.length > 0 && (
+                  <div className="absolute top-full left-0 bg-neutral-600 rounded-md shadow-lg min-w-max">
+                    {hasSubSubCategories(category) ? (
+                      // Multi-column layout for categories with sub-subcategories
+                      <div className="grid grid-cols-4 gap-4 p-6 w-[800px]">
+                        {category.subCategories.map((subCategory) => (
+                          <div key={subCategory.id} className="space-y-2">
+                            <h3 className="text-white px-2 font-medium text-sm uppercase tracking-wide border-b border-gray-700 pb-2">
+                              {subCategory.name}
+                            </h3>
+                            <div className="space-y-1">
+                              {subCategory.subSubCategories.map((subSubCategory) => (
+                                <Link
+                                  key={subSubCategory.id}
+                                  href={`/category/${subSubCategory.slug ?? subSubCategory.id}`}
+                                  className="block px-2 text-gray-300 hover:text-white hover:bg-gray-800 text-sm py-1 transition-colors"
+                                >
+                                  {subSubCategory.name}
+                                </Link>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    // Simple list for categories with only subcategories
-                    <div className="py-2 w-64">
-                      {category.subCategories.map((subCategory) => (
-                        <Link
-                          key={subCategory.id}
-                          href={`/category/${subCategory.slug ?? subCategory.id}`}
-                          className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
-                        >
-                          {subCategory.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+                        ))}
+                      </div>
+                    ) : (
+                      // Simple list for categories with only subcategories
+                      <div className="py-2 w-64">
+                        {category.subCategories.map((subCategory) => (
+                          <Link
+                            key={subCategory.id}
+                            href={`/category/${subCategory.slug ?? subCategory.id}`}
+                            className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+                          >
+                            {subCategory.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
-          {/* Cart Icon */}
+          {/* Wishlist link */}
           <Link
+            href="/wishlist"
+            className="relative inline-flex items-center justify-center rounded-full bg-white/10 p-2 hover:bg-white/20 transition-colors"
+            aria-label={wishlistCount ? `View wishlist (${wishlistCount} items)` : 'View wishlist'}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.8 4.6a5 5 0 0 0-7.1 0l-1.2 1.2-1.2-1.2a5 5 0 1 0-7.1 7.1l1.2 1.2 7.1 7.1 7.1-7.1 1.2-1.2a5 5 0 0 0 0-7.1z" />
+            </svg>
+            {wishlistCount > 0 && (
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] px-1">
+                {wishlistCount}
+              </span>
+            )}
+          </Link>
+
+           <Link
             href="/cart"
             className="relative flex items-center justify-center p-2 hover:bg-gray-800 rounded transition-colors"
             aria-label="View cart"
@@ -182,6 +200,23 @@ export function Navbar({ categories }: NavbarProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+
+            {/* Quick Links */}
+            <div className="py-2 border-b border-gray-800">
+              <Link
+                href="/wishlist"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-4 py-3 text-sm text-gray-200 hover:text-white hover:bg-gray-800 transition-colors"
+              >
+                <span className="font-medium">Wishlist</span>
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  {wishlistCount > 0 && <span>{wishlistCount} item{wishlistCount === 1 ? '' : 's'}</span>}
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20.8 4.6a5 5 0 0 0-7.1 0l-1.2 1.2-1.2-1.2a5 5 0 1 0-7.1 7.1l1.2 1.2 7.1 7.1 7.1-7.1 1.2-1.2a5 5 0 0 0 0-7.1z" />
+                  </svg>
+                </div>
+              </Link>
             </div>
 
             {/* Categories List */}

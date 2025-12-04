@@ -1,8 +1,11 @@
 'use client';
 
+'use client';
+
 import Image from 'next/image';
 import { useState } from 'react';
 import { Product } from '@/lib/product/model/product.model';
+import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 
 interface ProductDetailsProps {
@@ -14,6 +17,9 @@ function formatPrice(value: number) {
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
+  const { isInWishlist, toggleWishlistItem } = useStorefrontWishlist();
+  const inWishlist = isInWishlist(product.id, []);
+
   const { addToCart, isLoading } = useStorefrontCart();
   const [quantity] = useState<number>(1);
   return (
@@ -146,8 +152,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           <button
             type="button"
             className="py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] font-medium hover:bg-[var(--storefront-button-secondary-hover)] transition"
+            aria-pressed={inWishlist}
+            aria-label={inWishlist ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+            onClick={() => {
+              void toggleWishlistItem(product.id, []);
+            }}
           >
-            Add to Wishlist
+            {inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
           </button>
           <button
             type="button"

@@ -6,9 +6,11 @@ import {
     handleRevokeStorefrontSession,
 } from '@/lib/storefront-session/storefront-session.controller';
 
-const ensureSessionMock = vi.fn();
-const getSessionMock = vi.fn();
-const revokeSessionMock = vi.fn();
+const { ensureSessionMock, getSessionMock, revokeSessionMock } = vi.hoisted(() => ({
+    ensureSessionMock: vi.fn(),
+    getSessionMock: vi.fn(),
+    revokeSessionMock: vi.fn(),
+}));
 
 vi.mock('@/lib/storefront-session/storefront-session.service', () => ({
     ensureStorefrontSession: ensureSessionMock,

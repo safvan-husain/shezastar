@@ -61,6 +61,6 @@ export function toStorefrontSession(doc: StorefrontSessionDocument): StorefrontS
         lastActiveAt: doc.lastActiveAt.toISOString(),
         cartId: doc.cartId?.toHexString(),
         wishlistId: doc.wishlistId?.toHexString(),
-        metadata: doc.metadata,
+        metadata: doc.metadata ?? undefined,
     };
 }

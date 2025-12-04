@@ -44,8 +44,8 @@ describe('Storefront session route handlers', () => {
             new Request('http://localhost/api/storefront/session', { method: 'POST', body: '{}' }),
             ctx
         );
-        expect(postResponse.status).toBe(200);
         const postBody = await postResponse.json();
+        expect(postResponse.status).toBe(200);
         expect(postBody.sessionId).toBeDefined();
 
         const getResponse = await GET(new Request('http://localhost/api/storefront/session'), ctx);

@@ -18,6 +18,7 @@ import {
 import {
     getCurrentStorefrontSessionToken,
     revokeStorefrontSessionCookie,
+    setStorefrontSessionCookie,
 } from './session-token';
 
 const COLLECTION = 'userSessions';
@@ -120,7 +121,9 @@ export async function createStorefrontSession(
     if (!created) {
         throw new AppError(500, 'SESSION_CREATE_FAILED');
     }
-    return toStorefrontSession(created);
+    const storefrontSession = toStorefrontSession(created);
+    await setStorefrontSessionCookie(storefrontSession.sessionId);
+    return storefrontSession;
 }
 
 export async function touchStorefrontSession(
@@ -129,7 +132,9 @@ export async function touchStorefrontSession(
 ): Promise<StorefrontSession> {
     const doc = await findActiveSession(sessionId);
     const updated = await updateActivity(sessionId, doc, metadata);
-    return toStorefrontSession(updated);
+    const storefrontSession = toStorefrontSession(updated);
+    await setStorefrontSessionCookie(storefrontSession.sessionId);
+    return storefrontSession;
 }
 
 export async function ensureStorefrontSession(

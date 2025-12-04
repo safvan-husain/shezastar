@@ -1,9 +1,12 @@
 'use client';
 
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/lib/product/model/product.model';
 import { Card } from './ui/Card';
+import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from './storefront/StorefrontCartProvider';
 
 interface ProductGridProps {
@@ -15,9 +18,19 @@ function formatPrice(value: number) {
   return `AED ${value.toFixed(2)}`;
 }
 
-function HeartIcon() {
+function HeartIcon({ filled }: { filled?: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'black' }}>
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ color: 'black' }}
+    >
       <path d="M20.8 4.6a5 5 0 0 0-7.1 0l-1.2 1.2-1.2-1.2a5 5 0 1 0-7.1 7.1l1.2 1.2 7.1 7.1 7.1-7.1 1.2-1.2a5 5 0 0 0 0-7.1z" />
     </svg>
   );
@@ -55,11 +68,14 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
     );
   }
 
+  const { isInWishlist, toggleWishlistItem } = useStorefrontWishlist();
+
   return (
     <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {products.map((product) => {
         const primaryImage = product.images?.[0];
         const imageIndicators = Math.min(product.images?.length ?? 0, 4);
+        const inWishlist = isInWishlist(product.id, []);
 
         return (
           <Link
@@ -98,9 +114,15 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 <button
                   type="button"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--storefront-button-secondary)] shadow-[var(--storefront-shadow-md)] transition hover:bg-[var(--storefront-button-secondary-hover)]"
-                  aria-label={`Add ${product.name} to wishlist`}
+                  aria-label={inWishlist ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+                  aria-pressed={inWishlist}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void toggleWishlistItem(product.id, []);
+                  }}
                 >
-                  <HeartIcon />
+                  <HeartIcon filled={inWishlist} />
                 </button>
               </div>
 

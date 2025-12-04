@@ -18,7 +18,8 @@ export async function POST(req: Request, ctx: RouteParams) {
     await ctx.params;
     let payload: unknown = {};
     try {
-        payload = await req.json();
+        const parsed = await req.json();
+        payload = parsed ?? {};
     } catch {
         payload = {};
     }

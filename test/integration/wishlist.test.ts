@@ -1,0 +1,150 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { clear } from '../test-db';
+import { GET, POST, DELETE } from '@/app/api/storefront/wishlist/route';
+import { PATCH } from '@/app/api/storefront/wishlist/clear/route';
+import { createProduct } from '@/lib/product/product.service';
+
+const { getStorefrontSessionIdMock } = vi.hoisted(() => ({
+    getStorefrontSessionIdMock: vi.fn(),
+}));
+
+vi.mock('@/lib/storefront-session', () => ({
+    getStorefrontSessionId: getStorefrontSessionIdMock,
+}));
+
+const ctx = { params: Promise.resolve({}) };
+
+describe('Storefront wishlist route handlers', () => {
+    beforeEach(async () => {
+        await clear();
+        getStorefrontSessionIdMock.mockReset();
+        getStorefrontSessionIdMock.mockResolvedValue('session-integration');
+    });
+
+    it('adds an item via POST and returns it via GET', async () => {
+        const product = await createProduct({
+            name: 'Wishlist Product',
+            basePrice: 100,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+        });
+
+        const postResponse = await POST(
+            new Request('http://localhost/api/storefront/wishlist', {
+                method: 'POST',
+                body: JSON.stringify({
+                    productId: product.id,
+                    selectedVariantItemIds: [],
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }),
+            ctx
+        );
+
+        expect(postResponse.status).toBe(200);
+        const postBody = await postResponse.json();
+        expect(postBody.items).toHaveLength(1);
+        expect(postBody.items[0].productId).toBe(product.id);
+
+        const getResponse = await GET(
+            new Request('http://localhost/api/storefront/wishlist'),
+            ctx
+        );
+        expect(getResponse.status).toBe(200);
+        const getBody = await getResponse.json();
+        expect(getBody.items).toHaveLength(1);
+        expect(getBody.items[0].productId).toBe(product.id);
+    });
+
+    it('removes an item via DELETE with JSON body', async () => {
+        const product = await createProduct({
+            name: 'Wishlist Product',
+            basePrice: 100,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+        });
+
+        await POST(
+            new Request('http://localhost/api/storefront/wishlist', {
+                method: 'POST',
+                body: JSON.stringify({
+                    productId: product.id,
+                    selectedVariantItemIds: [],
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }),
+            ctx
+        );
+
+        const deleteResponse = await DELETE(
+            new Request('http://localhost/api/storefront/wishlist', {
+                method: 'DELETE',
+                body: JSON.stringify({
+                    productId: product.id,
+                    selectedVariantItemIds: [],
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }),
+            ctx
+        );
+
+        expect(deleteResponse.status).toBe(200);
+        const deleteBody = await deleteResponse.json();
+        expect(deleteBody.items).toHaveLength(0);
+    });
+
+    it('clears wishlist via PATCH', async () => {
+        const product = await createProduct({
+            name: 'Wishlist Product',
+            basePrice: 100,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+        });
+
+        await POST(
+            new Request('http://localhost/api/storefront/wishlist', {
+                method: 'POST',
+                body: JSON.stringify({
+                    productId: product.id,
+                    selectedVariantItemIds: [],
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }),
+            ctx
+        );
+
+        const patchResponse = await PATCH(
+            new Request('http://localhost/api/storefront/wishlist/clear', {
+                method: 'PATCH',
+            }),
+            ctx
+        );
+
+        expect(patchResponse.status).toBe(200);
+        const patchBody = await patchResponse.json();
+        expect(patchBody.items).toHaveLength(0);
+    });
+
+    it('returns 401 when session is missing', async () => {
+        getStorefrontSessionIdMock.mockResolvedValueOnce(null);
+
+        const response = await GET(
+            new Request('http://localhost/api/storefront/wishlist'),
+            ctx
+        );
+
+        expect(response.status).toBe(401);
+    });
+});
