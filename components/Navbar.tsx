@@ -71,24 +71,24 @@ export function Navbar({ categories }: NavbarProps) {
               onMouseEnter={() => handleMouseEnter(category.id)}
               onMouseLeave={handleMouseLeave}
             >
-              <button className="px-4 py-3 text-sm font-medium uppercase tracking-wide hover:bg-gray-800 transition-colors flex items-center">
+              <button className="px-4 py-3 text-xs font-medium uppercase tracking-wide hover:text-amber-400 transition-colors flex items-center">
                 {category.name}
                 <svg
-                  className="ml-1 h-3 w-3 fill-current"
+                  className="ml-1 h-4 w-4 fill-current"
                   viewBox="0 0 20 20"
                 >
-                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                  <path d="M10 14l-6-6h12z" />
                 </svg>
               </button>
 
               {activeDropdown === category.id && category.subCategories.length > 0 && (
-                <div className="absolute top-full left-0 bg-gray-900 shadow-lg min-w-max">
+                <div className="absolute top-full left-0 bg-neutral-600 rounded-md shadow-lg min-w-max">
                   {hasSubSubCategories(category) ? (
                     // Multi-column layout for categories with sub-subcategories
-                    <div className="grid grid-cols-4 gap-8 p-6 w-[800px]">
+                    <div className="grid grid-cols-4 gap-4 p-6 w-[800px]">
                       {category.subCategories.map((subCategory) => (
                         <div key={subCategory.id} className="space-y-2">
-                          <h3 className="text-white font-medium text-sm uppercase tracking-wide border-b border-gray-700 pb-2">
+                          <h3 className="text-white px-2 font-medium text-sm uppercase tracking-wide border-b border-gray-700 pb-2">
                             {subCategory.name}
                           </h3>
                           <div className="space-y-1">
@@ -96,7 +96,7 @@ export function Navbar({ categories }: NavbarProps) {
                               <Link
                                 key={subSubCategory.id}
                                 href={`/category/${subSubCategory.slug ?? subSubCategory.id}`}
-                                className="block text-gray-300 hover:text-white text-sm py-1 transition-colors"
+                                className="block px-2 text-gray-300 hover:text-white hover:bg-gray-800 text-sm py-1 transition-colors"
                               >
                                 {subSubCategory.name}
                               </Link>
