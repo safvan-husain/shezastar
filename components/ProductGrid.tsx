@@ -97,13 +97,6 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 >
                   <HeartIcon />
                 </button>
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-grey-400 shadow-[var(--storefront-shadow-md)] transition hover:bg-[var(--storefront-button-secondary-hover)]"
-                  aria-label={`Compare ${product.name}`}
-                >
-                  <CompareIcon />
-                </button>
               </div>
 
               {imageIndicators > 1 && (

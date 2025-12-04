@@ -204,15 +204,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   }
 
   const { products, error: productsError } = await fetchProducts(match.filterId);
-  const description = buildDescription(match.level, match.title, products.length > 0);
 
   return (
-    <div className="container mx-auto px-4 py-12 space-y-8">
+    <div className="container mx-auto px-4 py-12 space-y-8 mt-24">
       {productsError && <CategoryErrorHandler error={productsError} />}
       <div className="space-y-3">
         {match.breadcrumbs.length > 0 && <Breadcrumbs items={match.breadcrumbs} />}
-        <h1 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)]">{match.title}</h1>
-        <p className="text-[var(--text-secondary)]">{description}</p>
       </div>
 
       <ProductGrid
