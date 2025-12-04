@@ -46,6 +46,8 @@ cp .env.local.example .env.local
 MONGODB_URI=mongodb://localhost:27017
 DB_NAME=shezastar
 NEXT_PUBLIC_API_URL=http://localhost:3000
+ADMIN_SESSION_SECRET=replace-with-admin-secret
+USER_SESSION_SECRET=replace-with-storefront-secret
 ```
 
 4. Start the development server:
