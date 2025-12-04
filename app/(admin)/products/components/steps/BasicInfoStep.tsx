@@ -9,10 +9,12 @@ interface BasicInfoStepProps {
     description: string;
     basePrice: string;
     offerPrice: string;
+    stockCount: string;
     onNameChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
     onBasePriceChange: (value: string) => void;
     onOfferPriceChange: (value: string) => void;
+    onStockCountChange: (value: string) => void;
 }
 
 export function BasicInfoStep({
@@ -20,10 +22,12 @@ export function BasicInfoStep({
     description,
     basePrice,
     offerPrice,
+    stockCount,
     onNameChange,
     onDescriptionChange,
     onBasePriceChange,
     onOfferPriceChange,
+    onStockCountChange,
 }: BasicInfoStepProps) {
     return (
         <Card>
@@ -75,6 +79,20 @@ export function BasicInfoStep({
                         step="0.01"
                         min="0"
                     />
+                </div>
+                <div>
+                    <Input
+                        type="number"
+                        label="Stock Count (optional)"
+                        value={stockCount}
+                        onChange={(e) => onStockCountChange(e.target.value)}
+                        placeholder="Leave empty for unlimited stock"
+                        step="1"
+                        min="0"
+                    />
+                    <p className="text-xs text-[var(--muted-foreground)] mt-2">
+                        Track inventory by entering available units. Leave empty if stock is not tracked.
+                    </p>
                 </div>
                 {offerPrice && parseFloat(offerPrice) < parseFloat(basePrice) && (
                     <div className="bg-[var(--success)]/10 border border-[var(--success)] text-[var(--success)] px-4 py-3 rounded-lg flex items-center gap-2">

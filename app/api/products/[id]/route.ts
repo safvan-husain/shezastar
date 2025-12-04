@@ -34,6 +34,7 @@ export async function PUT(
             const description = formData.get('description') as string | null;
             const basePrice = formData.get('basePrice') ? parseFloat(formData.get('basePrice') as string) : undefined;
             const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
+            const stockCount = formData.get('stockCount') ? parseFloat(formData.get('stockCount') as string) : undefined;
             const variants = formData.get('variants') ? JSON.parse(formData.get('variants') as string) : undefined;
             const subCategoryIds = formData.get('subCategoryIds') ? JSON.parse(formData.get('subCategoryIds') as string) : undefined;
             const installationService = formData.get('installationService') ? JSON.parse(formData.get('installationService') as string) : undefined;
@@ -41,16 +42,16 @@ export async function PUT(
 
             // Handle new image uploads
             const newImageFiles = formData.getAll('newImages') as File[];
-            
+
             let uploadedImages: any[] = [];
             if (newImageFiles.length > 0) {
                 const urls = await saveImages(newImageFiles);
-                
+
                 // Map uploaded URLs with metadata
                 uploadedImages = urls.map((url, index) => {
                     const metaStr = formData.get(`newImageMeta_${index}`) as string;
                     const meta = metaStr ? JSON.parse(metaStr) : {};
-                    
+
                     return {
                         id: nanoid(),
                         url,
@@ -68,6 +69,7 @@ export async function PUT(
             if (description !== null) productData.description = description;
             if (basePrice !== undefined) productData.basePrice = basePrice;
             if (offerPrice !== undefined) productData.offerPrice = offerPrice;
+            if (stockCount !== undefined) productData.stockCount = stockCount;
             if (variants !== undefined) productData.variants = variants;
             if (subCategoryIds !== undefined) productData.subCategoryIds = subCategoryIds;
             if (installationService !== undefined) productData.installationService = installationService;

@@ -47,6 +47,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [description, setDescription] = useState(initialData?.description || '');
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
     const [offerPrice, setOfferPrice] = useState(initialData?.offerPrice || '');
+    const [stockCount, setStockCount] = useState(initialData?.stockCount?.toString() || '');
     const [images, setImages] = useState<ImageFile[]>(
         initialData?.images?.map((img: any) => ({
             id: img.id,
@@ -82,6 +83,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
             if (description) formData.append('description', description);
             formData.append('basePrice', basePrice);
             if (offerPrice) formData.append('offerPrice', offerPrice);
+            if (stockCount) formData.append('stockCount', stockCount);
             formData.append('variants', JSON.stringify(variants));
             formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
 
@@ -239,10 +241,12 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         description={description}
                         basePrice={basePrice}
                         offerPrice={offerPrice}
+                        stockCount={stockCount}
                         onNameChange={setName}
                         onDescriptionChange={setDescription}
                         onBasePriceChange={setBasePrice}
                         onOfferPriceChange={setOfferPrice}
+                        onStockCountChange={setStockCount}
                     />
                 )}
 
@@ -293,6 +297,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         description={description}
                         basePrice={basePrice}
                         offerPrice={offerPrice}
+                        stockCount={stockCount}
                         images={images}
                         variants={variants}
                         imageMappings={imageMappings}

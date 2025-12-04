@@ -12,6 +12,7 @@ export interface ProductDocument {
     variants: ProductVariant[];
     subCategoryIds: string[];
     installationService?: InstallationService;
+    stockCount?: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -26,12 +27,13 @@ export interface Product {
     variants: ProductVariant[];
     subCategoryIds: string[];
     installationService?: InstallationService;
+    stockCount?: number;
     createdAt: string;
     updatedAt: string;
 }
 
 export function toProduct(doc: ProductDocument): Product {
-    return {
+    const product: Product = {
         id: doc._id.toString(),
         name: doc.name,
         description: doc.description,
@@ -44,6 +46,13 @@ export function toProduct(doc: ProductDocument): Product {
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
+
+    // Only include stockCount if it's defined
+    if (doc.stockCount !== undefined && doc.stockCount !== null) {
+        product.stockCount = doc.stockCount;
+    }
+
+    return product;
 }
 
 export function toProducts(docs: ProductDocument[]): Product[] {

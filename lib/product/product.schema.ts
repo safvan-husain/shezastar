@@ -33,6 +33,7 @@ export const CreateProductSchema = z.object({
     variants: z.array(ProductVariantSchema).default([]),
     subCategoryIds: z.array(z.string()).default([]),
     installationService: InstallationServiceSchema.optional(),
+    stockCount: z.number().int().min(0, 'Stock count must be a non-negative integer').optional(),
 });
 
 export const UpdateProductSchema = z.object({
@@ -44,6 +45,7 @@ export const UpdateProductSchema = z.object({
     variants: z.array(ProductVariantSchema).optional(),
     subCategoryIds: z.array(z.string()).optional(),
     installationService: InstallationServiceSchema.optional(),
+    stockCount: z.number().int().min(0, 'Stock count must be a non-negative integer').optional(),
 });
 
 export const ImageMappingSchema = z.object({

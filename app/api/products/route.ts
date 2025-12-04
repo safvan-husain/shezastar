@@ -30,6 +30,7 @@ export async function POST(req: Request) {
             const description = formData.get('description') as string | null;
             const basePrice = parseFloat(formData.get('basePrice') as string);
             const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
+            const stockCount = formData.get('stockCount') ? parseFloat(formData.get('stockCount') as string) : undefined;
             const variants = JSON.parse(formData.get('variants') as string || '[]');
             const subCategoryIds = JSON.parse(formData.get('subCategoryIds') as string || '[]');
             const installationService = formData.get('installationService') ? JSON.parse(formData.get('installationService') as string) : undefined;
@@ -38,16 +39,16 @@ export async function POST(req: Request) {
             // Handle new image uploads
             const newImagesCount = parseInt(formData.get('newImagesCount') as string || '0');
             const newImageFiles = formData.getAll('newImages') as File[];
-            
+
             let uploadedImages: any[] = [];
             if (newImageFiles.length > 0) {
                 const urls = await saveImages(newImageFiles);
-                
+
                 // Map uploaded URLs with metadata
                 uploadedImages = urls.map((url, index) => {
                     const metaStr = formData.get(`newImageMeta_${index}`) as string;
                     const meta = metaStr ? JSON.parse(metaStr) : {};
-                    
+
                     return {
                         id: nanoid(),
                         url,
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
                 description,
                 basePrice,
                 offerPrice,
+                stockCount,
                 images: allImages,
                 variants,
                 subCategoryIds,

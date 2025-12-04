@@ -167,3 +167,142 @@ describe('Products API Integration - Category filtering', () => {
         expect(names).not.toContain('Integration Parent Product');
     });
 });
+
+describe('Products API Integration - Stock Count', () => {
+    let productWithStockId: string;
+    let productWithoutStockId: string;
+
+    beforeAll(async () => {
+        await clear();
+    });
+
+    it('should create a product with stock count', async () => {
+        const productData = {
+            name: 'Product with Stock',
+            basePrice: 50.00,
+            stockCount: 100,
+            images: [],
+            variants: []
+        };
+
+        const req = new Request('http://localhost/api/products', {
+            method: 'POST',
+            body: JSON.stringify(productData),
+        });
+
+        const res = await createProduct(req);
+        const body = await res.json();
+
+        expect(res.status).toBe(201);
+        expect(body.stockCount).toBe(100);
+        expect(body.name).toBe(productData.name);
+        productWithStockId = body.id;
+    });
+
+    it('should persist stock count when fetching product', async () => {
+        const req = new Request(`http://localhost/api/products/${productWithStockId}`);
+        const params = Promise.resolve({ id: productWithStockId });
+        const res = await getProduct(req, { params });
+        const body = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(body.stockCount).toBe(100);
+    });
+
+    it('should create a product without stock count', async () => {
+        const productData = {
+            name: 'Product without Stock Tracking',
+            basePrice: 75.00,
+            images: [],
+            variants: []
+        };
+
+        const req = new Request('http://localhost/api/products', {
+            method: 'POST',
+            body: JSON.stringify(productData),
+        });
+
+        const res = await createProduct(req);
+        const body = await res.json();
+
+        expect(res.status).toBe(201);
+        expect(body.stockCount).toBeUndefined();
+        productWithoutStockId = body.id;
+    });
+
+    it('should update product stock count', async () => {
+        const updateData = {
+            stockCount: 50
+        };
+
+        const req = new Request(`http://localhost/api/products/${productWithStockId}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData),
+        });
+        const params = Promise.resolve({ id: productWithStockId });
+        const res = await updateProduct(req, { params });
+        const body = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(body.stockCount).toBe(50);
+    });
+
+    it('should accept zero stock count', async () => {
+        const updateData = {
+            stockCount: 0
+        };
+
+        const req = new Request(`http://localhost/api/products/${productWithStockId}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData),
+        });
+        const params = Promise.resolve({ id: productWithStockId });
+        const res = await updateProduct(req, { params });
+        const body = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(body.stockCount).toBe(0);
+    });
+
+    it('should reject negative stock count', async () => {
+        const productData = {
+            name: 'Invalid Product',
+            basePrice: 25.00,
+            stockCount: -10,
+            images: [],
+            variants: []
+        };
+
+        const req = new Request('http://localhost/api/products', {
+            method: 'POST',
+            body: JSON.stringify(productData),
+        });
+
+        const res = await createProduct(req);
+
+        expect(res.status).toBe(400);
+    });
+
+    it('should reject decimal stock count', async () => {
+        const productData = {
+            name: 'Invalid Product',
+            basePrice: 25.00,
+            stockCount: 10.5,
+            images: [],
+            variants: []
+        };
+
+        const req = new Request('http://localhost/api/products', {
+            method: 'POST',
+            body: JSON.stringify(productData),
+        });
+
+        const res = await createProduct(req);
+
+        expect(res.status).toBe(400);
+    });
+
+    afterAll(async () => {
+        await clear();
+    });
+});
