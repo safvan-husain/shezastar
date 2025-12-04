@@ -8,33 +8,36 @@ import {
     handleUpdateCartItem,
 } from '@/lib/cart/cart.controller';
 
-const getCartForCurrentSessionMock = vi.fn();
-const ensureCartForCurrentSessionMock = vi.fn();
-const addItemToCartMock = vi.fn();
-const updateCartItemQuantityMock = vi.fn();
-const removeItemFromCartMock = vi.fn();
-const clearCartMock = vi.fn();
-
 vi.mock('@/lib/cart/cart.service', () => ({
-    getCartForCurrentSession: getCartForCurrentSessionMock,
-    ensureCartForCurrentSession: ensureCartForCurrentSessionMock,
-    addItemToCart: addItemToCartMock,
-    updateCartItemQuantity: updateCartItemQuantityMock,
-    removeItemFromCart: removeItemFromCartMock,
-    clearCart: clearCartMock,
+    getCartForCurrentSession: vi.fn(),
+    ensureCartForCurrentSession: vi.fn(),
+    addItemToCart: vi.fn(),
+    updateCartItemQuantity: vi.fn(),
+    removeItemFromCart: vi.fn(),
+    clearCart: vi.fn(),
 }));
-
-const getStorefrontSessionIdMock = vi.fn();
-const ensureStorefrontSessionMock = vi.fn();
 
 vi.mock('@/lib/storefront-session', () => ({
-    getStorefrontSessionId: getStorefrontSessionIdMock,
-    ensureStorefrontSession: ensureStorefrontSessionMock,
+    getStorefrontSessionId: vi.fn(),
+    ensureStorefrontSession: vi.fn(),
 }));
+
+// Import the mocked modules to get references to the mock functions
+const cartService = await import('@/lib/cart/cart.service');
+const storefrontSession = await import('@/lib/storefront-session');
 
 describe('Cart controller', () => {
     it('returns an empty cart when no session cart exists', async () => {
-        getCartForCurrentSessionMock.mockResolvedValueOnce(null);
+        vi.mocked(cartService.getCartForCurrentSession).mockResolvedValueOnce(null);
+        vi.mocked(cartService.ensureCartForCurrentSession).mockResolvedValueOnce({
+            id: 'cart-1',
+            sessionId: 'session-123',
+            items: [],
+            subtotal: 0,
+            totalItems: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
 
         const result = await handleGetCartForCurrentSession();
         expect(result.status).toBe(200);
@@ -43,7 +46,7 @@ describe('Cart controller', () => {
     });
 
     it('adds an item to cart for the current session', async () => {
-        ensureStorefrontSessionMock.mockResolvedValueOnce({
+        vi.mocked(storefrontSession.ensureStorefrontSession).mockResolvedValueOnce({
             sessionId: 'session-123',
             status: 'active',
             createdAt: new Date().toISOString(),
@@ -52,7 +55,7 @@ describe('Cart controller', () => {
             lastActiveAt: new Date().toISOString(),
         });
 
-        addItemToCartMock.mockResolvedValueOnce({
+        vi.mocked(cartService.addItemToCart).mockResolvedValueOnce({
             id: 'cart-1',
             sessionId: 'session-123',
             items: [
@@ -78,7 +81,7 @@ describe('Cart controller', () => {
         });
 
         expect(response.status).toBe(200);
-        expect(addItemToCartMock).toHaveBeenCalledWith({
+        expect(cartService.addItemToCart).toHaveBeenCalledWith({
             sessionId: 'session-123',
             productId: 'prod-1',
             selectedVariantItemIds: [],
@@ -97,7 +100,7 @@ describe('Cart controller', () => {
     });
 
     it('returns 404 when updating without a session id', async () => {
-        getStorefrontSessionIdMock.mockResolvedValueOnce(null);
+        vi.mocked(storefrontSession.getStorefrontSessionId).mockResolvedValueOnce(null);
 
         const response = await handleUpdateCartItem({
             productId: 'prod-1',
@@ -110,8 +113,8 @@ describe('Cart controller', () => {
     });
 
     it('updates cart item quantity when session id is present', async () => {
-        getStorefrontSessionIdMock.mockResolvedValueOnce('session-123');
-        updateCartItemQuantityMock.mockResolvedValueOnce({
+        vi.mocked(storefrontSession.getStorefrontSessionId).mockResolvedValueOnce('session-123');
+        vi.mocked(cartService.updateCartItemQuantity).mockResolvedValueOnce({
             id: 'cart-1',
             sessionId: 'session-123',
             items: [
@@ -137,7 +140,7 @@ describe('Cart controller', () => {
         });
 
         expect(response.status).toBe(200);
-        expect(updateCartItemQuantityMock).toHaveBeenCalledWith({
+        expect(cartService.updateCartItemQuantity).toHaveBeenCalledWith({
             sessionId: 'session-123',
             productId: 'prod-1',
             selectedVariantItemIds: [],
@@ -146,8 +149,8 @@ describe('Cart controller', () => {
     });
 
     it('removes a cart item when session id is present', async () => {
-        getStorefrontSessionIdMock.mockResolvedValueOnce('session-123');
-        removeItemFromCartMock.mockResolvedValueOnce({
+        vi.mocked(storefrontSession.getStorefrontSessionId).mockResolvedValueOnce('session-123');
+        vi.mocked(cartService.removeItemFromCart).mockResolvedValueOnce({
             id: 'cart-1',
             sessionId: 'session-123',
             items: [],
@@ -167,8 +170,8 @@ describe('Cart controller', () => {
     });
 
     it('clears the cart when session id is present', async () => {
-        getStorefrontSessionIdMock.mockResolvedValueOnce('session-123');
-        clearCartMock.mockResolvedValueOnce({
+        vi.mocked(storefrontSession.getStorefrontSessionId).mockResolvedValueOnce('session-123');
+        vi.mocked(cartService.clearCart).mockResolvedValueOnce({
             id: 'cart-1',
             sessionId: 'session-123',
             items: [],
@@ -181,7 +184,7 @@ describe('Cart controller', () => {
         const response = await handleClearCart({});
 
         expect(response.status).toBe(200);
-        expect(clearCartMock).toHaveBeenCalledWith('session-123');
+        expect(cartService.clearCart).toHaveBeenCalledWith('session-123');
         expect(response.body.items).toHaveLength(0);
     });
 });

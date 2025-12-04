@@ -19,20 +19,12 @@ import { getStorefrontSessionId, ensureStorefrontSession } from '@/lib/storefron
 export async function handleGetCartForCurrentSession() {
     try {
         const cart = await getCartForCurrentSession();
-        if (!cart) {
-            const emptyCart = CartSchema.parse({
-                id: 'anonymous',
-                sessionId: '',
-                items: [],
-                subtotal: 0,
-                totalItems: 0,
-                createdAt: new Date(0).toISOString(),
-                updatedAt: new Date(0).toISOString(),
-            });
-            return { status: 200, body: emptyCart };
+        if (cart) {
+            return { status: 200, body: CartSchema.parse(cart) };
         }
 
-        return { status: 200, body: CartSchema.parse(cart) };
+        const ensuredCart = await ensureCartForCurrentSession();
+        return { status: 200, body: CartSchema.parse(ensuredCart) };
     } catch (err) {
         return catchError(err);
     }
