@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Category } from '@/lib/category/model/category.model';
 import Image from 'next/image';
+import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 
 interface NavbarProps {
   categories: Category[];
@@ -14,6 +15,7 @@ export function Navbar({ categories }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { totalItems } = useStorefrontCart();
 
   const handleMouseEnter = (categoryId: string) => {
     if (timeoutRef.current) {
@@ -62,8 +64,9 @@ export function Navbar({ categories }: NavbarProps) {
           <Image alt='shazstar logo' width={100} height={100} src={"/brand-icon.png"} />
         </Link>
         
-        {/* Desktop Menu */}
-        <div className="hidden lg:flex items-center h-12 pb-2">
+        <div className="flex items-center gap-4">
+          {/* Desktop Menu */}
+          <div className="hidden lg:flex items-center h-12 pb-2">
           {categories.map((category) => (
             <div
               key={category.id}
@@ -123,18 +126,37 @@ export function Navbar({ categories }: NavbarProps) {
               )}
             </div>
           ))}
-        </div>
+          </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className="lg:hidden p-2 hover:bg-gray-800 rounded transition-colors"
-          aria-label="Open menu"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+          {/* Cart Icon */}
+          <Link
+            href="/cart"
+            className="relative flex items-center justify-center p-2 hover:bg-gray-800 rounded transition-colors"
+            aria-label="View cart"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="9" cy="21" r="1.5" />
+              <circle cx="18" cy="21" r="1.5" />
+              <path d="M2.5 3h2l2.2 12.6a1.5 1.5 0 0 0 1.5 1.2h9.4a1.5 1.5 0 0 0 1.5-1.2l1.2-7.6H6.2" />
+            </svg>
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-500 text-xs font-semibold px-1.5 py-0.5">
+                {totalItems}
+              </span>
+            )}
+          </Link>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden p-2 hover:bg-gray-800 rounded transition-colors"
+            aria-label="Open menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}

@@ -1,5 +1,9 @@
+'use client';
+
 import Image from 'next/image';
+import { useState } from 'react';
 import { Product } from '@/lib/product/model/product.model';
+import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 
 interface ProductDetailsProps {
   product: Product;
@@ -10,6 +14,8 @@ function formatPrice(value: number) {
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
+  const { addToCart, isLoading } = useStorefrontCart();
+  const [quantity] = useState<number>(1);
   return (
     <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
       {/* Image Gallery */}
@@ -125,7 +131,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         {/* Add to Cart Button */}
         <button
           type="button"
-          className="w-full py-4 rounded-lg bg-[var(--storefront-button-primary)] text-white font-semibold hover:bg-[var(--storefront-button-primary-hover)] transition"
+          className="w-full py-4 rounded-lg bg-[var(--storefront-button-primary)] text-white font-semibold hover:bg-[var(--storefront-button-primary-hover)] transition disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={isLoading}
+          onClick={async () => {
+            await addToCart(product.id, [], quantity);
+          }}
+          aria-label={`Add ${product.name} to cart`}
         >
           Add to Cart
         </button>

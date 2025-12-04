@@ -1,7 +1,10 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/lib/product/model/product.model';
 import { Card } from './ui/Card';
+import { useStorefrontCart } from './storefront/StorefrontCartProvider';
 
 interface ProductGridProps {
   products: Product[];
@@ -42,6 +45,8 @@ function CartIcon() {
 }
 
 export function ProductGrid({ products, emptyMessage = 'No products available yet.' }: ProductGridProps) {
+  const { addToCart, isLoading } = useStorefrontCart();
+
   if (products.length === 0) {
     return (
       <Card className="text-center py-12">
@@ -133,9 +138,15 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
 
                 <button
                   type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-white disabled:opacity-60 disabled:cursor-not-allowed"
                   aria-label={`Add ${product.name} to cart`}
                   style={{ backgroundColor: '#e5e7eb' }}
+                  disabled={isLoading}
+                  onClick={async (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    await addToCart(product.id, []);
+                  }}
                 >
                   <CartIcon />
                 </button>
