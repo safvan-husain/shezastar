@@ -17,8 +17,8 @@ import { AppError } from '@/lib/errors/app-error';
 
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
-export async function ensureStorefrontSessionAction(): Promise<StorefrontSession> {
-    // Get metadata from headers
+// Helper to get or create session WITHOUT setting cookies (safe for layouts)
+export async function getOrCreateStorefrontSession(): Promise<StorefrontSession> {
     const headerStore = await headers();
     const userAgent = headerStore.get('user-agent') ?? undefined;
     const ipAddressRaw = headerStore.get('x-forwarded-for') ?? undefined;
@@ -26,43 +26,61 @@ export async function ensureStorefrontSessionAction(): Promise<StorefrontSession
     
     const metadata = { userAgent, ipAddress };
 
-    // Check if cookie exists
     const token = await getCurrentStorefrontSessionToken();
 
     if (token) {
-        // Try to touch existing session
         try {
-            const session = await touchStorefrontSession(token.sessionId, metadata);
+            // Pass false to NOT set cookie during layout render
+            const session = await touchStorefrontSession(token.sessionId, metadata, false);
             return session;
         } catch (err) {
-            // If session not found or expired, create new one with same token
             if (
                 err instanceof AppError &&
                 ['SESSION_NOT_FOUND', 'SESSION_REVOKED', 'SESSION_EXPIRED'].includes(err.code)
             ) {
-                return await createStorefrontSession(token.sessionId, metadata);
+                return await createStorefrontSession(token.sessionId, metadata, false);
             }
             throw err;
         }
     }
 
-    // No cookie exists - create new session ID, cookie, and DB record
+    // No cookie - create session in DB only (cookie must be set elsewhere)
     const sessionId = randomBytes(16).toString('hex');
+    const session = await createStorefrontSession(sessionId, metadata, false);
     
-    const tokenValue = createStorefrontSessionToken(sessionId);
-    const cookieStore = await cookies();
-    
-    cookieStore.set({
-        name: STOREFRONT_COOKIE_NAME,
-        value: tokenValue,
-        maxAge: SESSION_DURATION_SECONDS,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        sameSite: 'lax',
-    });
+    return session;
+}
 
-    const session = await createStorefrontSession(sessionId, metadata);
+// Server Action that CAN set cookies (must be invoked as action, not called during render)
+export async function ensureStorefrontSessionAction(): Promise<StorefrontSession> {
+    const headerStore = await headers();
+    const userAgent = headerStore.get('user-agent') ?? undefined;
+    const ipAddressRaw = headerStore.get('x-forwarded-for') ?? undefined;
+    const ipAddress = ipAddressRaw?.split(',')[0]?.trim() ?? undefined;
+    
+    const metadata = { userAgent, ipAddress };
+
+    const token = await getCurrentStorefrontSessionToken();
+
+    if (token) {
+        try {
+            // Pass true to set cookie in Server Action
+            const session = await touchStorefrontSession(token.sessionId, metadata, true);
+            return session;
+        } catch (err) {
+            if (
+                err instanceof AppError &&
+                ['SESSION_NOT_FOUND', 'SESSION_REVOKED', 'SESSION_EXPIRED'].includes(err.code)
+            ) {
+                return await createStorefrontSession(token.sessionId, metadata, true);
+            }
+            throw err;
+        }
+    }
+
+    // No cookie - create new session and set cookie
+    const sessionId = randomBytes(16).toString('hex');
+    const session = await createStorefrontSession(sessionId, metadata, true);
     
     return session;
 }

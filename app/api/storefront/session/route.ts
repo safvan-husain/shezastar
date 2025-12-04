@@ -1,34 +1,15 @@
 import { NextResponse } from 'next/server';
+import { ensureStorefrontSession } from '@/lib/storefront-session';
 
-import {
-    handleEnsureStorefrontSession,
-    handleGetStorefrontSession,
-    handleRevokeStorefrontSession,
-} from '@/lib/storefront-session/storefront-session.controller';
-
-type RouteParams = { params: Promise<Record<string, string>> };
-
-export async function GET(req: Request, ctx: RouteParams) {
-    await ctx.params;
-    const { status, body } = await handleGetStorefrontSession();
-    return NextResponse.json(body, { status });
-}
-
-export async function POST(req: Request, ctx: RouteParams) {
-    await ctx.params;
-    let payload: unknown = {};
+export async function GET() {
     try {
-        const parsed = await req.json();
-        payload = parsed ?? {};
-    } catch {
-        payload = {};
+        const session = await ensureStorefrontSession();
+        return NextResponse.json({ sessionId: session.sessionId });
+    } catch (error) {
+        console.error('Failed to ensure session:', error);
+        return NextResponse.json(
+            { error: 'Failed to create session' },
+            { status: 500 }
+        );
     }
-    const { status, body } = await handleEnsureStorefrontSession(payload);
-    return NextResponse.json(body, { status });
-}
-
-export async function DELETE(req: Request, ctx: RouteParams) {
-    await ctx.params;
-    const { status, body } = await handleRevokeStorefrontSession();
-    return NextResponse.json(body, { status });
 }

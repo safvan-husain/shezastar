@@ -2,8 +2,7 @@ import { NavbarWrapper } from "@/components/NavbarWrapper";
 import { FooterWrapper } from "@/components/FooterWrapper";
 import { StorefrontSessionProvider } from "@/components/storefront/StorefrontSessionProvider";
 import { StorefrontWishlistProvider } from "@/components/storefront/StorefrontWishlistProvider";
-import { StorefrontCartProvider } from "@/components/storefront/StorefrontCartProvider";
-import { ensureStorefrontSessionAction } from "@/app/actions/session";
+import { getOrCreateStorefrontSession } from "@/app/actions/session";
 import { ensureWishlist } from "@/lib/wishlist";
 import { getCartForCurrentSession } from "@/lib/cart";
 
@@ -12,7 +11,7 @@ export default async function StorefrontLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await ensureStorefrontSessionAction();
+  const session = await getOrCreateStorefrontSession();
   const cart = await getCartForCurrentSession();
 
   return (

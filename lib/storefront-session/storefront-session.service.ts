@@ -111,7 +111,8 @@ async function updateActivity(
 
 export async function createStorefrontSession(
     sessionId: string,
-    metadata?: StorefrontSessionMetadataInput
+    metadata?: StorefrontSessionMetadataInput,
+    setCookie: boolean = false
 ): Promise<StorefrontSession> {
     const expiresAt = computeExpiry();
     const doc = buildStorefrontSessionDocument(sessionId, expiresAt, normalizeMetadata(metadata));
@@ -122,18 +123,23 @@ export async function createStorefrontSession(
         throw new AppError(500, 'SESSION_CREATE_FAILED');
     }
     const storefrontSession = toStorefrontSession(created);
-    await setStorefrontSessionCookie(storefrontSession.sessionId);
+    if (setCookie) {
+        await setStorefrontSessionCookie(storefrontSession.sessionId);
+    }
     return storefrontSession;
 }
 
 export async function touchStorefrontSession(
     sessionId: string,
-    metadata?: StorefrontSessionMetadataInput
+    metadata?: StorefrontSessionMetadataInput,
+    setCookie: boolean = false
 ): Promise<StorefrontSession> {
     const doc = await findActiveSession(sessionId);
     const updated = await updateActivity(sessionId, doc, metadata);
     const storefrontSession = toStorefrontSession(updated);
-    await setStorefrontSessionCookie(storefrontSession.sessionId);
+    if (setCookie) {
+        await setStorefrontSessionCookie(storefrontSession.sessionId);
+    }
     return storefrontSession;
 }
 
@@ -144,18 +150,18 @@ export async function ensureStorefrontSession(
     const token = await getCurrentStorefrontSessionToken();
     if (!token) {
         // Session ID should be created by middleware, but create one if missing
-        return createStorefrontSession(randomBytes(16).toString('hex'), payload);
+        return createStorefrontSession(randomBytes(16).toString('hex'), payload, true);
     }
 
     try {
-        return await touchStorefrontSession(token.sessionId, payload);
+        return await touchStorefrontSession(token.sessionId, payload, true);
     } catch (err) {
         if (
             err instanceof AppError &&
             ['SESSION_NOT_FOUND', 'SESSION_REVOKED', 'SESSION_EXPIRED'].includes(err.code)
         ) {
             // Create new session with existing token's sessionId
-            return createStorefrontSession(token.sessionId, payload);
+            return createStorefrontSession(token.sessionId, payload, true);
         }
         throw err;
     }

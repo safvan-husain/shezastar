@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import type { StorefrontSession } from '@/lib/storefront-session';
 import { useToast } from '@/components/ui/Toast';
@@ -23,6 +23,18 @@ export function StorefrontSessionProvider({ initialSession, children }: Storefro
     const [session, setSession] = useState(initialSession);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const { showToast } = useToast();
+
+    // Initialize session cookie on mount
+    useEffect(() => {
+        const initSession = async () => {
+            try {
+                await fetch('/api/storefront/session', { method: 'GET' });
+            } catch (error) {
+                console.error('Failed to initialize session:', error);
+            }
+        };
+        initSession();
+    }, []);
 
     const refreshSession = useCallback(async () => {
         setIsRefreshing(true);
