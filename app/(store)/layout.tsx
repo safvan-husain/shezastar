@@ -5,6 +5,7 @@ import { StorefrontWishlistProvider } from "@/components/storefront/StorefrontWi
 import { getOrCreateStorefrontSession } from "@/app/actions/session";
 import { ensureWishlist } from "@/lib/wishlist";
 import { getCartForCurrentSession } from "@/lib/cart";
+import { StorefrontCartProvider } from "@/components/storefront/StorefrontCartProvider";
 
 export default async function StorefrontLayout({
   children,
