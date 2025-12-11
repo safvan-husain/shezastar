@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Cart } from "@/lib/cart";
 import type { Product } from "@/lib/product/model/product.model";
 import { useStorefrontCart } from "@/components/storefront/StorefrontCartProvider";
+import CheckoutButton from "./CheckoutButton";
 
 interface CartPageContentProps {
   initialCart: Cart | null;
@@ -198,6 +199,9 @@ export function CartPageContent({ initialCart, productsById }: CartPageContentPr
           <p className="text-xs text-[var(--storefront-text-muted)]">
             Taxes and shipping calculated at checkout.
           </p>
+          <div className="mt-4 w-full md:w-auto">
+            <CheckoutButton />
+          </div>
         </div>
       </div>
     </div>

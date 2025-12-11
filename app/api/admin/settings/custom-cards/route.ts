@@ -10,7 +10,7 @@ export async function GET() {
         if (error instanceof AppError) {
             return NextResponse.json(
                 { message: error.message, code: error.code, details: error.details },
-                { status: error.statusCode }
+                { status: error.status}
             );
         }
 
