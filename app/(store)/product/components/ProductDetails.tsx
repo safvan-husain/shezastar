@@ -12,6 +12,8 @@ interface ProductDetailsProps {
   product: Product;
 }
 
+type InstallationOption = 'none' | 'store' | 'home';
+
 function formatPrice(value: number) {
   return `AED ${value.toFixed(2)}`;
 }
@@ -22,6 +24,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const { addToCart, isLoading } = useStorefrontCart();
   const [quantity, setQuantity] = useState<number>(1);
+  const [installationOption, setInstallationOption] = useState<InstallationOption>('none');
+
+  const addOnPrice =
+    installationOption === 'none'
+      ? 0
+      : installationOption === 'store'
+        ? product.installationService?.inStorePrice ?? 0
+        : product.installationService?.atHomePrice ?? 0;
+
   return (
     <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
       {/* Image Gallery */}
@@ -128,8 +139,43 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         {product.installationService?.enabled && (
           <div className="rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-bg-subtle)] p-4 space-y-2">
             <h3 className="font-semibold text-[var(--storefront-text-primary)]">Installation Service Available</h3>
-            <p className="text-lg font-semibold text-[var(--storefront-text-primary)]">
-              {formatPrice(product.installationService.atHomePrice ?? 0)}
+            <div className="space-y-3">
+              {[
+                { key: 'none' as InstallationOption, label: 'None', price: 0 },
+                {
+                  key: 'store' as InstallationOption,
+                  label: 'At store',
+                  price: product.installationService.inStorePrice ?? 0,
+                },
+                {
+                  key: 'home' as InstallationOption,
+                  label: 'At home',
+                  price: product.installationService.atHomePrice ?? 0,
+                },
+              ].map((option) => (
+                <label
+                  key={option.key}
+                  className="flex items-center gap-3 px-3 py-2 rounded-md border border-[var(--storefront-border)] bg-[var(--storefront-bg)]"
+                >
+                  <input
+                    type="radio"
+                    name="installation-option"
+                    value={option.key}
+                    checked={installationOption === option.key}
+                    onChange={() => setInstallationOption(option.key)}
+                    className="h-4 w-4"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-[var(--storefront-text-primary)]">{option.label}</span>
+                    <span className="text-xs text-[var(--storefront-text-secondary)]">
+                      {formatPrice(option.price)}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <p className="text-sm text-[var(--storefront-text-secondary)]">
+              Selected installation add-on: {formatPrice(addOnPrice)}
             </p>
           </div>
         )}
