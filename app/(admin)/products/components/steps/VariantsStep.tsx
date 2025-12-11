@@ -13,7 +13,7 @@ interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
     selectedItems: VariantItem[];
-    priceModifier?: number;
+    priceDelta?: number;
 }
 
 interface VariantsStepProps {

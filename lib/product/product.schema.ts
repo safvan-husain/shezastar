@@ -15,12 +15,17 @@ export const ProductVariantSchema = z.object({
         id: z.string(),
         name: z.string(),
     })),
-    priceModifier: z.number().optional(), // Optional price override for this variant
+    // Optional price delta for this variant type (used for admin previews / defaults).
+    // Final per-combination pricing is stored on VariantStock.
+    priceDelta: z.number().optional(),
 });
 
 export const VariantStockSchema = z.object({
     variantCombinationKey: z.string(), // e.g., "color-red+size-large" or "default" for no variants
     stockCount: z.number().int().min(0, 'Stock count must be non-negative'),
+    // Optional price delta for this exact combination (peer to stockCount).
+    // Effective unit price = (offerPrice ?? basePrice) + (priceDelta ?? 0).
+    priceDelta: z.number().optional(),
 });
 
 export const InstallationServiceSchema = z.object({

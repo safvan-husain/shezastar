@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { getVariantCombinationKey } from "@/lib/product/product.utils";
 
 interface ImageFile {
     id: string;
@@ -21,7 +22,12 @@ interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
     selectedItems: VariantItem[];
-    priceModifier?: number;
+}
+
+interface VariantStock {
+    variantCombinationKey: string;
+    stockCount: number;
+    priceDelta?: number;
 }
 
 interface ReviewStepProps {
@@ -33,6 +39,7 @@ interface ReviewStepProps {
     highlights: string[];
     images: ImageFile[];
     variants: ProductVariant[];
+    variantStock: VariantStock[];
     imageMappings: Record<string, string[]>;
     selectedSubCategoryIds: string[];
     installationEnabled: boolean;
@@ -49,6 +56,7 @@ export function ReviewStep({
     highlights,
     images,
     variants,
+    variantStock,
     imageMappings,
     selectedSubCategoryIds,
     installationEnabled,
@@ -202,14 +210,22 @@ export function ReviewStep({
     const parsedBasePrice = parseFloat(basePrice) || 0;
     const parsedOfferPrice = offerPrice ? parseFloat(offerPrice) || 0 : null;
 
-    const variantPriceModifier = variants.reduce((total, variant) => {
-        const hasSelection = Boolean(selectedVariantItems[variant.variantTypeId]);
-        if (!hasSelection || !variant.priceModifier) return total;
-        return total + variant.priceModifier;
-    }, 0);
+    const selectedVariantItemIdsForPricing = useMemo(
+        () => Array.from(selectedItemIds),
+        [selectedItemIds]
+    );
 
-    const effectiveBase = parsedBasePrice + variantPriceModifier;
-    const effectiveOffer = parsedOfferPrice !== null ? parsedOfferPrice + variantPriceModifier : null;
+    const combinationPriceDelta = useMemo(() => {
+        if (!variantStock || variantStock.length === 0 || selectedVariantItemIdsForPricing.length === 0) {
+            return 0;
+        }
+        const key = getVariantCombinationKey(selectedVariantItemIdsForPricing);
+        const entry = variantStock.find(vs => vs.variantCombinationKey === key);
+        return entry?.priceDelta ?? 0;
+    }, [variantStock, selectedVariantItemIdsForPricing]);
+
+    const effectiveBase = parsedBasePrice + combinationPriceDelta;
+    const effectiveOffer = parsedOfferPrice !== null ? parsedOfferPrice + combinationPriceDelta : null;
 
     const inStorePriceNum =
         installationEnabled && inStorePrice !== "" ? Number(inStorePrice) : null;
@@ -345,10 +361,10 @@ export function ReviewStep({
                                 </span>
                             )}
                         </div>
-                        {variantPriceModifier !== 0 && (
+                        {combinationPriceDelta !== 0 && (
                             <p className="text-xs text-[var(--text-muted)]">
-                                Includes variant adjustment of {variantPriceModifier > 0 ? '+' : ''}
-                                ${variantPriceModifier.toFixed(2)} from base price
+                                Includes variant adjustment of {combinationPriceDelta > 0 ? '+' : ''}
+                                ${combinationPriceDelta.toFixed(2)} from base price
                             </p>
                         )}
                         {stockCount && (

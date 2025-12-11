@@ -2,8 +2,8 @@ import 'server-only';
 
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
-import { calculatePrice } from '@/lib/product/model/product.model';
 import { getProduct } from '@/lib/product/product.service';
+import { getVariantCombinationKey } from '@/lib/product/product.utils';
 import { getStorefrontSessionId, ensureStorefrontSession } from '@/lib/storefront-session';
 import { Cart, CartDocument, CartItemDocument, toCart } from './model/cart.model';
 
@@ -71,7 +71,21 @@ async function findCartOrThrow(sessionId: string): Promise<CartDocument> {
 async function computeUnitPrice(productId: string, selectedVariantItemIds: string[]): Promise<number> {
     const product = await getProduct(productId);
     const normalized = normalizeVariantItemIds(selectedVariantItemIds);
-    return calculatePrice(product.basePrice, product.offerPrice, product.variants, normalized);
+    const base = product.offerPrice ?? product.basePrice;
+
+    // If no per-combination pricing is configured, fall back to base/offer price.
+    if (!product.variantStock || product.variantStock.length === 0) {
+        return base;
+    }
+
+    const key = getVariantCombinationKey(normalized);
+    const stockEntry = product.variantStock.find(vs => vs.variantCombinationKey === key);
+
+    if (!stockEntry || stockEntry.priceDelta === undefined || stockEntry.priceDelta === null) {
+        return base;
+    }
+
+    return base + stockEntry.priceDelta;
 }
 
 function findItemIndex(cart: CartDocument, productId: string, normalizedVariantItemIds: string[]): number {

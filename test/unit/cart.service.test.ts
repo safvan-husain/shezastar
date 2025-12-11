@@ -37,10 +37,16 @@ describe('Cart service', () => {
                             name: 'Red',
                         },
                     ],
-                    priceModifier: 10,
                 },
             ],
             subCategoryIds: [],
+            variantStock: [
+                {
+                    variantCombinationKey: variantItemId,
+                    stockCount: 100,
+                    priceDelta: 10,
+                },
+            ],
         });
 
         productId = product.id;

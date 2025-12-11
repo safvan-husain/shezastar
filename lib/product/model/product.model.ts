@@ -95,23 +95,5 @@ export function filterImagesByVariants(
         .sort((a, b) => a.order - b.order);
 }
 
-/**
- * Calculate effective price based on selected variants
- */
-export function calculatePrice(
-    basePrice: number,
-    offerPrice: number | undefined,
-    variants: ProductVariant[],
-    selectedVariantItemIds: string[]
-): number {
-    let price = offerPrice ?? basePrice;
-
-    // Apply variant price modifiers
-    for (const variant of variants) {
-        if (variant.priceModifier && variant.selectedItems.some(item => selectedVariantItemIds.includes(item.id))) {
-            price += variant.priceModifier;
-        }
-    }
-
-    return price;
-}
+// Per-combination pricing is now handled via product.variantStock.priceDelta
+// and the getVariantCombinationKey helper in lib/product/product.utils.ts.

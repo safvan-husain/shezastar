@@ -117,6 +117,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     });
   };
 
+  const combinationPriceDelta = useMemo(() => {
+    if (!product.variantStock || product.variantStock.length === 0 || selectedVariantItemIds.length === 0) {
+      return 0;
+    }
+    const key = getVariantCombinationKey(selectedVariantItemIds);
+    const entry = product.variantStock.find(vs => vs.variantCombinationKey === key);
+    return entry?.priceDelta ?? 0;
+  }, [product.variantStock, selectedVariantItemIds]);
+
   return (
     <div className='flex flex-col'>
       <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
@@ -130,16 +139,30 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
           {/* Price */}
           <div className="flex items-baseline gap-3">
-            {product.offerPrice ? (
-              <>
-                <span className="text-4xl font-bold text-[var(--storefront-sale)]">{formatPrice(product.offerPrice)}</span>
-                <span className="text-xl text-[var(--storefront-text-muted)] line-through">{formatPrice(product.basePrice)}</span>
-                <span className="text-sm font-semibold text-[var(--storefront-sale)]">
-                  Save {formatPrice(product.basePrice - product.offerPrice)}
-                </span>
-              </>
+            {product.offerPrice != null ? (
+              (() => {
+                const effectiveBase = product.basePrice + combinationPriceDelta;
+                const effectiveOffer = product.offerPrice + combinationPriceDelta;
+                return (
+                  <>
+                    <span className="text-4xl font-bold text-[var(--storefront-sale)]">
+                      {formatPrice(effectiveOffer)}
+                    </span>
+                    <span className="text-xl text-[var(--storefront-text-muted)] line-through">
+                      {formatPrice(effectiveBase)}
+                    </span>
+                    {effectiveBase > effectiveOffer && (
+                      <span className="text-sm font-semibold text-[var(--storefront-sale)]">
+                        Save {formatPrice(effectiveBase - effectiveOffer)}
+                      </span>
+                    )}
+                  </>
+                );
+              })()
             ) : (
-              <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">{formatPrice(product.basePrice)}</span>
+              <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">
+                {formatPrice(product.basePrice + combinationPriceDelta)}
+              </span>
             )}
           </div>
 

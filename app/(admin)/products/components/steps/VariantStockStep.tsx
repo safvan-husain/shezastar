@@ -14,48 +14,64 @@ interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
     selectedItems: VariantItem[];
-    priceModifier?: number;
+    priceDelta?: number;
 }
 
 interface VariantStock {
     variantCombinationKey: string;
     stockCount: number;
+    priceDelta?: number;
 }
 
 interface VariantStockStepProps {
     variants: ProductVariant[];
     variantStock: VariantStock[];
+    basePrice: number;
+    offerPrice: number | null;
     onVariantStockChange: (variantStock: VariantStock[]) => void;
 }
 
-export function VariantStockStep({ variants, variantStock, onVariantStockChange }: VariantStockStepProps) {
+export function VariantStockStep({ variants, variantStock, basePrice, offerPrice, onVariantStockChange }: VariantStockStepProps) {
     const [combinations, setCombinations] = useState<Array<{ key: string; label: string; itemIds: string[] }>>([]);
     const [stockValues, setStockValues] = useState<Record<string, number>>({});
+    const [priceDeltaValues, setPriceDeltaValues] = useState<Record<string, number>>({});
 
     // Generate all possible combinations when variants change
     useEffect(() => {
         const allCombinations = generateAllVariantCombinations(variants);
         setCombinations(allCombinations);
 
-        // Initialize stock values from existing variantStock or default to 0
+        // Initialize stock and price delta values from existing variantStock or default to 0
         const initialStockValues: Record<string, number> = {};
+        const initialPriceValues: Record<string, number> = {};
         allCombinations.forEach(combo => {
             const existing = variantStock.find(vs => vs.variantCombinationKey === combo.key);
             initialStockValues[combo.key] = existing?.stockCount ?? 0;
+            initialPriceValues[combo.key] = existing?.priceDelta ?? 0;
         });
         setStockValues(initialStockValues);
+        setPriceDeltaValues(initialPriceValues);
     }, [variants, variantStock]);
+
+    const rebuildVariantStock = (stocks: Record<string, number>, prices: Record<string, number>) => {
+        const newVariantStock: VariantStock[] = Object.entries(stocks).map(([key, stockCount]) => ({
+            variantCombinationKey: key,
+            stockCount,
+            priceDelta: prices[key] ?? 0,
+        }));
+        onVariantStockChange(newVariantStock);
+    };
 
     const handleStockChange = (key: string, value: number) => {
         const newStockValues = { ...stockValues, [key]: value };
         setStockValues(newStockValues);
+        rebuildVariantStock(newStockValues, priceDeltaValues);
+    };
 
-        // Convert to VariantStock array
-        const newVariantStock: VariantStock[] = Object.entries(newStockValues).map(([k, v]) => ({
-            variantCombinationKey: k,
-            stockCount: v
-        }));
-        onVariantStockChange(newVariantStock);
+    const handlePriceDeltaChange = (key: string, value: number) => {
+        const newPriceValues = { ...priceDeltaValues, [key]: value };
+        setPriceDeltaValues(newPriceValues);
+        rebuildVariantStock(stockValues, newPriceValues);
     };
 
     const handleBulkSet = () => {
@@ -74,14 +90,11 @@ export function VariantStockStep({ variants, variantStock, onVariantStockChange 
         });
         setStockValues(newStockValues);
 
-        const newVariantStock: VariantStock[] = Object.entries(newStockValues).map(([k, v]) => ({
-            variantCombinationKey: k,
-            stockCount: v
-        }));
-        onVariantStockChange(newVariantStock);
+        rebuildVariantStock(newStockValues, priceDeltaValues);
     };
 
     const totalStock = Object.values(stockValues).reduce((sum, val) => sum + val, 0);
+    const baseForPricing = (offerPrice ?? basePrice) || 0;
 
     return (
         <Card>
@@ -116,28 +129,55 @@ export function VariantStockStep({ variants, variantStock, onVariantStockChange 
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {combinations.map((combo) => (
-                        <div key={combo.key} className="flex items-center gap-4 p-4 bg-[var(--bg-subtle)] rounded-lg">
-                            <div className="flex-1">
-                                <p className="font-medium text-[var(--foreground)]">{combo.label}</p>
-                                <p className="text-xs text-[var(--muted-foreground)] mt-1">Key: {combo.key}</p>
+                    {combinations.map((combo) => {
+                        const stock = stockValues[combo.key] ?? 0;
+                        const priceDelta = priceDeltaValues[combo.key] ?? 0;
+                        const effectivePrice = baseForPricing + priceDelta;
+
+                        return (
+                            <div key={combo.key} className="flex items-center gap-6 p-4 bg-[var(--bg-subtle)] rounded-lg">
+                                <div className="flex-1">
+                                    <p className="font-medium text-[var(--foreground)]">{combo.label}</p>
+                                    <p className="text-xs text-[var(--muted-foreground)] mt-1">Key: {combo.key}</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <label htmlFor={`stock-${combo.key}`} className="text-sm text-[var(--muted-foreground)]">
+                                            Stock:
+                                        </label>
+                                        <input
+                                            id={`stock-${combo.key}`}
+                                            type="number"
+                                            min="0"
+                                            value={stock}
+                                            onChange={(e) => handleStockChange(combo.key, parseInt(e.target.value, 10) || 0)}
+                                            className="w-24 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                                        />
+                                        <span className="text-sm text-[var(--muted-foreground)]">units</span>
+                                    </div>
+
+                                    <div className="flex flex-col items-end gap-1 min-w-[10rem]">
+                                        <div className="flex items-center gap-2">
+                                            <label htmlFor={`price-${combo.key}`} className="text-sm text-[var(--muted-foreground)]">
+                                                Price Δ:
+                                            </label>
+                                            <input
+                                                id={`price-${combo.key}`}
+                                                type="number"
+                                                step="0.01"
+                                                value={priceDelta}
+                                                onChange={(e) => handlePriceDeltaChange(combo.key, parseFloat(e.target.value) || 0)}
+                                                className="w-28 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-[var(--muted-foreground)]">
+                                            Effective: {effectivePrice.toFixed(2)}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <label htmlFor={`stock-${combo.key}`} className="text-sm text-[var(--muted-foreground)]">
-                                    Stock:
-                                </label>
-                                <input
-                                    id={`stock-${combo.key}`}
-                                    type="number"
-                                    min="0"
-                                    value={stockValues[combo.key] ?? 0}
-                                    onChange={(e) => handleStockChange(combo.key, parseInt(e.target.value, 10) || 0)}
-                                    className="w-24 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-                                />
-                                <span className="text-sm text-[var(--muted-foreground)]">units</span>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 

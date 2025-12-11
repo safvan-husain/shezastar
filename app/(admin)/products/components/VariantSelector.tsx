@@ -22,7 +22,7 @@ interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
     selectedItems: VariantItem[];
-    priceModifier?: number;
+    priceDelta?: number;
 }
 
 interface VariantSelectorProps {
@@ -97,7 +97,7 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
                 variantTypeId: variantType.id,
                 variantTypeName: variantType.name,
                 selectedItems: [],
-                priceModifier: 0,
+                priceDelta: 0,
             },
         ]);
     };
@@ -123,11 +123,11 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
         );
     };
 
-    const updatePriceModifier = (variantTypeId: string, value: number) => {
+    const updatePriceDelta = (variantTypeId: string, value: number) => {
         onChange(
             variants.map(v =>
                 v.variantTypeId === variantTypeId
-                    ? { ...v, priceModifier: value }
+                    ? { ...v, priceDelta: value }
                     : v
             )
         );
@@ -197,16 +197,16 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
                             <div className="max-w-xs">
                                 <Input
                                     type="number"
-                                    label="Price Modifier (optional)"
+                                    label="Price Delta (optional)"
                                     placeholder="0"
-                                    value={variant.priceModifier || ''}
-                                    onChange={(e) => updatePriceModifier(
+                                    value={variant.priceDelta ?? ''}
+                                    onChange={(e) => updatePriceDelta(
                                         variant.variantTypeId,
                                         parseFloat(e.target.value) || 0
                                     )}
                                 />
                                 <p className="text-xs text-[var(--text-muted)] mt-1">
-                                    Add to base price (can be negative)
+                                    Amount added to the base/offer price. Can be negative.
                                 </p>
                             </div>
                         </div>

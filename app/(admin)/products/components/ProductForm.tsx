@@ -30,7 +30,7 @@ interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
     selectedItems: VariantItem[];
-    priceModifier?: number;
+    priceDelta?: number;
 }
 
 interface ProductFormProps {
@@ -58,7 +58,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
         })) || []
     );
     const [variants, setVariants] = useState<ProductVariant[]>(initialData?.variants || []);
-    const [variantStock, setVariantStock] = useState<Array<{ variantCombinationKey: string; stockCount: number }>>(initialData?.variantStock || []);
+    const [variantStock, setVariantStock] = useState<Array<{ variantCombinationKey: string; stockCount: number; priceDelta?: number }>>(
+        initialData?.variantStock || []
+    );
     const [subCategoryIds, setSubCategoryIds] = useState<string[]>(initialData?.subCategoryIds || []);
     const [installationEnabled, setInstallationEnabled] = useState(initialData?.installationService?.enabled || false);
     const [inStorePrice, setInStorePrice] = useState(initialData?.installationService?.inStorePrice?.toString() || '');
@@ -283,6 +285,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     <VariantStockStep
                         variants={variants}
                         variantStock={variantStock}
+                        basePrice={parseFloat(basePrice) || 0}
+                        offerPrice={offerPrice ? parseFloat(offerPrice) || 0 : null}
                         onVariantStockChange={setVariantStock}
                     />
                 )}
@@ -317,6 +321,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         highlights={highlights}
                         images={images}
                         variants={variants}
+                        variantStock={variantStock}
                         imageMappings={imageMappings}
                         selectedSubCategoryIds={subCategoryIds}
                         installationEnabled={installationEnabled}
