@@ -1,6 +1,6 @@
 import { ObjectId } from '@/lib/db/mongo-client';
 
-export type OrderStatus = 'pending' | 'paid' | 'cancelled' | 'failed';
+export type OrderStatus = 'pending' | 'paid' | 'cancelled' | 'failed' | 'completed';
 
 export interface OrderItemDocument {
     productId: string;

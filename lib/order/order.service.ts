@@ -15,6 +15,7 @@ async function getOrderCollection() {
             collection.createIndex({ sessionId: 1 }),
             collection.createIndex({ stripeSessionId: 1 }, { unique: true, sparse: true }),
             collection.createIndex({ createdAt: -1 }),
+            collection.createIndex({ status: 1, createdAt: -1 }),
         ]);
         indexesEnsured = true;
     }
@@ -67,4 +68,94 @@ export async function getOrdersBySessionId(sessionId: string): Promise<Order[]> 
     const collection = await getOrderCollection();
     const docs = await collection.find({ sessionId }).sort({ createdAt: -1 }).toArray();
     return docs.map(toOrder);
+}
+
+export async function getOrderById(id: string): Promise<Order> {
+    let objectId: ObjectId;
+    try {
+        objectId = new ObjectId(id);
+    } catch {
+        throw new AppError(400, 'INVALID_ORDER_ID', { id });
+    }
+
+    const collection = await getOrderCollection();
+    const doc = await collection.findOne({ _id: objectId });
+
+    if (!doc) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    return toOrder(doc);
+}
+
+export async function listOrders(params: {
+    page?: number;
+    limit?: number;
+    status?: OrderStatus;
+}): Promise<{
+    orders: Order[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+}> {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(Math.max(1, params.limit ?? 20), 100);
+
+    const filter: Partial<OrderDocument> = {};
+
+    if (params.status) {
+        filter.status = params.status;
+    }
+
+    const collection = await getOrderCollection();
+
+    const total = await collection.countDocuments(filter);
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+
+    const docs = await collection
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+
+    const orders = docs.map(toOrder);
+
+    return {
+        orders,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+        },
+    };
+}
+
+export async function updateOrderStatusById(id: string, status: OrderStatus): Promise<Order> {
+    let objectId: ObjectId;
+    try {
+        objectId = new ObjectId(id);
+    } catch {
+        throw new AppError(400, 'INVALID_ORDER_ID', { id });
+    }
+
+    const collection = await getOrderCollection();
+    const now = new Date();
+
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: {
+                status,
+                updatedAt: now,
+            },
+        },
+        { returnDocument: 'after' }
+    );
+
+    if (!result) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    return toOrder(result);
 }
