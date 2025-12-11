@@ -3,39 +3,65 @@ import Stripe from 'stripe';
 import { getCartForCurrentSession } from '@/lib/cart/cart.service';
 import { getStorefrontSessionId } from '@/lib/storefront-session';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is missing. Please set it in your .env.local file.');
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {});
-// actually I'll just use the one from the error message if it seems valid.
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new Stripe(process.env.STRIPE_SECRET_KEY, {})
+    : null;
 
 export async function POST(req: NextRequest) {
+    if (!stripe) {
+        console.error('STRIPE_SECRET_KEY is missing.');
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+
     try {
         const sessionId = await getStorefrontSessionId();
         if (!sessionId) {
             return NextResponse.json({ error: 'No active session' }, { status: 401 });
         }
 
-        const cart = await getCartForCurrentSession();
-        if (!cart || cart.items.length === 0) {
-            return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
+        let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+        let metadata: Record<string, string> = { sessionId };
+
+        const body = await req.json().catch(() => ({}));
+        const buyNowItems = body.items;
+
+        if (buyNowItems && Array.isArray(buyNowItems) && buyNowItems.length > 0) {
+            // Buy Now Flow
+            lineItems = buyNowItems.map((item: any) => ({
+                price_data: {
+                    currency: 'usd',
+                    product_data: {
+                        name: item.productId, // We will fetch details in webhook
+                    },
+                    unit_amount: Math.round(item.unitPrice * 100),
+                },
+                quantity: item.quantity,
+            }));
+
+            metadata.type = 'buy_now';
+            metadata.buyNowItems = JSON.stringify(buyNowItems);
+        } else {
+            // Standard Cart Flow
+            const cart = await getCartForCurrentSession();
+            if (!cart || cart.items.length === 0) {
+                return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
+            }
+
+            lineItems = cart.items.map((item) => {
+                return {
+                    price_data: {
+                        currency: 'usd', // Assuming USD for now. TODO: Make dynamic if needed
+                        product_data: {
+                            name: item.productId, // Ideally fetch product name, but productId is sufficient for now
+                        },
+                        unit_amount: Math.round(item.unitPrice * 100), // Stripe expects cents
+                    },
+                    quantity: item.quantity,
+                };
+            });
         }
 
         const origin = req.headers.get('origin') || 'http://localhost:3000';
-
-        const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = cart.items.map((item) => {
-            return {
-                price_data: {
-                    currency: 'usd', // Assuming USD for now. TODO: Make dynamic if needed
-                    product_data: {
-                        name: item.productId, // Ideally fetch product name, but productId is sufficient for now
-                    },
-                    unit_amount: Math.round(item.unitPrice * 100), // Stripe expects cents
-                },
-                quantity: item.quantity,
-            };
-        });
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -43,9 +69,7 @@ export async function POST(req: NextRequest) {
             mode: 'payment',
             success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/checkout/cancel`,
-            metadata: {
-                sessionId: sessionId,
-            },
+            metadata: metadata,
         });
 
         return NextResponse.json({ url: session.url });

@@ -256,9 +256,37 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <button
                 type="button"
                 className="w-full py-3 px-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition flex items-center justify-center"
-                onClick={() => {
-                  // TODO: Implement buy now functionality
-                  console.log('Buy now clicked');
+                onClick={async () => {
+                  try {
+                    const basePrice = product.offerPrice ?? product.basePrice;
+                    const finalUnitPrice = basePrice + addOnPrice;
+
+                    const response = await fetch('/api/checkout_sessions', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        items: [{
+                          productId: product.id,
+                          quantity: quantity,
+                          unitPrice: finalUnitPrice,
+                          selectedVariantItemIds: [], // Currently adhering to same pattern as addToCart
+                        }],
+                      }),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.url) {
+                      window.location.href = data.url;
+                    } else {
+                      console.error('Failed to start checkout:', data.error);
+                      // Optionally show a toast here
+                    }
+                  } catch (error) {
+                    console.error('Error during buy now:', error);
+                  }
                 }}
                 aria-label={`Buy ${product.name} now`}
               >

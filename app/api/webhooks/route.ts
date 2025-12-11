@@ -6,17 +6,15 @@ import { OrderDocument, OrderItemDocument } from '@/lib/order/model/order.model'
 import { getProduct } from '@/lib/product/product.service';
 import { filterImagesByVariants } from '@/lib/product/model/product.model';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is missing.');
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {});
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new Stripe(process.env.STRIPE_SECRET_KEY, {})
+    : null;
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function POST(req: NextRequest) {
-    if (!endpointSecret) {
-        return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    if (!endpointSecret || !stripe) {
+        return NextResponse.json({ error: 'Webhook secret or Stripe key not configured' }, { status: 500 });
     }
 
     const sig = req.headers.get('stripe-signature');
@@ -42,59 +40,117 @@ export async function POST(req: NextRequest) {
             try {
                 // Determine status based on payment_status
                 const status = session.payment_status === 'paid' ? 'paid' : 'pending';
-
-                // Fetch the cart to populate order items
-                const cart = await getCartBySessionId(storefrontSessionId);
                 const orderItems: OrderItemDocument[] = [];
+                let shouldClearCart = true;
 
-                if (cart && cart.items.length > 0) {
-                    // Loop through ALL items in the cart
-                    for (const cartItem of cart.items) {
-                        try {
-                            const product = await getProduct(cartItem.productId);
+                // Check for Buy Now items in metadata
+                if (session.metadata?.type === 'buy_now' && session.metadata?.buyNowItems) {
+                    try {
+                        const buyNowItems = JSON.parse(session.metadata.buyNowItems);
+                        // Loop through Buy Now items
+                        for (const item of buyNowItems) {
+                            try {
+                                const product = await getProduct(item.productId);
 
-                            // Resolve Product Image
-                            // Use the first image that matches the variant or default to first product image
-                            let productImage = product.images.length > 0 ? product.images[0].url : undefined;
-                            if (cartItem.selectedVariantItemIds.length > 0) {
-                                const matchedImages = filterImagesByVariants(product.images, cartItem.selectedVariantItemIds);
-                                if (matchedImages.length > 0) {
-                                    productImage = matchedImages[0].url;
+                                // Resolve Product Image
+                                let productImage = product.images.length > 0 ? product.images[0].url : undefined;
+                                if (item.selectedVariantItemIds && item.selectedVariantItemIds.length > 0) {
+                                    const matchedImages = filterImagesByVariants(product.images, item.selectedVariantItemIds);
+                                    if (matchedImages.length > 0) {
+                                        productImage = matchedImages[0].url;
+                                    }
                                 }
-                            }
 
-                            // Resolve Variant Name
-                            let variantNames: string[] = [];
-                            if (cartItem.selectedVariantItemIds.length > 0) {
-                                for (const variant of product.variants) {
-                                    for (const item of variant.selectedItems) {
-                                        if (cartItem.selectedVariantItemIds.includes(item.id)) {
-                                            variantNames.push(`${variant.variantTypeName}: ${item.name}`);
+                                // Resolve Variant Name
+                                let variantNames: string[] = [];
+                                if (item.selectedVariantItemIds && item.selectedVariantItemIds.length > 0) {
+                                    for (const variant of product.variants) {
+                                        for (const vItem of variant.selectedItems) {
+                                            if (item.selectedVariantItemIds.includes(vItem.id)) {
+                                                variantNames.push(`${variant.variantTypeName}: ${vItem.name}`);
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
+                                const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
 
-                            orderItems.push({
-                                productId: cartItem.productId,
-                                productName: product.name,
-                                productImage: productImage,
-                                variantName: variantName,
-                                selectedVariantItemIds: cartItem.selectedVariantItemIds,
-                                quantity: cartItem.quantity,
-                                unitPrice: cartItem.unitPrice,
-                            });
-                        } catch (err) {
-                            console.error(`Failed to fetch product details for product ${cartItem.productId} in session ${storefrontSessionId}`, err);
-                            // Fallback if product not found (should be rare)
-                            orderItems.push({
-                                productId: cartItem.productId,
-                                productName: 'Unknown Product', // Placeholder
-                                selectedVariantItemIds: cartItem.selectedVariantItemIds,
-                                quantity: cartItem.quantity,
-                                unitPrice: cartItem.unitPrice,
-                            });
+                                orderItems.push({
+                                    productId: item.productId,
+                                    productName: product.name,
+                                    productImage: productImage,
+                                    variantName: variantName,
+                                    selectedVariantItemIds: item.selectedVariantItemIds || [],
+                                    quantity: item.quantity,
+                                    unitPrice: item.unitPrice,
+                                });
+                            } catch (err) {
+                                console.error(`Failed to fetch product details for buy now product ${item.productId}`, err);
+                                orderItems.push({
+                                    productId: item.productId,
+                                    productName: 'Unknown Product',
+                                    selectedVariantItemIds: item.selectedVariantItemIds || [],
+                                    quantity: item.quantity,
+                                    unitPrice: item.unitPrice,
+                                });
+                            }
+                        }
+                        shouldClearCart = false; // Don't clear cart for Buy Now
+                    } catch (e) {
+                        console.error('Failed to parse buy now items', e);
+                    }
+                } else {
+                    // Standard Cart Flow
+                    const cart = await getCartBySessionId(storefrontSessionId);
+
+                    if (cart && cart.items.length > 0) {
+                        // Loop through ALL items in the cart
+                        for (const cartItem of cart.items) {
+                            try {
+                                const product = await getProduct(cartItem.productId);
+
+                                // Resolve Product Image
+                                // Use the first image that matches the variant or default to first product image
+                                let productImage = product.images.length > 0 ? product.images[0].url : undefined;
+                                if (cartItem.selectedVariantItemIds.length > 0) {
+                                    const matchedImages = filterImagesByVariants(product.images, cartItem.selectedVariantItemIds);
+                                    if (matchedImages.length > 0) {
+                                        productImage = matchedImages[0].url;
+                                    }
+                                }
+
+                                // Resolve Variant Name
+                                let variantNames: string[] = [];
+                                if (cartItem.selectedVariantItemIds.length > 0) {
+                                    for (const variant of product.variants) {
+                                        for (const item of variant.selectedItems) {
+                                            if (cartItem.selectedVariantItemIds.includes(item.id)) {
+                                                variantNames.push(`${variant.variantTypeName}: ${item.name}`);
+                                            }
+                                        }
+                                    }
+                                }
+                                const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
+
+                                orderItems.push({
+                                    productId: cartItem.productId,
+                                    productName: product.name,
+                                    productImage: productImage,
+                                    variantName: variantName,
+                                    selectedVariantItemIds: cartItem.selectedVariantItemIds,
+                                    quantity: cartItem.quantity,
+                                    unitPrice: cartItem.unitPrice,
+                                });
+                            } catch (err) {
+                                console.error(`Failed to fetch product details for product ${cartItem.productId} in session ${storefrontSessionId}`, err);
+                                // Fallback if product not found (should be rare)
+                                orderItems.push({
+                                    productId: cartItem.productId,
+                                    productName: 'Unknown Product', // Placeholder
+                                    selectedVariantItemIds: cartItem.selectedVariantItemIds,
+                                    quantity: cartItem.quantity,
+                                    unitPrice: cartItem.unitPrice,
+                                });
+                            }
                         }
                     }
                 }
@@ -110,10 +166,13 @@ export async function POST(req: NextRequest) {
 
                 await createOrder(orderData);
 
-                // Clear the cart
-                await clearCart(storefrontSessionId);
-
-                console.log(`Order created and cart cleared for session ${storefrontSessionId}`);
+                // Clear the cart ONLY if it's not a Buy Now order
+                if (shouldClearCart) {
+                    await clearCart(storefrontSessionId);
+                    console.log(`Order created and cart cleared for session ${storefrontSessionId}`);
+                } else {
+                    console.log(`Order created (Buy Now) for session ${storefrontSessionId}. Cart preserved.`);
+                }
             } catch (error) {
                 console.error('Error processing checkout.session.completed:', error);
                 return NextResponse.json({ error: 'Error processing webhook' }, { status: 500 });
