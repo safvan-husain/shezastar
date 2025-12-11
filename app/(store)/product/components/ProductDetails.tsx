@@ -5,6 +5,7 @@ import type { Product } from '@/lib/product/model/product.model';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 import { getVariantCombinationKey } from '@/lib/product/product.utils';
+import { useToast } from '@/components/ui/Toast';
 import { ProductImageGallery } from './ProductImageGallery';
 import { BuyNowButton } from './BuyNowButton';
 
@@ -23,6 +24,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const inWishlist = isInWishlist(product.id, []);
 
   const { addToCart, isLoading } = useStorefrontCart();
+  const { showToast } = useToast();
   const [quantity, setQuantity] = useState<number>(1);
   const [installationOption, setInstallationOption] = useState<InstallationOption>('none');
   const [selectedVariantItems, setSelectedVariantItems] = useState<Record<string, string | null>>({});
@@ -125,6 +127,37 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     const entry = product.variantStock.find(vs => vs.variantCombinationKey === key);
     return entry?.priceDelta ?? 0;
   }, [product.variantStock, selectedVariantItemIds]);
+
+  const hasVariants = Boolean(product.variants && product.variants.length > 0);
+  const allVariantsSelected = useMemo(() => {
+    if (!hasVariants || !product.variants) return true;
+    return product.variants.every(variant => {
+      // Variant types without items don't require a choice
+      if (!variant.selectedItems || variant.selectedItems.length === 0) {
+        return true;
+      }
+      return Boolean(selectedVariantItems[variant.variantTypeId]);
+    });
+  }, [hasVariants, product.variants, selectedVariantItems]);
+
+  const currentStockLimit = useMemo(() => {
+    // Prefer per-combination stock when configured
+    if (hasVariantStock && product.variantStock && product.variantStock.length > 0) {
+      const key = getVariantCombinationKey(selectedVariantItemIds);
+      const stock = stockByKey.get(key);
+      // Undefined means "unlimited" per backend semantics
+      if (typeof stock === 'number') {
+        return stock;
+      }
+    }
+
+    // Fall back to deprecated product-level stockCount if present
+    if (typeof product.stockCount === 'number') {
+      return product.stockCount;
+    }
+
+    return null;
+  }, [hasVariantStock, product.variantStock, stockByKey, selectedVariantItemIds, product.stockCount]);
 
   return (
     <div className='flex flex-col'>
@@ -276,7 +309,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 <button
                   type="button"
                   className="p-3 hover:bg-gray-50 transition"
-                  onClick={() => setQuantity(quantity + 1)}
+                  onClick={() => {
+                    if (currentStockLimit !== null && quantity + 1 > currentStockLimit) {
+                      showToast('Lack of count.', 'error');
+                      return;
+                    }
+                    setQuantity(quantity + 1);
+                  }}
                   aria-label="Increase quantity"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,8 +328,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <button
                 type="button"
                 className="w-full py-3 px-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={isLoading}
+                disabled={isLoading || !allVariantsSelected}
                 onClick={async () => {
+                  if (currentStockLimit !== null && quantity > currentStockLimit) {
+                    showToast('Lack of count.', 'error');
+                    return;
+                  }
                   await addToCart(product.id, selectedVariantItemIds, quantity);
                 }}
                 aria-label={`Add ${product.name} to cart`}
@@ -332,6 +375,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 quantity={quantity}
                 addOnPrice={addOnPrice}
                 selectedVariantItemIds={selectedVariantItemIds}
+                disabled={!allVariantsSelected}
               />
 
 

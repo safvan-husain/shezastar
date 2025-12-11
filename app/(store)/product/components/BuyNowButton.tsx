@@ -8,12 +8,15 @@ interface BuyNowButtonProps {
   quantity: number;
   addOnPrice: number;
   selectedVariantItemIds: string[];
+  disabled?: boolean;
 }
 
-export function BuyNowButton({ product, quantity, addOnPrice, selectedVariantItemIds }: BuyNowButtonProps) {
+export function BuyNowButton({ product, quantity, addOnPrice, selectedVariantItemIds, disabled }: BuyNowButtonProps) {
   const { showToast } = useToast();
 
   const handleBuyNow = async () => {
+    if (disabled) return;
+
     const url = '/api/checkout_sessions';
     const method = 'POST';
 
@@ -69,7 +72,8 @@ export function BuyNowButton({ product, quantity, addOnPrice, selectedVariantIte
   return (
     <button
       type="button"
-      className="w-full py-3 px-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition flex items-center justify-center"
+      className="w-full py-3 px-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+      disabled={disabled}
       onClick={handleBuyNow}
       aria-label={`Buy ${product.name} now`}
     >
