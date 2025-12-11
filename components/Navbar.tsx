@@ -66,26 +66,26 @@ export function Navbar({ categories }: NavbarProps) {
         <Link href={'/'}>
           <Image alt='shazstar logo' width={100} height={100} src={"/brand-icon.png"} />
         </Link>
-        
+
         <div className="flex items-center gap-4">
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center h-12 pb-2">
-          {categories.map((category) => (
-            <div
-              key={category.id}
-              className="relative"
-              onMouseEnter={() => handleMouseEnter(category.id)}
-              onMouseLeave={handleMouseLeave}
-            >
-              <button className="px-4 py-3 text-xs font-medium uppercase tracking-wide hover:text-amber-400 transition-colors flex items-center">
-                {category.name}
-                <svg
-                  className="ml-1 h-4 w-4 fill-current"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M10 14l-6-6h12z" />
-                </svg>
-              </button>
+            {categories.map((category) => (
+              <div
+                key={category.id}
+                className="relative"
+                onMouseEnter={() => handleMouseEnter(category.id)}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button className="px-4 py-3 text-xs font-medium uppercase tracking-wide hover:text-amber-400 transition-colors flex items-center">
+                  {category.name}
+                  <svg
+                    className="ml-1 h-4 w-4 fill-current"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 14l-6-6h12z" />
+                  </svg>
+                </button>
 
                 {activeDropdown === category.id && category.subCategories.length > 0 && (
                   <div className="absolute top-full left-0 bg-neutral-600 rounded-md shadow-lg min-w-max">
@@ -131,6 +131,18 @@ export function Navbar({ categories }: NavbarProps) {
             ))}
           </div>
 
+
+          {/* Orders link */}
+          <Link
+            href="/orders"
+            className="relative inline-flex items-center justify-center rounded-full bg-white/10 p-2 hover:bg-white/20 transition-colors"
+            aria-label="View orders"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </Link>
+
           {/* Wishlist link */}
           <Link
             href="/wishlist"
@@ -147,7 +159,7 @@ export function Navbar({ categories }: NavbarProps) {
             )}
           </Link>
 
-           <Link
+          <Link
             href="/cart"
             className="relative flex items-center justify-center p-2 hover:bg-gray-800 rounded transition-colors"
             aria-label="View cart"
@@ -185,7 +197,7 @@ export function Navbar({ categories }: NavbarProps) {
             className="fixed inset-0 bg-black/40 z-50 lg:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
-          
+
           {/* Slide-in Menu */}
           <div className="fixed top-0 right-0 bottom-0 w-80 bg-gray-900 z-50 overflow-y-auto lg:hidden shadow-xl">
             {/* Header */}
@@ -204,6 +216,16 @@ export function Navbar({ categories }: NavbarProps) {
 
             {/* Quick Links */}
             <div className="py-2 border-b border-gray-800">
+              <Link
+                href="/orders"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-4 py-3 text-sm text-gray-200 hover:text-white hover:bg-gray-800 transition-colors"
+              >
+                <span className="font-medium">My Orders</span>
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </Link>
               <Link
                 href="/wishlist"
                 onClick={() => setMobileMenuOpen(false)}

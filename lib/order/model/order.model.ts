@@ -4,6 +4,9 @@ export type OrderStatus = 'pending' | 'paid' | 'cancelled' | 'failed';
 
 export interface OrderItemDocument {
     productId: string;
+    productName: string;
+    productImage?: string;
+    variantName?: string;
     selectedVariantItemIds: string[];
     quantity: number;
     unitPrice: number;
@@ -23,6 +26,9 @@ export interface OrderDocument {
 
 export interface OrderItem {
     productId: string;
+    productName: string;
+    productImage?: string;
+    variantName?: string;
     selectedVariantItemIds: string[];
     quantity: number;
     unitPrice: number;
@@ -47,6 +53,9 @@ export function toOrder(doc: OrderDocument): Order {
         stripeSessionId: doc.stripeSessionId,
         items: doc.items.map(item => ({
             productId: item.productId,
+            productName: item.productName,
+            productImage: item.productImage,
+            variantName: item.variantName,
             selectedVariantItemIds: item.selectedVariantItemIds,
             quantity: item.quantity,
             unitPrice: item.unitPrice,

@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 export const OrderItemSchema = z.object({
     productId: z.string().min(1),
+    productName: z.string(),
+    productImage: z.string().optional(),
+    variantName: z.string().optional(),
     selectedVariantItemIds: z.array(z.string().min(1)).default([]),
     quantity: z.number().int().min(1),
     unitPrice: z.number(),
