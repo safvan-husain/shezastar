@@ -11,10 +11,10 @@ interface FooterProps {
 export function Footer({ categories }: FooterProps) {
   return (
     <footer className="bg-neutral-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-7xl mx-auto px-4 py-12 text-center md:text-left">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
-          <div className="space-y-4">
+          <div className="space-y-4 flex flex-col items-center md:items-start">
             <Image
               alt='shazstar logo'
               width={120}
@@ -22,11 +22,11 @@ export function Footer({ categories }: FooterProps) {
               src="/brand-icon-transparent.png"
             />
             <div className="space-y-2 text-sm text-gray-400">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center md:justify-start gap-2">
                 <span className="text-yellow-400">✉</span>
                 <span>info@shazastar.com</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center md:justify-start gap-2">
                 <span className="text-yellow-400">📞</span>
                 <span>+971 502122464</span>
               </div>
@@ -43,7 +43,7 @@ export function Footer({ categories }: FooterProps) {
                 <li key={category.id}>
                   <Link
                     href={`/category/${category.slug ?? category.id}`}
-                    className="group text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center gap-1"
+                    className="group text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
                   >
                     <span className='text-yellow-400 text-md group-hover:text-sm'>›</span>
                     {category.name}
@@ -62,7 +62,7 @@ export function Footer({ categories }: FooterProps) {
               <li>
                 <Link
                   href="/privacy-policy"
-                  className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center gap-1"
+                  className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
                 >
                   <span className='text-yellow-400'>›</span>
                   Privacy Policy
@@ -71,7 +71,7 @@ export function Footer({ categories }: FooterProps) {
               <li>
                 <Link
                   href="/terms-of-service"
-                  className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center gap-1"
+                  className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
                 >
                   <span className='text-yellow-400'>›</span>
                   Terms of Service
@@ -81,11 +81,11 @@ export function Footer({ categories }: FooterProps) {
           </div>
 
           {/* Follow Us */}
-          <div>
+          <div className="flex flex-col items-center md:items-start">
             <h3 className="text-white font-semibold text-sm uppercase tracking-wide mb-4">
               Follow Us
             </h3>
-            <div className="flex gap-3">
+            <div className="flex gap-3 justify-center md:justify-start">
               <a
                 href="https://instagram.com"
                 target="_blank"
@@ -124,7 +124,7 @@ export function Footer({ categories }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-gray-800">
+        <div className="mt-12 pt-8 border-t border-gray-800 text-center md:text-left">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
               Copyright © 2024 Shaza Star | Developed by{' '}
