@@ -178,83 +178,95 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           )}
 
           {/* Quantity Counter and Action Buttons */}
-          <div className="flex gap-3 flex-col sm:flex-row items-center">
+          <div className="space-y-4">
             {/* Quantity Counter */}
-            <div className="flex text-black items-center border border-[var(--storefront-border)] rounded-lg bg-white">
+
+
+            {/* Primary Action Buttons */}
+            <div className="grid w-full grid-cols-[1fr_2fr] gap-4 sm:grid-cols-[1fr_2fr_2fr_1fr]">
+
+              <div className="flex w-fit justify-start text-black items-center border border-[var(--storefront-border)] rounded-lg bg-white">
+                <button
+                  type="button"
+                  className="p-3 hover:bg-gray-50 transition"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  aria-label="Decrease quantity"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                  </svg>
+                </button>
+                <span className="px-4 py-3 min-w-[3rem] text-center font-medium text-[var(--storefront-text-primary)]">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  className="p-3 hover:bg-gray-50 transition"
+                  onClick={() => setQuantity(quantity + 1)}
+                  aria-label="Increase quantity"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Add to Cart Button */}
               <button
                 type="button"
-                className="p-3 hover:bg-gray-50 transition"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                aria-label="Decrease quantity"
+                className="w-full py-3 px-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={isLoading}
+                onClick={async () => {
+                  await addToCart(product.id, [], quantity);
+                }}
+                aria-label={`Add ${product.name} to cart`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 11-4 0v-6m4 0V9a2 2 0 10-4 0v4.01" />
                 </svg>
+                Add to cart
               </button>
-              <span className="px-4 py-3 min-w-[3rem] text-center font-medium text-[var(--storefront-text-primary)]">
-                {quantity}
-              </span>
+
+              {/* Wishlist Icon Button */}
               <button
                 type="button"
-                className="p-3 hover:bg-gray-50 transition"
-                onClick={() => setQuantity(quantity + 1)}
-                aria-label="Increase quantity"
+                className="sm:order-4 w-full py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] hover:bg-[var(--storefront-button-secondary-hover)] transition flex items-center justify-center"
+                aria-pressed={inWishlist}
+                aria-label={inWishlist ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+                onClick={() => {
+                  void toggleWishlistItem(product.id, []);
+                }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <svg
+                  className="w-5 h-5"
+                  fill={inWishlist ? 'currentColor' : 'none'}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.8"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.04 4 9.54 4.81 10.29 6.09 11.04 4.81 12.54 4 14.08 4 16.57 4 18.57 6 18.57 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                  />
                 </svg>
               </button>
+
+              {/* Buy Now Button */}
+              <button
+                type="button"
+                className="w-full py-3 px-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition flex items-center justify-center"
+                onClick={() => {
+                  // TODO: Implement buy now functionality
+                  console.log('Buy now clicked');
+                }}
+                aria-label={`Buy ${product.name} now`}
+              >
+                Buy Now
+              </button>
+
+
             </div>
-
-            {/* Add to Cart Button */}
-            <button
-              type="button"
-              className="flex-1 py-3 px-6 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              disabled={isLoading}
-              onClick={async () => {
-                await addToCart(product.id, [], quantity);
-              }}
-              aria-label={`Add ${product.name} to cart`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 11-4 0v-6m4 0V9a2 2 0 10-4 0v4.01" />
-              </svg>
-              Add to cart
-            </button>
-
-            {/* Buy Now Button */}
-            <button
-              type="button"
-              className="py-3 px-6 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition"
-              onClick={() => {
-                // TODO: Implement buy now functionality
-                console.log('Buy now clicked');
-              }}
-              aria-label={`Buy ${product.name} now`}
-            >
-              Buy Now
-            </button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
-              className="py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] font-medium hover:bg-[var(--storefront-button-secondary-hover)] transition"
-              aria-pressed={inWishlist}
-              aria-label={inWishlist ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
-              onClick={() => {
-                void toggleWishlistItem(product.id, []);
-              }}
-            >
-              {inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-            </button>
-            <button
-              type="button"
-              className="py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] font-medium hover:bg-[var(--storefront-button-secondary-hover)] transition"
-            >
-              Compare
-            </button>
           </div>
         </div>
       </div>
