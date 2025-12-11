@@ -71,7 +71,7 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: method === 'GET' ? undefined : JSON.stringify(body ?? {}),
+                    body: JSON.stringify(body ?? {}),
                 });
 
                 if (!response.ok) {
