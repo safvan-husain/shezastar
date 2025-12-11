@@ -30,7 +30,6 @@ interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
     selectedItems: VariantItem[];
-    priceDelta?: number;
 }
 
 interface ProductFormProps {
@@ -49,7 +48,6 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [highlights, setHighlights] = useState<string[]>(initialData?.highlights || []);
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
     const [offerPrice, setOfferPrice] = useState(initialData?.offerPrice || '');
-    const [stockCount, setStockCount] = useState(initialData?.stockCount?.toString() || '');
     const [images, setImages] = useState<ImageFile[]>(
         initialData?.images?.map((img: any) => ({
             id: img.id,
@@ -88,11 +86,25 @@ export function ProductForm({ initialData }: ProductFormProps) {
             if (description) formData.append('description', description);
             formData.append('basePrice', basePrice);
             if (offerPrice) formData.append('offerPrice', offerPrice);
-            if (stockCount) formData.append('stockCount', stockCount);
             const normalizedHighlights = highlights.map(h => h.trim()).filter(Boolean);
             formData.append('highlights', JSON.stringify(normalizedHighlights));
             formData.append('variants', JSON.stringify(variants));
-            formData.append('variantStock', JSON.stringify(variantStock));
+            
+            // Ensure products without variants have a default stock entry
+            let finalVariantStock = [...variantStock];
+            if (variants.length === 0) {
+                // If no variants, ensure we have a default stock entry
+                const hasDefaultEntry = finalVariantStock.some(vs => vs.variantCombinationKey === 'default');
+                if (!hasDefaultEntry) {
+                    finalVariantStock.push({
+                        variantCombinationKey: 'default',
+                        stockCount: 0,
+                        priceDelta: 0,
+                    });
+                }
+            }
+            
+            formData.append('variantStock', JSON.stringify(finalVariantStock));
             formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
 
             // Add installation service data
@@ -249,13 +261,11 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         description={description}
                         basePrice={basePrice}
                         offerPrice={offerPrice}
-                        stockCount={stockCount}
                         highlights={highlights}
                         onNameChange={setName}
                         onDescriptionChange={setDescription}
                         onBasePriceChange={setBasePrice}
                         onOfferPriceChange={setOfferPrice}
-                        onStockCountChange={setStockCount}
                         onHighlightsChange={setHighlights}
                     />
                 )}
@@ -317,7 +327,6 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         description={description}
                         basePrice={basePrice}
                         offerPrice={offerPrice}
-                        stockCount={stockCount}
                         highlights={highlights}
                         images={images}
                         variants={variants}

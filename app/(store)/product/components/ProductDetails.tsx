@@ -151,13 +151,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       }
     }
 
-    // Fall back to deprecated product-level stockCount if present
-    if (typeof product.stockCount === 'number') {
-      return product.stockCount;
-    }
-
     return null;
-  }, [hasVariantStock, product.variantStock, stockByKey, selectedVariantItemIds, product.stockCount]);
+  }, [hasVariantStock, product.variantStock, stockByKey, selectedVariantItemIds]);
 
   return (
     <div className='flex flex-col'>
@@ -311,7 +306,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   className="p-3 hover:bg-gray-50 transition"
                   onClick={() => {
                     if (currentStockLimit !== null && quantity + 1 > currentStockLimit) {
-                      showToast('Lack of count.', 'error');
+                      showToast('Lack of stock.', 'error');
                       return;
                     }
                     setQuantity(quantity + 1);
@@ -331,7 +326,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 disabled={isLoading || !allVariantsSelected}
                 onClick={async () => {
                   if (currentStockLimit !== null && quantity > currentStockLimit) {
-                    showToast('Lack of count.', 'error');
+                    showToast('Lack of stock.', 'error');
                     return;
                   }
                   await addToCart(product.id, selectedVariantItemIds, quantity);

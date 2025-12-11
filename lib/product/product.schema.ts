@@ -15,9 +15,6 @@ export const ProductVariantSchema = z.object({
         id: z.string(),
         name: z.string(),
     })),
-    // Optional price delta for this variant type (used for admin previews / defaults).
-    // Final per-combination pricing is stored on VariantStock.
-    priceDelta: z.number().optional(),
 });
 
 export const VariantStockSchema = z.object({
@@ -44,7 +41,6 @@ export const CreateProductSchema = z.object({
     variants: z.array(ProductVariantSchema).default([]),
     subCategoryIds: z.array(z.string()).default([]),
     installationService: InstallationServiceSchema.optional(),
-    stockCount: z.number().int().min(0, 'Stock count must be a non-negative integer').optional(), // DEPRECATED - for backward compatibility
     variantStock: z.array(VariantStockSchema).default([]),
 });
 
@@ -58,7 +54,6 @@ export const UpdateProductSchema = z.object({
     variants: z.array(ProductVariantSchema).optional(),
     subCategoryIds: z.array(z.string()).optional(),
     installationService: InstallationServiceSchema.optional(),
-    stockCount: z.number().int().min(0, 'Stock count must be a non-negative integer').optional(), // DEPRECATED
     variantStock: z.array(VariantStockSchema).optional(),
 });
 

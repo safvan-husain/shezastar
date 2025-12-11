@@ -35,7 +35,6 @@ interface ReviewStepProps {
     description: string;
     basePrice: string;
     offerPrice: string;
-    stockCount: string;
     highlights: string[];
     images: ImageFile[];
     variants: ProductVariant[];
@@ -52,7 +51,6 @@ export function ReviewStep({
     description,
     basePrice,
     offerPrice,
-    stockCount,
     highlights,
     images,
     variants,
@@ -224,6 +222,15 @@ export function ReviewStep({
         return entry?.priceDelta ?? 0;
     }, [variantStock, selectedVariantItemIdsForPricing]);
 
+    const combinationStockCount = useMemo(() => {
+        if (!variantStock || variantStock.length === 0) {
+            return null;
+        }
+        const key = getVariantCombinationKey(selectedVariantItemIdsForPricing);
+        const entry = variantStock.find(vs => vs.variantCombinationKey === key);
+        return entry?.stockCount ?? null;
+    }, [variantStock, selectedVariantItemIdsForPricing]);
+
     const effectiveBase = parsedBasePrice + combinationPriceDelta;
     const effectiveOffer = parsedOfferPrice !== null ? parsedOfferPrice + combinationPriceDelta : null;
 
@@ -367,15 +374,15 @@ export function ReviewStep({
                                 ${combinationPriceDelta.toFixed(2)} from base price
                             </p>
                         )}
-                        {stockCount && (
+                        {combinationStockCount !== null && (
                             <div className="flex items-center gap-2 text-sm">
-                                {parseInt(stockCount) > 0 ? (
+                                {combinationStockCount > 0 ? (
                                     <>
                                         <svg className="w-4 h-4 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         <span className="text-[var(--success)] font-medium">
-                                            In Stock ({stockCount} units available)
+                                            In Stock ({combinationStockCount} units available)
                                         </span>
                                     </>
                                 ) : (
@@ -390,7 +397,7 @@ export function ReviewStep({
                                 )}
                             </div>
                         )}
-                        {!stockCount && (
+                        {combinationStockCount === null && (
                             <p className="text-xs text-[var(--muted-foreground)]">
                                 Stock not tracked
                             </p>

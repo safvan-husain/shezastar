@@ -34,7 +34,6 @@ export async function PUT(
             const description = formData.get('description') as string | null;
             const basePrice = formData.get('basePrice') ? parseFloat(formData.get('basePrice') as string) : undefined;
             const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
-            const stockCount = formData.get('stockCount') ? parseFloat(formData.get('stockCount') as string) : undefined;
             const highlights = formData.get('highlights')
                 ? JSON.parse(formData.get('highlights') as string)
                 : undefined;
@@ -73,7 +72,6 @@ export async function PUT(
             if (description !== null) productData.description = description;
             if (basePrice !== undefined) productData.basePrice = basePrice;
             if (offerPrice !== undefined) productData.offerPrice = offerPrice;
-            if (stockCount !== undefined) productData.stockCount = stockCount;
             if (highlights !== undefined) productData.highlights = highlights;
             if (variants !== undefined) productData.variants = variants;
             if (variantStock !== undefined) productData.variantStock = variantStock;

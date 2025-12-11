@@ -180,9 +180,15 @@ describe('Products API Integration - Stock Count', () => {
         const productData = {
             name: 'Product with Stock',
             basePrice: 50.00,
-            stockCount: 100,
             images: [],
-            variants: []
+            variants: [],
+            variantStock: [
+                {
+                    variantCombinationKey: 'default',
+                    stockCount: 100,
+                    priceDelta: 0
+                }
+            ]
         };
 
         const req = new Request('http://localhost/api/products', {
@@ -194,7 +200,9 @@ describe('Products API Integration - Stock Count', () => {
         const body = await res.json();
 
         expect(res.status).toBe(201);
-        expect(body.stockCount).toBe(100);
+        expect(body.variantStock).toHaveLength(1);
+        expect(body.variantStock[0].variantCombinationKey).toBe('default');
+        expect(body.variantStock[0].stockCount).toBe(100);
         expect(body.name).toBe(productData.name);
         productWithStockId = body.id;
     });
@@ -206,7 +214,8 @@ describe('Products API Integration - Stock Count', () => {
         const body = await res.json();
 
         expect(res.status).toBe(200);
-        expect(body.stockCount).toBe(100);
+        expect(body.variantStock).toHaveLength(1);
+        expect(body.variantStock[0].stockCount).toBe(100);
     });
 
     it('should create a product without stock count', async () => {
@@ -226,13 +235,19 @@ describe('Products API Integration - Stock Count', () => {
         const body = await res.json();
 
         expect(res.status).toBe(201);
-        expect(body.stockCount).toBeUndefined();
+        expect(body.variantStock).toHaveLength(0);
         productWithoutStockId = body.id;
     });
 
     it('should update product stock count', async () => {
         const updateData = {
-            stockCount: 50
+            variantStock: [
+                {
+                    variantCombinationKey: 'default',
+                    stockCount: 50,
+                    priceDelta: 0
+                }
+            ]
         };
 
         const req = new Request(`http://localhost/api/products/${productWithStockId}`, {
@@ -244,12 +259,19 @@ describe('Products API Integration - Stock Count', () => {
         const body = await res.json();
 
         expect(res.status).toBe(200);
-        expect(body.stockCount).toBe(50);
+        expect(body.variantStock).toHaveLength(1);
+        expect(body.variantStock[0].stockCount).toBe(50);
     });
 
     it('should accept zero stock count', async () => {
         const updateData = {
-            stockCount: 0
+            variantStock: [
+                {
+                    variantCombinationKey: 'default',
+                    stockCount: 0,
+                    priceDelta: 0
+                }
+            ]
         };
 
         const req = new Request(`http://localhost/api/products/${productWithStockId}`, {
@@ -261,16 +283,23 @@ describe('Products API Integration - Stock Count', () => {
         const body = await res.json();
 
         expect(res.status).toBe(200);
-        expect(body.stockCount).toBe(0);
+        expect(body.variantStock).toHaveLength(1);
+        expect(body.variantStock[0].stockCount).toBe(0);
     });
 
     it('should reject negative stock count', async () => {
         const productData = {
             name: 'Invalid Product',
             basePrice: 25.00,
-            stockCount: -10,
             images: [],
-            variants: []
+            variants: [],
+            variantStock: [
+                {
+                    variantCombinationKey: 'default',
+                    stockCount: -10,
+                    priceDelta: 0
+                }
+            ]
         };
 
         const req = new Request('http://localhost/api/products', {
@@ -287,9 +316,15 @@ describe('Products API Integration - Stock Count', () => {
         const productData = {
             name: 'Invalid Product',
             basePrice: 25.00,
-            stockCount: 10.5,
             images: [],
-            variants: []
+            variants: [],
+            variantStock: [
+                {
+                    variantCombinationKey: 'default',
+                    stockCount: 10.5,
+                    priceDelta: 0
+                }
+            ]
         };
 
         const req = new Request('http://localhost/api/products', {

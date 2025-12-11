@@ -22,7 +22,6 @@ interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
     selectedItems: VariantItem[];
-    priceDelta?: number;
 }
 
 interface VariantSelectorProps {
@@ -97,7 +96,6 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
                 variantTypeId: variantType.id,
                 variantTypeName: variantType.name,
                 selectedItems: [],
-                priceDelta: 0,
             },
         ]);
     };
@@ -123,15 +121,7 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
         );
     };
 
-    const updatePriceDelta = (variantTypeId: string, value: number) => {
-        onChange(
-            variants.map(v =>
-                v.variantTypeId === variantTypeId
-                    ? { ...v, priceDelta: value }
-                    : v
-            )
-        );
-    };
+
 
     if (loading) {
         return <div className="text-center py-4">Loading variant types...</div>;
@@ -192,22 +182,6 @@ export function VariantSelector({ variants, onChange }: VariantSelectorProps) {
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-
-                            <div className="max-w-xs">
-                                <Input
-                                    type="number"
-                                    label="Price Delta (optional)"
-                                    placeholder="0"
-                                    value={variant.priceDelta ?? ''}
-                                    onChange={(e) => updatePriceDelta(
-                                        variant.variantTypeId,
-                                        parseFloat(e.target.value) || 0
-                                    )}
-                                />
-                                <p className="text-xs text-[var(--text-muted)] mt-1">
-                                    Amount added to the base/offer price. Can be negative.
-                                </p>
                             </div>
                         </div>
                     </Card>

@@ -36,7 +36,6 @@ export async function createProduct(input: CreateProductInput) {
         variants: input.variants,
         subCategoryIds: input.subCategoryIds || [],
         installationService: input.installationService,
-        stockCount: input.stockCount, // DEPRECATED
         variantStock: input.variantStock || [],
         highlights: input.highlights ?? [],
         createdAt: now,
@@ -131,7 +130,6 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     if (input.description !== undefined) updateDoc.description = input.description;
     if (input.basePrice !== undefined) updateDoc.basePrice = input.basePrice;
     if (input.offerPrice !== undefined) updateDoc.offerPrice = input.offerPrice;
-    if (input.stockCount !== undefined) updateDoc.stockCount = input.stockCount;
     if (input.variantStock !== undefined) updateDoc.variantStock = input.variantStock;
     if (input.highlights !== undefined) updateDoc.highlights = input.highlights;
     if (input.images) {

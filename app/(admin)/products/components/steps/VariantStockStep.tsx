@@ -14,7 +14,6 @@ interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
     selectedItems: VariantItem[];
-    priceDelta?: number;
 }
 
 interface VariantStock {

@@ -12,7 +12,6 @@ export interface ProductDocument {
     variants: ProductVariant[];
     subCategoryIds: string[];
     installationService?: InstallationService;
-    stockCount?: number; // DEPRECATED - for backward compatibility
     variantStock: VariantStock[];
     highlights?: string[];
     createdAt: Date;
@@ -29,7 +28,6 @@ export interface Product {
     variants: ProductVariant[];
     subCategoryIds: string[];
     installationService?: InstallationService;
-    stockCount?: number; // DEPRECATED
     variantStock: VariantStock[];
     highlights: string[];
     createdAt: string;
@@ -37,7 +35,7 @@ export interface Product {
 }
 
 export function toProduct(doc: ProductDocument): Product {
-    const product: Product = {
+    return {
         id: doc._id.toString(),
         name: doc.name,
         description: doc.description,
@@ -52,13 +50,6 @@ export function toProduct(doc: ProductDocument): Product {
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
-
-    // Only include stockCount if it's defined (DEPRECATED)
-    if (doc.stockCount !== undefined && doc.stockCount !== null) {
-        product.stockCount = doc.stockCount;
-    }
-
-    return product;
 }
 
 export function toProducts(docs: ProductDocument[]): Product[] {

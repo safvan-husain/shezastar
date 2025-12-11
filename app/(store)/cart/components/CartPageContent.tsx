@@ -39,10 +39,6 @@ function computeAvailableStock(product: Product | null, selectedVariantItemIds: 
     }
   }
 
-  if (typeof product.stockCount === "number") {
-    return product.stockCount;
-  }
-
   return null;
 }
 

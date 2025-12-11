@@ -9,13 +9,11 @@ interface BasicInfoStepProps {
     description: string;
     basePrice: string;
     offerPrice: string;
-    stockCount: string;
     highlights: string[];
     onNameChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
     onBasePriceChange: (value: string) => void;
     onOfferPriceChange: (value: string) => void;
-    onStockCountChange: (value: string) => void;
     onHighlightsChange: (value: string[]) => void;
 }
 
@@ -24,13 +22,11 @@ export function BasicInfoStep({
     description,
     basePrice,
     offerPrice,
-    stockCount,
     highlights,
     onNameChange,
     onDescriptionChange,
     onBasePriceChange,
     onOfferPriceChange,
-    onStockCountChange,
     onHighlightsChange,
 }: BasicInfoStepProps) {
     return (
@@ -83,20 +79,6 @@ export function BasicInfoStep({
                         step="0.01"
                         min="0"
                     />
-                </div>
-                <div>
-                    <Input
-                        type="number"
-                        label="Stock Count (optional)"
-                        value={stockCount}
-                        onChange={(e) => onStockCountChange(e.target.value)}
-                        placeholder="Leave empty for unlimited stock"
-                        step="1"
-                        min="0"
-                    />
-                    <p className="text-xs text-[var(--muted-foreground)] mt-2">
-                        Track inventory by entering available units. Leave empty if stock is not tracked.
-                    </p>
                 </div>
                 <div>
                     <div className="flex items-center justify-between mb-2">
