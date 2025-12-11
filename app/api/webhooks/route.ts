@@ -8,9 +8,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error('STRIPE_SECRET_KEY is missing.');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-01-27.clover' as any,
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {});
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 

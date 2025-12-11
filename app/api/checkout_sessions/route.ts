@@ -7,9 +7,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error('STRIPE_SECRET_KEY is missing. Please set it in your .env.local file.');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-01-27.clover' as any, // Temporary fix or specific version
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {});
 // actually I'll just use the one from the error message if it seems valid.
 
 export async function POST(req: NextRequest) {
@@ -50,7 +48,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        return NextResponse.json({ sessionId: session.id });
+        return NextResponse.json({ url: session.url });
     } catch (err: any) {
         console.error('Error creating checkout session:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });

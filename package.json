@@ -16,7 +16,6 @@
     "@dnd-kit/sortable": "^9.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
-    "@stripe/stripe-js": "^8.5.3",
     "mongodb": "^6.11.0",
     "nanoid": "^5.0.9",
     "next": "16.0.7",
