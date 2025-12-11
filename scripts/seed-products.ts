@@ -20,6 +20,7 @@ async function seedProducts() {
             name: seed.name,
             description: seed.description,
             basePrice: seed.price,
+            highlights: [],
             images: [
                 {
                     id: nanoid(),

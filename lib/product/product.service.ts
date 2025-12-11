@@ -37,6 +37,7 @@ export async function createProduct(input: CreateProductInput) {
         subCategoryIds: input.subCategoryIds || [],
         installationService: input.installationService,
         stockCount: input.stockCount,
+        highlights: input.highlights ?? [],
         createdAt: now,
         updatedAt: now,
     };
@@ -130,6 +131,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     if (input.basePrice !== undefined) updateDoc.basePrice = input.basePrice;
     if (input.offerPrice !== undefined) updateDoc.offerPrice = input.offerPrice;
     if (input.stockCount !== undefined) updateDoc.stockCount = input.stockCount;
+    if (input.highlights !== undefined) updateDoc.highlights = input.highlights;
     if (input.images) {
         // Ensure all images have IDs
         updateDoc.images = input.images.map((img, index) => ({

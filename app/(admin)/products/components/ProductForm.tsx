@@ -45,6 +45,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
     const [name, setName] = useState(initialData?.name || '');
     const [description, setDescription] = useState(initialData?.description || '');
+    const [highlights, setHighlights] = useState<string[]>(initialData?.highlights || []);
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
     const [offerPrice, setOfferPrice] = useState(initialData?.offerPrice || '');
     const [stockCount, setStockCount] = useState(initialData?.stockCount?.toString() || '');
@@ -84,6 +85,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
             formData.append('basePrice', basePrice);
             if (offerPrice) formData.append('offerPrice', offerPrice);
             if (stockCount) formData.append('stockCount', stockCount);
+            const normalizedHighlights = highlights.map(h => h.trim()).filter(Boolean);
+            formData.append('highlights', JSON.stringify(normalizedHighlights));
             formData.append('variants', JSON.stringify(variants));
             formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
 
@@ -242,11 +245,13 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         basePrice={basePrice}
                         offerPrice={offerPrice}
                         stockCount={stockCount}
+                        highlights={highlights}
                         onNameChange={setName}
                         onDescriptionChange={setDescription}
                         onBasePriceChange={setBasePrice}
                         onOfferPriceChange={setOfferPrice}
                         onStockCountChange={setStockCount}
+                        onHighlightsChange={setHighlights}
                     />
                 )}
 
@@ -298,6 +303,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         basePrice={basePrice}
                         offerPrice={offerPrice}
                         stockCount={stockCount}
+                        highlights={highlights}
                         images={images}
                         variants={variants}
                         imageMappings={imageMappings}

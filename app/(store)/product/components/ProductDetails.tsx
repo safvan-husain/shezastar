@@ -94,6 +94,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           {product.description && (
             <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
           )}
+          {product.highlights && product.highlights.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <h2 className="text-sm font-semibold text-[var(--storefront-text-primary)]">Key highlights</h2>
+              <ul className="mt-1 space-y-1 text-sm text-[var(--storefront-text-secondary)]">
+                {product.highlights.map((item, index) => (
+                  <li key={`${item}-${index}`} className="flex gap-2">
+                    <span className="mt-[3px] text-[var(--storefront-text-muted)]">•</span>
+                    <span className="flex-1">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Price */}

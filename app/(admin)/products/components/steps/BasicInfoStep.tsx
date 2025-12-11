@@ -10,11 +10,13 @@ interface BasicInfoStepProps {
     basePrice: string;
     offerPrice: string;
     stockCount: string;
+    highlights: string[];
     onNameChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
     onBasePriceChange: (value: string) => void;
     onOfferPriceChange: (value: string) => void;
     onStockCountChange: (value: string) => void;
+    onHighlightsChange: (value: string[]) => void;
 }
 
 export function BasicInfoStep({
@@ -23,11 +25,13 @@ export function BasicInfoStep({
     basePrice,
     offerPrice,
     stockCount,
+    highlights,
     onNameChange,
     onDescriptionChange,
     onBasePriceChange,
     onOfferPriceChange,
     onStockCountChange,
+    onHighlightsChange,
 }: BasicInfoStepProps) {
     return (
         <Card>
@@ -93,6 +97,61 @@ export function BasicInfoStep({
                     <p className="text-xs text-[var(--muted-foreground)] mt-2">
                         Track inventory by entering available units. Leave empty if stock is not tracked.
                     </p>
+                </div>
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-semibold text-[var(--foreground)]">
+                            Product Highlights
+                        </label>
+                        <button
+                            type="button"
+                            className="text-xs font-medium text-[var(--primary)] hover:underline"
+                            onClick={() => {
+                                if (highlights.length >= 10) return;
+                                onHighlightsChange([...highlights, '']);
+                            }}
+                        >
+                            + Add highlight
+                        </button>
+                    </div>
+                    <p className="text-xs text-[var(--muted-foreground)] mb-3">
+                        Short, benefit-focused bullet points. One per row (max 10).
+                    </p>
+                    <div className="space-y-2">
+                        {highlights.map((value, index) => (
+                            <div key={index} className="flex gap-2 items-start">
+                                <Input
+                                    value={value}
+                                    onChange={(e) => {
+                                        const next = [...highlights];
+                                        next[index] = e.target.value;
+                                        onHighlightsChange(next);
+                                    }}
+                                    placeholder="e.g., Easy plug-and-play installation"
+                                />
+                                <button
+                                    type="button"
+                                    className="text-xs text-[var(--muted-foreground)] hover:text-[var(--danger)] mt-2"
+                                    onClick={() => {
+                                        const next = highlights.filter((_, i) => i !== index);
+                                        onHighlightsChange(next);
+                                    }}
+                                    aria-label="Remove highlight"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        ))}
+                        {highlights.length === 0 && (
+                            <button
+                                type="button"
+                                className="text-xs font-medium text-[var(--primary)] hover:underline"
+                                onClick={() => onHighlightsChange([''])}
+                            >
+                                Add your first highlight
+                            </button>
+                        )}
+                    </div>
                 </div>
                 {offerPrice && parseFloat(offerPrice) < parseFloat(basePrice) && (
                     <div className="bg-[var(--success)]/10 border border-[var(--success)] text-[var(--success)] px-4 py-3 rounded-lg flex items-center gap-2">

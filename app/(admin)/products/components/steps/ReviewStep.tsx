@@ -30,6 +30,7 @@ interface ReviewStepProps {
     basePrice: string;
     offerPrice: string;
     stockCount: string;
+    highlights: string[];
     images: ImageFile[];
     variants: ProductVariant[];
     imageMappings: Record<string, string[]>;
@@ -45,6 +46,7 @@ export function ReviewStep({
     basePrice,
     offerPrice,
     stockCount,
+    highlights,
     images,
     variants,
     imageMappings,
@@ -291,6 +293,21 @@ export function ReviewStep({
                             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                                 {description}
                             </p>
+                        )}
+                        {highlights && highlights.length > 0 && (
+                            <div className="mt-3 space-y-1">
+                                <p className="text-xs font-semibold text-[var(--text-secondary)]">
+                                    Key highlights
+                                </p>
+                                <ul className="space-y-1 text-xs text-[var(--text-muted)]">
+                                    {highlights.map((item, index) => (
+                                        <li key={`${item}-${index}`} className="flex gap-2">
+                                            <span className="mt-[2px] text-[var(--text-muted)]">•</span>
+                                            <span className="flex-1">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         )}
                         {categoryLabels.length > 0 && (
                             <div className="mt-3 space-y-1">
