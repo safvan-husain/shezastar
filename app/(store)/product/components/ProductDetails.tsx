@@ -1,12 +1,12 @@
 'use client';
 
-'use client';
-
-import Image from 'next/image';
-import { useState } from 'react';
-import { Product } from '@/lib/product/model/product.model';
+import { useMemo, useState } from 'react';
+import type { Product } from '@/lib/product/model/product.model';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
+import { getVariantCombinationKey } from '@/lib/product/product.utils';
+import { ProductImageGallery } from './ProductImageGallery';
+import { BuyNowButton } from './BuyNowButton';
 
 interface ProductDetailsProps {
   product: Product;
@@ -25,6 +25,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const { addToCart, isLoading } = useStorefrontCart();
   const [quantity, setQuantity] = useState<number>(1);
   const [installationOption, setInstallationOption] = useState<InstallationOption>('none');
+  const [selectedVariantItems, setSelectedVariantItems] = useState<Record<string, string | null>>({});
 
   const addOnPrice =
     installationOption === 'none'
@@ -33,60 +34,94 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         ? product.installationService?.inStorePrice ?? 0
         : product.installationService?.atHomePrice ?? 0;
 
+  const selectedVariantItemIds = useMemo(
+    () => Object.values(selectedVariantItems).filter((id): id is string => Boolean(id)),
+    [selectedVariantItems]
+  );
+
+  const hasVariantStock = (product.variantStock?.length ?? 0) > 0;
+
+  const stockByKey = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const stockEntry of product.variantStock ?? []) {
+      map.set(stockEntry.variantCombinationKey, stockEntry.stockCount);
+    }
+    return map;
+  }, [product.variantStock]);
+
+  const isCombinationAvailable = (combinationItemIds: string[]): boolean => {
+    if (!hasVariantStock) {
+      // No per-variant stock tracking; treat as available
+      return true;
+    }
+
+    const key = getVariantCombinationKey(combinationItemIds);
+    const stock = stockByKey.get(key);
+
+    // If there is no explicit stock entry for this combination,
+    // mirror backend behavior and treat it as unlimited/available.
+    if (stock === undefined) {
+      return true;
+    }
+
+    return stock > 0;
+  };
+
+  const isVariantItemAvailable = (variantTypeId: string, itemId: string): boolean => {
+    if (!hasVariantStock || !product.variants || product.variants.length === 0) {
+      return true;
+    }
+
+    const variants = product.variants;
+
+    const search = (index: number, currentIds: string[]): boolean => {
+      if (index === variants.length) {
+        return isCombinationAvailable(currentIds);
+      }
+
+      const variant = variants[index];
+      const selectedForVariant = selectedVariantItems[variant.variantTypeId] ?? null;
+
+      // For the variant we are evaluating, force the candidate item.
+      // For other variants, honor current selection if any; otherwise try all options.
+      if (variant.variantTypeId === variantTypeId) {
+        return search(index + 1, [...currentIds, itemId]);
+      }
+
+      if (selectedForVariant) {
+        return search(index + 1, [...currentIds, selectedForVariant]);
+      }
+
+      for (const option of variant.selectedItems) {
+        if (search(index + 1, [...currentIds, option.id])) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    return search(0, []);
+  };
+
+  const handleVariantClick = (variantTypeId: string, itemId: string, isDisabled: boolean) => {
+    if (isDisabled) return;
+
+    setSelectedVariantItems(prev => {
+      const current = prev[variantTypeId];
+      const next: Record<string, string | null> = { ...prev };
+
+      // Toggle selection: clicking again clears it
+      next[variantTypeId] = current === itemId ? null : itemId;
+      return next;
+    });
+  };
+
   return (
     <div className='flex flex-col'>
       <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
         {/* Image Gallery */}
-        <div className="space-y-4">
-          <div className="relative aspect-square overflow-hidden rounded-lg bg-[var(--storefront-bg-subtle)]">
-            {product.images?.[0] ? (
-              <Image
-                src={product.images[0].url}
-                alt={product.name}
-                fill
-                unoptimized
-                sizes="(max-width: 824px) 80vw, 50vw"
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-[var(--storefront-text-muted)]">
-                <svg className="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h18M3 19h18M5 5v14M19 5v14" />
-                </svg>
-                <p className="text-sm tracking-wide">No image available</p>
-              </div>
-            )}
-            {product.offerPrice && (
-              <div className="absolute top-4 left-4">
-                <span className="inline-flex items-center rounded-md bg-[var(--storefront-sale)] px-3 py-1.5 text-sm font-semibold text-white">
-                  SALE
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Thumbnail Gallery */}
-          {product.images && product.images.length > 1 && (
-            <div className="grid grid-cols-4 gap-4">
-              {product.images.slice(0, 4).map((image, index) => (
-                <div
-                  key={image.id || index}
-                  className="relative aspect-square overflow-hidden rounded-md bg-[var(--storefront-bg-subtle)] border border-[var(--storefront-border)] cursor-pointer hover:border-[var(--storefront-text-primary)] transition"
-                >
-                  <Image
-                    src={image.url}
-                    alt={`${product.name} - Image ${index + 1}`}
-                    fill
-                    unoptimized
-                    sizes="(max-width: 1024px) 25vw, 12.5vw"
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductImageGallery product={product} />
 
         {/* Product Info */}
         <div className="space-y-6">
@@ -117,15 +152,33 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     {variant.variantTypeName}
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {variant.selectedItems.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className="px-4 py-2 rounded-md border border-[var(--storefront-border)] bg-[var(--storefront-bg)] text-[var(--storefront-text-primary)] hover:border-[var(--storefront-text-primary)] transition"
-                      >
-                        {item.name}
-                      </button>
-                    ))}
+                    {variant.selectedItems.map((item) => {
+                      const isSelected = selectedVariantItems[variant.variantTypeId] === item.id;
+                      const isAvailable = isVariantItemAvailable(variant.variantTypeId, item.id);
+                      const isDisabled = !isAvailable && !isSelected;
+
+                      const baseClasses =
+                        'px-4 py-2 rounded-md border transition text-[var(--storefront-text-primary)]';
+                      const stateClasses = isSelected
+                        ? 'border-[var(--storefront-text-primary)] bg-[var(--storefront-bg-hover)] font-semibold'
+                        : 'border-[var(--storefront-border)] bg-[var(--storefront-bg)] hover:border-[var(--storefront-text-primary)]';
+                      const disabledClasses = isDisabled
+                        ? 'opacity-50 cursor-not-allowed hover:border-[var(--storefront-border)]'
+                        : '';
+
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          disabled={isDisabled}
+                          aria-pressed={isSelected}
+                          className={[baseClasses, stateClasses, disabledClasses].join(' ')}
+                          onClick={() => handleVariantClick(variant.variantTypeId, item.id, isDisabled)}
+                        >
+                          {item.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -179,8 +232,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
           {/* Quantity Counter and Action Buttons */}
           <div className="space-y-4">
-            {/* Quantity Counter */}
-
 
             {/* Primary Action Buttons */}
             <div className="grid w-full grid-cols-[1fr_2fr] gap-4 sm:grid-cols-[1fr_2fr_2fr_1fr]">
@@ -217,7 +268,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 className="w-full py-3 px-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={isLoading}
                 onClick={async () => {
-                  await addToCart(product.id, [], quantity);
+                  await addToCart(product.id, selectedVariantItemIds, quantity);
                 }}
                 aria-label={`Add ${product.name} to cart`}
               >
@@ -253,45 +304,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               </button>
 
               {/* Buy Now Button */}
-              <button
-                type="button"
-                className="w-full py-3 px-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition flex items-center justify-center"
-                onClick={async () => {
-                  try {
-                    const basePrice = product.offerPrice ?? product.basePrice;
-                    const finalUnitPrice = basePrice + addOnPrice;
-
-                    const response = await fetch('/api/checkout_sessions', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        items: [{
-                          productId: product.id,
-                          quantity: quantity,
-                          unitPrice: finalUnitPrice,
-                          selectedVariantItemIds: [], // Currently adhering to same pattern as addToCart
-                        }],
-                      }),
-                    });
-
-                    const data = await response.json();
-
-                    if (data.url) {
-                      window.location.href = data.url;
-                    } else {
-                      console.error('Failed to start checkout:', data.error);
-                      // Optionally show a toast here
-                    }
-                  } catch (error) {
-                    console.error('Error during buy now:', error);
-                  }
-                }}
-                aria-label={`Buy ${product.name} now`}
-              >
-                Buy Now
-              </button>
+              <BuyNowButton
+                product={product}
+                quantity={quantity}
+                addOnPrice={addOnPrice}
+                selectedVariantItemIds={selectedVariantItemIds}
+              />
 
 
             </div>
