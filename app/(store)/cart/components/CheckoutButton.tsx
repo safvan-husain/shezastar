@@ -21,8 +21,8 @@ export default function CheckoutButton({ hasStockIssues = false, availableCount 
     if (hasStockIssues) {
       const message =
         typeof availableCount === "number"
-          ? `This product has not this much count. There is only ${availableCount} left. Please adjust the count.`
-          : "This product has not this much count. There is only this much left. Please adjust the count.";
+          ? `There is only ${availableCount} left. Please adjust the count.`
+          : "There is only this much left. Please adjust the count.";
 
       showToast(
         message,
@@ -58,8 +58,8 @@ export default function CheckoutButton({ hasStockIssues = false, availableCount 
               : undefined;
           const message =
             typeof firstAvailable === "number"
-              ? `This product has not this much count. There is only ${firstAvailable} left. Please adjust the count.`
-              : "This product has not this much count. There is only this much left. Please adjust the count.";
+              ? `There is only ${firstAvailable} left. Please adjust the count.`
+              : "There is only this much left. Please adjust the count.";
 
           showToast(
             message,
