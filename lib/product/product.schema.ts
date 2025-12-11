@@ -18,6 +18,11 @@ export const ProductVariantSchema = z.object({
     priceModifier: z.number().optional(), // Optional price override for this variant
 });
 
+export const VariantStockSchema = z.object({
+    variantCombinationKey: z.string(), // e.g., "color-red+size-large" or "default" for no variants
+    stockCount: z.number().int().min(0, 'Stock count must be non-negative'),
+});
+
 export const InstallationServiceSchema = z.object({
     enabled: z.boolean().default(false),
     inStorePrice: z.number().min(0).optional(),
@@ -34,7 +39,8 @@ export const CreateProductSchema = z.object({
     variants: z.array(ProductVariantSchema).default([]),
     subCategoryIds: z.array(z.string()).default([]),
     installationService: InstallationServiceSchema.optional(),
-    stockCount: z.number().int().min(0, 'Stock count must be a non-negative integer').optional(),
+    stockCount: z.number().int().min(0, 'Stock count must be a non-negative integer').optional(), // DEPRECATED - for backward compatibility
+    variantStock: z.array(VariantStockSchema).default([]),
 });
 
 export const UpdateProductSchema = z.object({
@@ -47,7 +53,8 @@ export const UpdateProductSchema = z.object({
     variants: z.array(ProductVariantSchema).optional(),
     subCategoryIds: z.array(z.string()).optional(),
     installationService: InstallationServiceSchema.optional(),
-    stockCount: z.number().int().min(0, 'Stock count must be a non-negative integer').optional(),
+    stockCount: z.number().int().min(0, 'Stock count must be a non-negative integer').optional(), // DEPRECATED
+    variantStock: z.array(VariantStockSchema).optional(),
 });
 
 export const ImageMappingSchema = z.object({
@@ -57,6 +64,7 @@ export const ImageMappingSchema = z.object({
 
 export type ProductImage = z.infer<typeof ProductImageSchema>;
 export type ProductVariant = z.infer<typeof ProductVariantSchema>;
+export type VariantStock = z.infer<typeof VariantStockSchema>;
 export type InstallationService = z.infer<typeof InstallationServiceSchema>;
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;

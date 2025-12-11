@@ -31,8 +31,16 @@ vi.mock('@/lib/storefront-session', () => ({
 // Mock Cart Service to avoid DB calls
 vi.mock('@/lib/cart/cart.service', () => ({
     getCartForCurrentSession: vi.fn().mockResolvedValue({
-        items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100 }],
+        items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100, selectedVariantItemIds: [] }],
         isEmpty: false
+    }),
+}));
+
+// Mock Stock Service
+vi.mock('@/lib/product/product.service-stock', () => ({
+    validateStockAvailability: vi.fn().mockResolvedValue({
+        available: true,
+        insufficientItems: []
     }),
 }));
 

@@ -39,6 +39,7 @@ export async function PUT(
                 ? JSON.parse(formData.get('highlights') as string)
                 : undefined;
             const variants = formData.get('variants') ? JSON.parse(formData.get('variants') as string) : undefined;
+            const variantStock = formData.get('variantStock') ? JSON.parse(formData.get('variantStock') as string) : undefined;
             const subCategoryIds = formData.get('subCategoryIds') ? JSON.parse(formData.get('subCategoryIds') as string) : undefined;
             const installationService = formData.get('installationService') ? JSON.parse(formData.get('installationService') as string) : undefined;
             const existingImages = JSON.parse(formData.get('existingImages') as string || '[]');
@@ -75,6 +76,7 @@ export async function PUT(
             if (stockCount !== undefined) productData.stockCount = stockCount;
             if (highlights !== undefined) productData.highlights = highlights;
             if (variants !== undefined) productData.variants = variants;
+            if (variantStock !== undefined) productData.variantStock = variantStock;
             if (subCategoryIds !== undefined) productData.subCategoryIds = subCategoryIds;
             if (installationService !== undefined) productData.installationService = installationService;
             productData.images = allImages;

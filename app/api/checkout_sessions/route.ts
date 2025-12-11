@@ -25,8 +25,17 @@ export async function POST(req: NextRequest) {
         const body = await req.json().catch(() => ({}));
         const buyNowItems = body.items;
 
+        // Prepare items for stock validation
+        let itemsToValidate: Array<{ productId: string; selectedVariantItemIds: string[]; quantity: number }> = [];
+
         if (buyNowItems && Array.isArray(buyNowItems) && buyNowItems.length > 0) {
             // Buy Now Flow
+            itemsToValidate = buyNowItems.map((item: any) => ({
+                productId: item.productId,
+                selectedVariantItemIds: item.selectedVariantItemIds || [],
+                quantity: item.quantity
+            }));
+
             lineItems = buyNowItems.map((item: any) => ({
                 price_data: {
                     currency: 'usd',
@@ -47,6 +56,12 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
             }
 
+            itemsToValidate = cart.items.map(item => ({
+                productId: item.productId,
+                selectedVariantItemIds: item.selectedVariantItemIds,
+                quantity: item.quantity
+            }));
+
             lineItems = cart.items.map((item) => {
                 return {
                     price_data: {
@@ -59,6 +74,17 @@ export async function POST(req: NextRequest) {
                     quantity: item.quantity,
                 };
             });
+        }
+
+        // Validate stock availability before creating checkout session
+        const { validateStockAvailability } = await import('@/lib/product/product.service-stock');
+        const stockValidation = await validateStockAvailability(itemsToValidate);
+
+        if (!stockValidation.available) {
+            return NextResponse.json({
+                error: 'Insufficient stock',
+                insufficientItems: stockValidation.insufficientItems
+            }, { status: 400 });
         }
 
         const origin = req.headers.get('origin') || 'http://localhost:3000';

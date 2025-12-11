@@ -1,6 +1,6 @@
 // lib/product/model/product.model.ts
 import { ObjectId } from 'mongodb';
-import { ProductImage, ProductVariant, InstallationService } from '../product.schema';
+import { ProductImage, ProductVariant, InstallationService, VariantStock } from '../product.schema';
 
 export interface ProductDocument {
     _id: ObjectId;
@@ -12,7 +12,8 @@ export interface ProductDocument {
     variants: ProductVariant[];
     subCategoryIds: string[];
     installationService?: InstallationService;
-    stockCount?: number;
+    stockCount?: number; // DEPRECATED - for backward compatibility
+    variantStock: VariantStock[];
     highlights?: string[];
     createdAt: Date;
     updatedAt: Date;
@@ -28,7 +29,8 @@ export interface Product {
     variants: ProductVariant[];
     subCategoryIds: string[];
     installationService?: InstallationService;
-    stockCount?: number;
+    stockCount?: number; // DEPRECATED
+    variantStock: VariantStock[];
     highlights: string[];
     createdAt: string;
     updatedAt: string;
@@ -45,12 +47,13 @@ export function toProduct(doc: ProductDocument): Product {
         variants: doc.variants,
         subCategoryIds: doc.subCategoryIds || [],
         installationService: doc.installationService,
+        variantStock: doc.variantStock || [],
         highlights: doc.highlights ?? [],
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
 
-    // Only include stockCount if it's defined
+    // Only include stockCount if it's defined (DEPRECATED)
     if (doc.stockCount !== undefined && doc.stockCount !== null) {
         product.stockCount = doc.stockCount;
     }

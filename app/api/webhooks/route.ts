@@ -166,6 +166,19 @@ export async function POST(req: NextRequest) {
 
                 await createOrder(orderData);
 
+                // Reduce stock for each item after successful order creation
+                for (const item of orderItems) {
+                    try {
+                        const { reduceVariantStock } = await import('@/lib/product/product.service-stock');
+                        await reduceVariantStock(item.productId, item.selectedVariantItemIds, item.quantity);
+                        console.log(`Reduced stock for product ${item.productId}, variant ${item.selectedVariantItemIds.join('+')}, quantity ${item.quantity}`);
+                    } catch (stockError) {
+                        // Log error but don't fail the order
+                        console.error(`Failed to reduce stock for product ${item.productId}:`, stockError);
+                        // TODO: Consider adding to a queue for manual review
+                    }
+                }
+
                 // Clear the cart ONLY if it's not a Buy Now order
                 if (shouldClearCart) {
                     await clearCart(storefrontSessionId);

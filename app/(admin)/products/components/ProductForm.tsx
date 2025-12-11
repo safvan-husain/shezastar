@@ -9,6 +9,7 @@ import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ImagesStep } from './steps/ImagesStep';
 import { CategoryStep } from './steps/CategoryStep';
 import { VariantsStep } from './steps/VariantsStep';
+import { VariantStockStep } from './steps/VariantStockStep';
 import { InstallationServiceStep } from './steps/InstallationServiceStep';
 import { ImageMappingStep } from './steps/ImageMappingStep';
 import { ReviewStep } from './steps/ReviewStep';
@@ -57,6 +58,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
         })) || []
     );
     const [variants, setVariants] = useState<ProductVariant[]>(initialData?.variants || []);
+    const [variantStock, setVariantStock] = useState<Array<{ variantCombinationKey: string; stockCount: number }>>(initialData?.variantStock || []);
     const [subCategoryIds, setSubCategoryIds] = useState<string[]>(initialData?.subCategoryIds || []);
     const [installationEnabled, setInstallationEnabled] = useState(initialData?.installationService?.enabled || false);
     const [inStorePrice, setInStorePrice] = useState(initialData?.installationService?.inStorePrice?.toString() || '');
@@ -88,6 +90,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
             const normalizedHighlights = highlights.map(h => h.trim()).filter(Boolean);
             formData.append('highlights', JSON.stringify(normalizedHighlights));
             formData.append('variants', JSON.stringify(variants));
+            formData.append('variantStock', JSON.stringify(variantStock));
             formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
 
             // Add installation service data
@@ -277,6 +280,14 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 )}
 
                 {step === 5 && (
+                    <VariantStockStep
+                        variants={variants}
+                        variantStock={variantStock}
+                        onVariantStockChange={setVariantStock}
+                    />
+                )}
+
+                {step === 6 && (
                     <InstallationServiceStep
                         enabled={installationEnabled}
                         inStorePrice={inStorePrice}
@@ -287,7 +298,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     />
                 )}
 
-                {step === 6 && (
+                {step === 7 && (
                     <ImageMappingStep
                         images={images}
                         variants={variants}
@@ -296,7 +307,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     />
                 )}
 
-                {step === 7 && (
+                {step === 8 && (
                     <ReviewStep
                         name={name}
                         description={description}
@@ -341,7 +352,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                                 Delete Product
                             </Button>
                         )}
-                        {step < 7 ? (
+                        {step < 8 ? (
                             <Button size="lg" onClick={() => setStep(step + 1)} disabled={!canProceed() || loading}>
                                 Next
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
