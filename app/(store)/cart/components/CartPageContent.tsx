@@ -2,21 +2,56 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo } from "react";
 import type { Cart } from "@/lib/cart";
 import type { Product } from "@/lib/product/model/product.model";
 import { useStorefrontCart } from "@/components/storefront/StorefrontCartProvider";
+import { getVariantCombinationKey } from "@/lib/product/product.utils";
 import CheckoutButton from "./CheckoutButton";
 
 interface CartPageContentProps {
   initialCart: Cart | null;
   productsById: Record<string, Product | null>;
+  stockIssuesByLineKey?: Record<
+    string,
+    {
+      requested: number;
+      available: number;
+    }
+  >;
+  isStockValid?: boolean;
 }
 
 function formatPrice(value: number) {
   return `AED ${value.toFixed(2)}`;
 }
 
-export function CartPageContent({ initialCart, productsById }: CartPageContentProps) {
+function computeAvailableStock(product: Product | null, selectedVariantItemIds: string[]): number | null {
+  if (!product) return null;
+
+  const hasVariantStock = Array.isArray(product.variantStock) && product.variantStock.length > 0;
+
+  if (hasVariantStock) {
+    const key = getVariantCombinationKey(selectedVariantItemIds);
+    const entry = product.variantStock.find((vs) => vs.variantCombinationKey === key);
+    if (typeof entry?.stockCount === "number") {
+      return entry.stockCount;
+    }
+  }
+
+  if (typeof product.stockCount === "number") {
+    return product.stockCount;
+  }
+
+  return null;
+}
+
+export function CartPageContent({
+  initialCart,
+  productsById,
+  stockIssuesByLineKey = {},
+  isStockValid = true,
+}: CartPageContentProps) {
   const {
     cart,
     items,
@@ -30,6 +65,37 @@ export function CartPageContent({ initialCart, productsById }: CartPageContentPr
 
   const effectiveCart = cart ?? initialCart;
   const effectiveItems = items.length > 0 ? items : effectiveCart?.items ?? [];
+
+  const { hasStockIssues, firstIssueAvailable } = useMemo(() => {
+    if (!effectiveItems.length) {
+      return { hasStockIssues: false, firstIssueAvailable: null as number | null };
+    }
+
+    let hasIssue = false;
+    let firstAvailable: number | null = null;
+
+    for (const item of effectiveItems) {
+      const product = productsById[item.productId] ?? null;
+      const variantKey = getVariantCombinationKey(item.selectedVariantItemIds);
+      const lineKey = `${item.productId}|${variantKey}`;
+      const stockIssue = stockIssuesByLineKey[lineKey];
+
+      const stockFromProduct = computeAvailableStock(product, item.selectedVariantItemIds);
+      const availableForLine =
+        stockIssue && typeof stockIssue.available === "number"
+          ? stockIssue.available
+          : stockFromProduct;
+
+      if (availableForLine != null && item.quantity > availableForLine) {
+        hasIssue = true;
+        if (firstAvailable == null) {
+          firstAvailable = availableForLine;
+        }
+      }
+    }
+
+    return { hasStockIssues: hasIssue, firstIssueAvailable: firstAvailable };
+  }, [effectiveItems, productsById, stockIssuesByLineKey]);
 
   if (!effectiveCart || effectiveItems.length === 0) {
     return (
@@ -55,11 +121,26 @@ export function CartPageContent({ initialCart, productsById }: CartPageContentPr
           const imageUrl = product?.images?.[0]?.url;
 
           const lineTotal = item.unitPrice * item.quantity;
+          const variantKey = getVariantCombinationKey(item.selectedVariantItemIds);
+          const lineKey = `${item.productId}|${variantKey}`;
+          const stockIssue = stockIssuesByLineKey[lineKey];
+          const stockFromProduct = computeAvailableStock(product, item.selectedVariantItemIds);
+          const availableForLine =
+            stockIssue && typeof stockIssue.available === "number"
+              ? stockIssue.available
+              : stockFromProduct;
+          const isOutOfStock =
+            availableForLine != null && item.quantity > availableForLine;
 
           return (
             <div
-              key={`${item.productId}-${item.selectedVariantItemIds.join(",")}`}
-              className="flex gap-4 border-b border-[var(--storefront-border-light)] pb-4"
+              key={lineKey}
+              className={[
+                "flex gap-4 border-b pb-4 rounded-md",
+                isOutOfStock
+                  ? "border-[var(--storefront-sale)] bg-[var(--storefront-sale-bg)]"
+                  : "border-[var(--storefront-border-light)]",
+              ].join(" ")}
             >
               <div className="w-24 h-24 relative flex-shrink-0 rounded-md overflow-hidden bg-[var(--storefront-bg-subtle)]">
                 {imageUrl ? (
@@ -91,6 +172,17 @@ export function CartPageContent({ initialCart, productsById }: CartPageContentPr
                     ) : (
                       <p className="text-xs text-[var(--storefront-text-muted)]">
                         This product is no longer available.
+                      </p>
+                    )}
+                    {isOutOfStock && (
+                      <p className="mt-2 text-xs text-[var(--storefront-sale-text)]">
+                        This product has not this much count.{" "}
+                        {availableForLine != null && (
+                          <>
+                            There is only {availableForLine} left.{" "}
+                          </>
+                        )}
+                        Please adjust the count.
                       </p>
                     )}
                   </div>
@@ -134,7 +226,10 @@ export function CartPageContent({ initialCart, productsById }: CartPageContentPr
                       <button
                         type="button"
                         className="px-2 text-sm text-[var(--storefront-text-primary)] disabled:opacity-50"
-                        disabled={isLoading}
+                        disabled={
+                          isLoading ||
+                          (availableForLine != null && item.quantity >= availableForLine)
+                        }
                         onClick={async () => {
                           await updateItem(
                             item.productId,
@@ -199,8 +294,13 @@ export function CartPageContent({ initialCart, productsById }: CartPageContentPr
           <p className="text-xs text-[var(--storefront-text-muted)]">
             Taxes and shipping calculated at checkout.
           </p>
+          {hasStockIssues && (
+            <p className="text-xs text-[var(--storefront-sale-text)] text-right">
+              Some items exceed available stock. Please adjust quantities before checkout.
+            </p>
+          )}
           <div className="mt-4 w-full md:w-auto">
-            <CheckoutButton />
+            <CheckoutButton hasStockIssues={hasStockIssues} availableCount={firstIssueAvailable ?? undefined} />
           </div>
         </div>
       </div>

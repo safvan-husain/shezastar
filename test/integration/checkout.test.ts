@@ -37,14 +37,14 @@ vi.mock('@/lib/cart/cart.service', () => ({
 }));
 
 // Mock Stock Service
-vi.mock('@/lib/product/product.service-stock', () => ({
-    validateStockAvailability: vi.fn().mockResolvedValue({
-        available: true,
-        insufficientItems: []
-    }),
-}));
+const validateStockAvailabilityMock = vi.fn().mockResolvedValue({
+    available: true,
+    insufficientItems: []
+});
 
-const ctx = { params: Promise.resolve({}) };
+vi.mock('@/lib/product/product.service-stock', () => ({
+    validateStockAvailability: validateStockAvailabilityMock,
+}));
 
 describe('Checkout Session API', () => {
     let POST: any;
@@ -52,6 +52,11 @@ describe('Checkout Session API', () => {
     beforeEach(async () => {
         vi.resetModules();
         mockCreateSession.mockClear();
+        validateStockAvailabilityMock.mockClear();
+        validateStockAvailabilityMock.mockResolvedValue({
+            available: true,
+            insufficientItems: []
+        });
         // Reset env variable for the test
         process.env.STRIPE_SECRET_KEY = 'test_key';
 
@@ -127,5 +132,43 @@ describe('Checkout Session API', () => {
                 })
             ])
         }));
+    });
+
+    it('returns 400 with insufficient stock details when stock is not available', async () => {
+        validateStockAvailabilityMock.mockResolvedValueOnce({
+            available: false,
+            insufficientItems: [
+                {
+                    productId: 'cart-prod-1',
+                    variantKey: 'default',
+                    requested: 5,
+                    available: 2,
+                },
+            ],
+        });
+
+        const req = new Request('http://localhost/api/checkout_sessions', {
+            method: 'POST',
+            body: JSON.stringify({}), // Use cart items
+            headers: { 'Content-Type': 'application/json' }
+        }) as any;
+
+        const res = await POST(req);
+        expect(res.status).toBe(400);
+
+        const body = await res.json();
+        expect(body).toEqual({
+            error: 'Insufficient stock',
+            insufficientItems: [
+                expect.objectContaining({
+                    productId: 'cart-prod-1',
+                    variantKey: 'default',
+                    requested: 5,
+                    available: 2,
+                }),
+            ],
+        });
+
+        expect(mockCreateSession).not.toHaveBeenCalled();
     });
 });
