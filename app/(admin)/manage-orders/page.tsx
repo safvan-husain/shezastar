@@ -278,26 +278,42 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                     {pagination.totalPages}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button
-                                        asChild
-                                        size="sm"
-                                        variant="ghost"
-                                        disabled={!canGoPrev}
-                                    >
-                                        <Link href={canGoPrev ? buildPageLink(pagination.page - 1) : '#'}>
+                                    {canGoPrev ? (
+                                        <Link href={buildPageLink(pagination.page - 1)}>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                            >
+                                                Previous
+                                            </Button>
+                                        </Link>
+                                    ) : (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            disabled
+                                        >
                                             Previous
+                                        </Button>
+                                    )}
+                                    {canGoNext ? (
+                                        <Link href={buildPageLink(pagination.page + 1)}>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                            >
+                                                Next
+                                            </Button>
                                         </Link>
-                                    </Button>
-                                    <Button
-                                        asChild
-                                        size="sm"
-                                        variant="ghost"
-                                        disabled={!canGoNext}
-                                    >
-                                        <Link href={canGoNext ? buildPageLink(pagination.page + 1) : '#'}>
+                                    ) : (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            disabled
+                                        >
                                             Next
-                                        </Link>
-                                    </Button>
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         )}

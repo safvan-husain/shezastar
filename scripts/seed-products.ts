@@ -33,7 +33,8 @@ async function seedProducts() {
             subCategoryIds: [seed.categoryId],
             installationService: {
                 enabled: false
-            }
+            },
+            variantStock: []
         };
 
         await createProduct(payload);

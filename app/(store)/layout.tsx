@@ -17,7 +17,7 @@ export default async function StorefrontLayout({
 
   return (
     <StorefrontSessionProvider initialSession={session}>
-      <StorefrontWishlistProvider initialWishlist={await ensureWishlist(session.sessionId)}>
+      <StorefrontWishlistProvider initialWishlist={await ensureWishlist(session)}>
         <StorefrontCartProvider initialCart={cart}>
         <div className="bg-white min-h-screen">
           <div className="fixed top-0 left-0 right-0 z-50">

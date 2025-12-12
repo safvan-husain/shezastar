@@ -183,7 +183,16 @@ export async function POST(req: NextRequest) {
 
                 // Clear the cart ONLY if it's not a Buy Now order
                 if (shouldClearCart) {
-                    await clearCart(storefrontSessionId);
+                    // Create a minimal session object for clearCart function
+                    const session = {
+                        sessionId: storefrontSessionId,
+                        status: 'active' as const,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        expiresAt: new Date().toISOString(),
+                        lastActiveAt: new Date().toISOString(),
+                    };
+                    await clearCart(session);
                     console.log(`Order created and cart cleared for session ${storefrontSessionId}`);
                 } else {
                     console.log(`Order created (Buy Now) for session ${storefrontSessionId}. Cart preserved.`);

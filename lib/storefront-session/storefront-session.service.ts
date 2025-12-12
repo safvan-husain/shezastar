@@ -205,6 +205,7 @@ export async function revokeStorefrontSession(sessionId?: string) {
 }
 
 export async function getStorefrontSessionId(): Promise<string | null> {
+    const token = await getCurrentStorefrontSessionToken();
     return token?.sessionId ?? null;
 }
 
