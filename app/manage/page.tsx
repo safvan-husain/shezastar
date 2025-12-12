@@ -44,16 +44,24 @@ type StatFetchResult = {
     error: ToastErrorPayload | null;
 };
 
+type PaginatedResponse = {
+    pagination?: {
+        total?: number;
+    };
+};
+
 async function getDashboardStats(): Promise<DashboardStats> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
     const [ordersResult, productsResult, categoriesResult, variantsResult] = await Promise.all([
-        fetchStat(`${baseUrl}/api/admin/orders?limit=1`, 'orders', data =>
-            typeof data?.pagination?.total === 'number' ? data.pagination.total : null
-        ),
-        fetchStat(`${baseUrl}/api/products?limit=1`, 'products', data =>
-            typeof data?.pagination?.total === 'number' ? data.pagination.total : null
-        ),
+        fetchStat(`${baseUrl}/api/admin/orders?limit=1`, 'orders', (data: unknown) => {
+            const response = data as PaginatedResponse;
+            return typeof response?.pagination?.total === 'number' ? response.pagination.total : null;
+        }),
+        fetchStat(`${baseUrl}/api/products?limit=1`, 'products', (data: unknown) => {
+            const response = data as PaginatedResponse;
+            return typeof response?.pagination?.total === 'number' ? response.pagination.total : null;
+        }),
         fetchStat(`${baseUrl}/api/categories`, 'categories', data =>
             Array.isArray(data) ? data.length : null
         ),
