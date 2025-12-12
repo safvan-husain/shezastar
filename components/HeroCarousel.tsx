@@ -41,6 +41,17 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
   }
 
   const currentBanner = banners[currentIndex];
+  const hasMultipleSlides = banners.length > 1;
+  const priceDetails = (
+    <>
+      <span className="text-lg mt-1 text-gray-300 line-through sm:text-xl">
+        {formatPrice(currentBanner.price)}
+      </span>
+      <span className="text-3xl font-bold text-white sm:text-4xl md:text-5xl">
+        {formatPrice(currentBanner.offerPrice)}
+      </span>
+    </>
+  );
 
   return (
     <section className="relative h-screen w-full overflow-hidden bg-[var(--storefront-bg-subtle)]">
@@ -80,23 +91,64 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
           </p>
 
           {/* Pricing */}
-          <div className="mb-8 flex justify-center items-center gap-4">
-            <span className="text-lg mt-1 text-gray-300 line-through sm:text-xl">
-              {formatPrice(currentBanner.price)}
-            </span>
-            <span className="text-3xl font-bold text-white sm:text-4xl md:text-5xl">
-              {formatPrice(currentBanner.offerPrice)}
-            </span>
+          <div className="mb-8 flex flex-col items-center gap-4">
+            <div className="hidden sm:flex justify-center items-center gap-4">
+              {priceDetails}
+            </div>
+            <div className="flex flex-col items-center gap-4 sm:hidden">
+              {hasMultipleSlides ? (
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={prevSlide}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition hover:bg-white/30"
+                    aria-label="Previous slide"
+                  >
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <div className="flex flex-col items-center gap-2">
+                    {priceDetails}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={nextSlide}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition hover:bg-white/30"
+                    aria-label="Next slide"
+                  >
+                    <svg
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">{priceDetails}</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Navigation Arrows */}
-      {banners.length > 1 && (
+      {hasMultipleSlides && (
         <>
           <button
+            type="button"
             onClick={prevSlide}
-            className="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition hover:bg-white/30"
+            className="hidden sm:flex absolute left-4 top-1/2 z-20 h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition hover:bg-white/30"
             aria-label="Previous slide"
           >
             <svg
@@ -111,8 +163,9 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
           </button>
 
           <button
+            type="button"
             onClick={nextSlide}
-            className="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition hover:bg-white/30"
+            className="hidden sm:flex absolute right-4 top-1/2 z-20 h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition hover:bg-white/30"
             aria-label="Next slide"
           >
             <svg
@@ -129,7 +182,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
       )}
 
       {/* Indicators */}
-      {banners.length > 1 && (
+      {hasMultipleSlides && (
         <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 gap-2">
           {banners.map((_, index) => (
             <button
