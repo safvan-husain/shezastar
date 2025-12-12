@@ -1,4 +1,5 @@
 import { ObjectId } from '@/lib/db/mongo-client';
+import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 
 export type OrderStatus = 'pending' | 'paid' | 'cancelled' | 'failed' | 'completed';
 
@@ -20,6 +21,7 @@ export interface OrderDocument {
     totalAmount: number;
     currency: string;
     status: OrderStatus;
+    billingDetails?: BillingDetails;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -42,6 +44,7 @@ export interface Order {
     totalAmount: number;
     currency: string;
     status: OrderStatus;
+    billingDetails?: BillingDetails;
     createdAt: string;
     updatedAt: string;
 }
@@ -63,6 +66,7 @@ export function toOrder(doc: OrderDocument): Order {
         totalAmount: doc.totalAmount,
         currency: doc.currency,
         status: doc.status,
+        billingDetails: doc.billingDetails,
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };

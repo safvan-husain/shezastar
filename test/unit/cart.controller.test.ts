@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import {
     handleAddToCart,
     handleClearCart,
+    handleGetBillingDetailsForCurrentSession,
     handleGetCartForCurrentSession,
     handleRemoveCartItem,
+    handleSetBillingDetailsForCurrentSession,
     handleUpdateCartItem,
 } from '@/lib/cart/cart.controller';
 
@@ -15,6 +17,8 @@ vi.mock('@/lib/cart/cart.service', () => ({
     updateCartItemQuantity: vi.fn(),
     removeItemFromCart: vi.fn(),
     clearCart: vi.fn(),
+    getBillingDetailsForCurrentSession: vi.fn(),
+    setBillingDetailsForCurrentSession: vi.fn(),
 }));
 
 vi.mock('@/lib/storefront-session', () => ({
@@ -208,6 +212,58 @@ describe('Cart controller', () => {
         expect(response.status).toBe(200);
         expect(cartService.clearCart).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 'session-123' }));
         expect(response.body.items).toHaveLength(0);
+    });
+
+    it('returns billing details for current session', async () => {
+        vi.mocked(cartService.getBillingDetailsForCurrentSession).mockResolvedValueOnce({
+            email: 'store@example.com',
+            firstName: 'Store',
+            lastName: 'User',
+            country: 'United Arab Emirates',
+            streetAddress1: '123 Billing St',
+            city: 'Dubai',
+            phone: '+971500000000',
+        });
+
+        const response = await handleGetBillingDetailsForCurrentSession();
+        expect(response.status).toBe(200);
+        expect(response.body.billingDetails?.email).toBe('store@example.com');
+    });
+
+    it('saves billing details for current session', async () => {
+        vi.mocked(cartService.setBillingDetailsForCurrentSession).mockResolvedValueOnce({
+            id: 'cart-1',
+            sessionId: 'session-123',
+            items: [],
+            subtotal: 0,
+            totalItems: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            billingDetails: {
+                email: 'store@example.com',
+                firstName: 'Store',
+                lastName: 'User',
+                country: 'United Arab Emirates',
+                streetAddress1: '123 Billing St',
+                city: 'Dubai',
+                phone: '+971500000000',
+            },
+        });
+
+        const payload = {
+            email: 'store@example.com',
+            firstName: 'Store',
+            lastName: 'User',
+            country: 'United Arab Emirates',
+            streetAddress1: '123 Billing St',
+            city: 'Dubai',
+            phone: '+971500000000',
+        };
+
+        const response = await handleSetBillingDetailsForCurrentSession(payload);
+        expect(response.status).toBe(200);
+        expect(cartService.setBillingDetailsForCurrentSession).toHaveBeenCalledWith(expect.objectContaining(payload));
+        expect(response.body.billingDetails?.email).toBe('store@example.com');
     });
 });
 

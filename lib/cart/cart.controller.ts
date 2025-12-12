@@ -6,6 +6,7 @@ import {
     RemoveFromCartSchema,
     UpdateCartItemSchema,
 } from './cart.schema';
+import { BillingDetailsSchema } from '@/lib/billing-details/billing-details.schema';
 import {
     addItemToCart,
     clearCart,
@@ -13,6 +14,8 @@ import {
     removeItemFromCart,
     updateCartItemQuantity,
     ensureCartForCurrentSession,
+    getBillingDetailsForCurrentSession as getBillingDetailsForCurrentSessionService,
+    setBillingDetailsForCurrentSession as setBillingDetailsForCurrentSessionService,
 } from './cart.service';
 import { ensureStorefrontSession, getStorefrontSession } from '@/lib/storefront-session';
 
@@ -130,6 +133,33 @@ export async function handleClearCart(input: unknown) {
 
         const cart = await clearCart(session);
         return { status: 200, body: CartSchema.parse(cart) };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleGetBillingDetailsForCurrentSession() {
+    try {
+        const billingDetails = await getBillingDetailsForCurrentSessionService();
+        return {
+            status: 200,
+            body: {
+                billingDetails,
+            },
+        };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleSetBillingDetailsForCurrentSession(input: unknown) {
+    try {
+        const parsed = BillingDetailsSchema.parse(input);
+        const cart = await setBillingDetailsForCurrentSessionService(parsed);
+        return {
+            status: 200,
+            body: CartSchema.parse(cart),
+        };
     } catch (err) {
         return catchError(err);
     }

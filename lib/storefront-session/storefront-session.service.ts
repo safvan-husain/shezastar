@@ -209,6 +209,16 @@ export async function getStorefrontSessionId(): Promise<string | null> {
     return token?.sessionId ?? null;
 }
 
+/**
+ * Fetch a storefront session by sessionId without requiring an active cookie.
+ * Used by Stripe webhooks to resolve userId/cart ownership.
+ */
+export async function getStorefrontSessionBySessionId(sessionId: string): Promise<StorefrontSession | null> {
+    const collection = await getSessionCollection();
+    const doc = await collection.findOne({ sessionId });
+    return doc ? toStorefrontSession(doc) : null;
+}
+
 export async function bindSessionToUser(sessionId: string, userId: string): Promise<void> {
     const { ObjectId } = await import('mongodb');
     const collection = await getSessionCollection();

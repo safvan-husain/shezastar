@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BillingDetailsSchema } from '@/lib/billing-details/billing-details.schema';
 
 export const CartItemSchema = z.object({
     productId: z.string().min(1),
@@ -14,6 +15,7 @@ export const CartSchema = z.object({
     sessionId: z.string().min(1),
     userId: z.string().optional(),
     items: z.array(CartItemSchema),
+    billingDetails: BillingDetailsSchema.optional(),
     subtotal: z.number(),
     totalItems: z.number().int().min(0),
     createdAt: z.string().min(1),

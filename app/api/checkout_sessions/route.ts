@@ -19,8 +19,33 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No active session' }, { status: 401 });
         }
 
+        const cart = await getCartForCurrentSession();
+        if (!cart || !cart.billingDetails) {
+            return NextResponse.json(
+                {
+                    error: 'Billing details required',
+                    code: 'BILLING_DETAILS_REQUIRED',
+                },
+                { status: 400 }
+            );
+        }
+
+        const billingDetails = cart.billingDetails;
+
         let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-        let metadata: Record<string, string> = { sessionId };
+        const metadata: Record<string, string> = {
+            sessionId,
+            billingEmail: billingDetails.email,
+            billingCountry: billingDetails.country,
+        };
+        const billingName = `${billingDetails.firstName} ${billingDetails.lastName}`.trim();
+        if (billingName) {
+            metadata.billingName = billingName;
+        }
+        const serializedBilling = JSON.stringify(billingDetails);
+        if (serializedBilling.length <= 400) {
+            metadata.billingDetails = serializedBilling;
+        }
 
         const body = await req.json().catch(() => ({}));
         const buyNowItems = body.items;
@@ -51,7 +76,6 @@ export async function POST(req: NextRequest) {
             metadata.buyNowItems = JSON.stringify(buyNowItems);
         } else {
             // Standard Cart Flow
-            const cart = await getCartForCurrentSession();
             if (!cart || cart.items.length === 0) {
                 return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
             }

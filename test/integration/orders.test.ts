@@ -6,6 +6,16 @@ import { GET as getOrderHandler, PATCH as patchOrderHandler } from '@/app/api/ad
 import { createOrder } from '@/lib/order/order.service';
 import type { OrderDocument, OrderStatus } from '@/lib/order/model/order.model';
 
+const BILLING_DETAILS = {
+    email: 'buyer@example.com',
+    firstName: 'Buyer',
+    lastName: 'Integration',
+    country: 'United Arab Emirates',
+    streetAddress1: '123 Integration St',
+    city: 'Dubai',
+    phone: '+971555000000',
+};
+
 const BASE_ORDER_DATA: Omit<OrderDocument, '_id' | 'createdAt' | 'updatedAt'> = {
     sessionId: 'session-integration',
     stripeSessionId: 'stripe-integration',
@@ -21,6 +31,7 @@ const BASE_ORDER_DATA: Omit<OrderDocument, '_id' | 'createdAt' | 'updatedAt'> = 
     totalAmount: 100,
     currency: 'usd',
     status: 'pending',
+    billingDetails: BILLING_DETAILS,
 };
 
 describe('Admin orders API', () => {
@@ -49,6 +60,7 @@ describe('Admin orders API', () => {
         const body = await res.json();
         expect(body.orders).toHaveLength(2);
         expect(body.pagination.total).toBe(3);
+        expect(body.orders[0].billingDetails).toEqual(expect.objectContaining(BILLING_DETAILS));
     });
 
     it('filters orders by status', async () => {
@@ -79,6 +91,7 @@ describe('Admin orders API', () => {
         expect(getRes.status).toBe(200);
         const getBody = await getRes.json();
         expect(getBody.id).toBe(created.id);
+        expect(getBody.billingDetails).toEqual(expect.objectContaining(BILLING_DETAILS));
 
         const patchReq = new Request(`http://localhost/api/admin/orders/${created.id}`, {
             method: 'PATCH',
@@ -93,6 +106,7 @@ describe('Admin orders API', () => {
         expect(patchRes.status).toBe(200);
         const patchBody = await patchRes.json();
         expect(patchBody.status).toBe('paid');
+        expect(patchBody.billingDetails).toEqual(expect.objectContaining(BILLING_DETAILS));
     });
 });
 

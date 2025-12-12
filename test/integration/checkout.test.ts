@@ -28,12 +28,23 @@ vi.mock('@/lib/storefront-session', () => ({
     getStorefrontSessionId: vi.fn().mockResolvedValue('test-session-id'),
 }));
 
+const getCartForCurrentSessionMock = vi.fn().mockResolvedValue({
+    items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100, selectedVariantItemIds: [] }],
+    isEmpty: false,
+    billingDetails: {
+        email: 'checkout@example.com',
+        firstName: 'Checkout',
+        lastName: 'Tester',
+        country: 'United Arab Emirates',
+        streetAddress1: '123 Checkout Street',
+        city: 'Dubai',
+        phone: '+971500000000',
+    },
+});
+
 // Mock Cart Service to avoid DB calls
 vi.mock('@/lib/cart/cart.service', () => ({
-    getCartForCurrentSession: vi.fn().mockResolvedValue({
-        items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100, selectedVariantItemIds: [] }],
-        isEmpty: false
-    }),
+    getCartForCurrentSession: getCartForCurrentSessionMock,
 }));
 
 // Mock Stock Service
@@ -53,6 +64,20 @@ describe('Checkout Session API', () => {
         vi.resetModules();
         mockCreateSession.mockClear();
         validateStockAvailabilityMock.mockClear();
+        getCartForCurrentSessionMock.mockClear();
+        getCartForCurrentSessionMock.mockResolvedValue({
+            items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100, selectedVariantItemIds: [] }],
+            isEmpty: false,
+            billingDetails: {
+                email: 'checkout@example.com',
+                firstName: 'Checkout',
+                lastName: 'Tester',
+                country: 'United Arab Emirates',
+                streetAddress1: '123 Checkout Street',
+                city: 'Dubai',
+                phone: '+971500000000',
+            },
+        });
         validateStockAvailabilityMock.mockResolvedValue({
             available: true,
             insufficientItems: []
@@ -89,7 +114,10 @@ describe('Checkout Session API', () => {
         expect(mockCreateSession).toHaveBeenCalledWith(expect.objectContaining({
             metadata: expect.objectContaining({
                 type: 'buy_now',
-                sessionId: 'test-session-id'
+                sessionId: 'test-session-id',
+                billingEmail: 'checkout@example.com',
+                billingCountry: 'United Arab Emirates',
+                billingName: 'Checkout Tester',
             }),
             line_items: expect.arrayContaining([
                 expect.objectContaining({
@@ -116,9 +144,12 @@ describe('Checkout Session API', () => {
         expect(res.status).toBe(200);
 
         expect(mockCreateSession).toHaveBeenCalledWith(expect.objectContaining({
-            metadata: {
-                sessionId: 'test-session-id'
-            },
+            metadata: expect.objectContaining({
+                sessionId: 'test-session-id',
+                billingEmail: 'checkout@example.com',
+                billingCountry: 'United Arab Emirates',
+                billingName: 'Checkout Tester',
+            }),
             // Should contain cart items specifically
             line_items: expect.arrayContaining([
                 expect.objectContaining({
@@ -169,6 +200,27 @@ describe('Checkout Session API', () => {
             ],
         });
 
+        expect(mockCreateSession).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when billing details are missing', async () => {
+        getCartForCurrentSessionMock.mockResolvedValueOnce({
+            items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100, selectedVariantItemIds: [] }],
+        });
+
+        const req = new Request('http://localhost/api/checkout_sessions', {
+            method: 'POST',
+            body: JSON.stringify({}),
+            headers: { 'Content-Type': 'application/json' },
+        }) as any;
+
+        const res = await POST(req);
+        expect(res.status).toBe(400);
+        const body = await res.json();
+        expect(body).toEqual({
+            error: 'Billing details required',
+            code: 'BILLING_DETAILS_REQUIRED',
+        });
         expect(mockCreateSession).not.toHaveBeenCalled();
     });
 });

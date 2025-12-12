@@ -2,12 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { Cart } from "@/lib/cart";
 import type { Product } from "@/lib/product/model/product.model";
 import { useStorefrontCart } from "@/components/storefront/StorefrontCartProvider";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
 import CheckoutButton from "./CheckoutButton";
+import { useToast } from "@/components/ui/Toast";
+import {
+  BillingDetailsForm,
+  EMPTY_BILLING_DETAILS,
+  type BillingDetailsFormErrors,
+  type BillingDetailsFormValue,
+  mapBillingDetailsToFormValue,
+  toBillingDetailsPayload,
+  validateBillingDetailsForm,
+} from "@/components/storefront/BillingDetailsForm";
 
 interface CartPageContentProps {
   initialCart: Cart | null;
@@ -57,10 +67,85 @@ export function CartPageContent({
     removeItem,
     clearCart,
     isLoading,
+    billingDetails,
+    saveBillingDetails,
   } = useStorefrontCart();
 
   const effectiveCart = cart ?? initialCart;
   const effectiveItems = items.length > 0 ? items : effectiveCart?.items ?? [];
+  const { showToast } = useToast();
+  const billingSectionRef = useRef<HTMLDivElement>(null);
+  const currentBillingDetails = billingDetails ?? effectiveCart?.billingDetails ?? null;
+  const [isEditingBilling, setIsEditingBilling] = useState(() => !currentBillingDetails);
+  const [billingForm, setBillingForm] = useState<BillingDetailsFormValue>(() =>
+    mapBillingDetailsToFormValue(currentBillingDetails)
+  );
+  const [billingErrors, setBillingErrors] = useState<BillingDetailsFormErrors>({});
+
+  useEffect(() => {
+    if (currentBillingDetails) {
+      setBillingForm(mapBillingDetailsToFormValue(currentBillingDetails));
+      setBillingErrors({});
+      setIsEditingBilling(false);
+    }
+  }, [currentBillingDetails]);
+
+  const handleBillingFieldChange = (field: keyof BillingDetailsFormValue, value: string) => {
+    setBillingForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    if (billingErrors[field]) {
+      setBillingErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  const handleBillingSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const validationErrors = validateBillingDetailsForm(billingForm);
+    if (Object.keys(validationErrors).length > 0) {
+      setBillingErrors(validationErrors);
+      showToast("Please complete the building address before checkout.", "error");
+      billingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    const payload = toBillingDetailsPayload(billingForm);
+    const result = await saveBillingDetails(payload);
+    if (result) {
+      setBillingErrors({});
+      setIsEditingBilling(false);
+    }
+  };
+
+  const handleMissingBillingDetails = () => {
+    showToast("Please add your building address before checkout.", "error", {
+      status: 400,
+      url: "/api/checkout_sessions",
+      method: "POST",
+    });
+    setIsEditingBilling(true);
+    billingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const startNewAddress = () => {
+    setBillingErrors({});
+    setBillingForm({
+      ...EMPTY_BILLING_DETAILS,
+      email: currentBillingDetails?.email ?? "",
+    });
+    setIsEditingBilling(true);
+  };
+
+  const cancelBillingEdit = () => {
+    setBillingErrors({});
+    setBillingForm(mapBillingDetailsToFormValue(currentBillingDetails));
+    setIsEditingBilling(false);
+  };
 
   const { hasStockIssues, firstIssueAvailable } = useMemo(() => {
     if (!effectiveItems.length) {
@@ -109,8 +194,122 @@ export function CartPageContent({
     );
   }
 
+  const hasBillingDetails = Boolean(currentBillingDetails);
+
   return (
     <div className="space-y-8">
+      <div
+        ref={billingSectionRef}
+        className="rounded-lg border border-[var(--storefront-border-light)] bg-[var(--storefront-bg)] p-6 space-y-4"
+      >
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-[var(--storefront-text-primary)]">
+              Building address
+            </h2>
+            <p className="text-sm text-[var(--storefront-text-secondary)]">
+              We’ll use this information for billing and delivery coordination before payment.
+            </p>
+          </div>
+          {hasBillingDetails && !isEditingBilling ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="text-sm text-[var(--storefront-button-primary)] hover:underline"
+                onClick={() => {
+                  setBillingForm(mapBillingDetailsToFormValue(currentBillingDetails));
+                  setIsEditingBilling(true);
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="text-sm text-[var(--storefront-button-primary)] hover:underline"
+                onClick={startNewAddress}
+              >
+                Add another
+              </button>
+            </div>
+          ) : !isEditingBilling ? (
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-md border border-[var(--storefront-border)] px-4 py-2 text-sm font-medium text-[var(--storefront-text-primary)] hover:bg-[var(--storefront-bg-subtle)]"
+              onClick={startNewAddress}
+            >
+              Create building address
+            </button>
+          ) : null}
+        </div>
+
+        {hasBillingDetails && !isEditingBilling && currentBillingDetails && (
+          <div className="grid gap-3 text-sm text-[var(--storefront-text-secondary)]">
+            <div>
+              <p className="text-[var(--storefront-text-muted)] text-xs uppercase tracking-wide">
+                Contact
+              </p>
+              <p className="font-medium text-[var(--storefront-text-primary)]">
+                {currentBillingDetails.firstName} {currentBillingDetails.lastName}
+              </p>
+              <p>{currentBillingDetails.email}</p>
+              <p>{currentBillingDetails.phone}</p>
+            </div>
+            <div>
+              <p className="text-[var(--storefront-text-muted)] text-xs uppercase tracking-wide">
+                Address
+              </p>
+              <p className="text-[var(--storefront-text-primary)] font-medium">
+                {currentBillingDetails.streetAddress1}
+              </p>
+              {currentBillingDetails.streetAddress2 && <p>{currentBillingDetails.streetAddress2}</p>}
+              <p>
+                {currentBillingDetails.city}
+                {currentBillingDetails.stateOrCounty ? `, ${currentBillingDetails.stateOrCounty}` : ""},{" "}
+                {currentBillingDetails.country}
+              </p>
+            </div>
+            {currentBillingDetails.orderNotes && (
+              <div>
+                <p className="text-[var(--storefront-text-muted)] text-xs uppercase tracking-wide">
+                  Notes
+                </p>
+                <p className="text-[var(--storefront-text-primary)]">{currentBillingDetails.orderNotes}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!hasBillingDetails && !isEditingBilling && (
+          <div className="rounded-md border border-dashed border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-4 text-sm text-[var(--storefront-text-secondary)]">
+            Building address is required to continue. Add your email, phone, and location details so we can prepare your order.
+          </div>
+        )}
+
+        {isEditingBilling && (
+          <form onSubmit={handleBillingSubmit} className="space-y-4">
+            <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={handleBillingFieldChange} />
+            <div className="flex justify-end gap-2">
+              {hasBillingDetails && (
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded-md border border-[var(--storefront-border)] text-sm text-[var(--storefront-text-secondary)] hover:bg-[var(--storefront-bg-subtle)]"
+                  onClick={cancelBillingEdit}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-md bg-[var(--storefront-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--storefront-button-primary-hover)] disabled:opacity-50"
+                disabled={isLoading}
+              >
+                Save address
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
       <div className="space-y-4">
         {effectiveItems.map((item) => {
           const product = productsById[item.productId] ?? null;
@@ -296,7 +495,17 @@ export function CartPageContent({
             </p>
           )}
           <div className="mt-4 w-full md:w-auto">
-            <CheckoutButton hasStockIssues={hasStockIssues} availableCount={firstIssueAvailable ?? undefined} />
+            <CheckoutButton
+              hasStockIssues={hasStockIssues}
+              availableCount={firstIssueAvailable ?? undefined}
+              hasBillingDetails={hasBillingDetails}
+              onMissingBillingDetails={handleMissingBillingDetails}
+            />
+            {!hasBillingDetails && (
+              <p className="mt-2 text-xs text-[var(--storefront-sale-text)] text-right">
+                Add your building address above to continue to checkout.
+              </p>
+            )}
           </div>
         </div>
       </div>

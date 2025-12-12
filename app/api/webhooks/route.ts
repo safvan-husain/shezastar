@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { updateOrderStatus, createOrder } from '@/lib/order/order.service';
-import { clearCart, getCartBySessionId } from '@/lib/cart/cart.service';
+import { updateOrderStatus, createOrder, getOrderByStripeSessionId } from '@/lib/order/order.service';
+import { clearCart, getCartBySessionId, getCart } from '@/lib/cart/cart.service';
 import { OrderDocument, OrderItemDocument } from '@/lib/order/model/order.model';
 import { getProduct } from '@/lib/product/product.service';
 import { filterImagesByVariants } from '@/lib/product/model/product.model';
+import { AppError } from '@/lib/errors/app-error';
+import { getStorefrontSessionBySessionId } from '@/lib/storefront-session';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -42,17 +44,62 @@ export async function POST(req: NextRequest) {
             try {
                 // Determine status based on payment_status
                 const status = session.payment_status === 'paid' ? 'paid' : 'pending';
-                const orderItems: OrderItemDocument[] = [];
-                let shouldClearCart = true;
 
-                // Check for Buy Now items in metadata
+                const isBuyNow = session.metadata?.type === 'buy_now';
+                const shouldClearCart = !isBuyNow;
+
+                const storefrontSession = await getStorefrontSessionBySessionId(storefrontSessionId);
+                const cartLookupSession = storefrontSession?.userId
+                    ? ({ sessionId: storefrontSessionId, userId: storefrontSession.userId } as any)
+                    : ({ sessionId: storefrontSessionId } as any);
+
+                const cart = storefrontSession?.userId
+                    ? await getCart(cartLookupSession)
+                    : await getCartBySessionId(storefrontSessionId);
+
+                // Idempotency: if we already created this order, don't create again,
+                // but still try to clear the cart for standard checkout.
+                const existingOrder = await getOrderByStripeSessionId(session.id);
+                if (existingOrder) {
+                    if (existingOrder.status !== status) {
+                        await updateOrderStatus(session.id, status);
+                    }
+
+                    if (shouldClearCart) {
+                        const minimalSession = {
+                            sessionId: storefrontSessionId,
+                            status: 'active' as const,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                            expiresAt: new Date().toISOString(),
+                            lastActiveAt: new Date().toISOString(),
+                            userId: storefrontSession?.userId,
+                        };
+                        try {
+                            await clearCart(minimalSession);
+                            console.log(`Idempotent webhook: cart cleared for session ${storefrontSessionId}`);
+                        } catch (clearError) {
+                            if (clearError instanceof AppError && clearError.code === 'CART_NOT_FOUND') {
+                                console.warn(`Idempotent webhook: cart not found for session ${storefrontSessionId}`);
+                            } else {
+                                throw clearError;
+                            }
+                        }
+                    }
+
+                    return NextResponse.json({ received: true });
+                }
+
+                const orderItems: OrderItemDocument[] = [];
+
                 if (session.metadata?.type === 'buy_now' && session.metadata?.buyNowItems) {
                     try {
                         const buyNowItems = JSON.parse(session.metadata.buyNowItems);
                         // Loop through Buy Now items
-                        for (const item of buyNowItems) {
-                            try {
-                                const product = await getProduct(item.productId);
+                        if (Array.isArray(buyNowItems)) {
+                            for (const item of buyNowItems) {
+                                try {
+                                    const product = await getProduct(item.productId);
 
                                 // Resolve Product Image
                                 let productImage = product.images.length > 0 ? product.images[0].url : undefined;
@@ -76,34 +123,32 @@ export async function POST(req: NextRequest) {
                                 }
                                 const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
 
-                                orderItems.push({
-                                    productId: item.productId,
-                                    productName: product.name,
-                                    productImage: productImage,
-                                    variantName: variantName,
-                                    selectedVariantItemIds: item.selectedVariantItemIds || [],
-                                    quantity: item.quantity,
-                                    unitPrice: item.unitPrice,
-                                });
-                            } catch (err) {
-                                console.error(`Failed to fetch product details for buy now product ${item.productId}`, err);
-                                orderItems.push({
-                                    productId: item.productId,
-                                    productName: 'Unknown Product',
-                                    selectedVariantItemIds: item.selectedVariantItemIds || [],
-                                    quantity: item.quantity,
-                                    unitPrice: item.unitPrice,
-                                });
+                                    orderItems.push({
+                                        productId: item.productId,
+                                        productName: product.name,
+                                        productImage: productImage,
+                                        variantName: variantName,
+                                        selectedVariantItemIds: item.selectedVariantItemIds || [],
+                                        quantity: item.quantity,
+                                        unitPrice: item.unitPrice,
+                                    });
+                                } catch (err) {
+                                    console.error(`Failed to fetch product details for buy now product ${item.productId}`, err);
+                                    orderItems.push({
+                                        productId: item.productId,
+                                        productName: 'Unknown Product',
+                                        selectedVariantItemIds: item.selectedVariantItemIds || [],
+                                        quantity: item.quantity,
+                                        unitPrice: item.unitPrice,
+                                    });
+                                }
                             }
                         }
-                        shouldClearCart = false; // Don't clear cart for Buy Now
                     } catch (e) {
                         console.error('Failed to parse buy now items', e);
                     }
                 } else {
                     // Standard Cart Flow
-                    const cart = await getCartBySessionId(storefrontSessionId);
-
                     if (cart && cart.items.length > 0) {
                         // Loop through ALL items in the cart
                         for (const cartItem of cart.items) {
@@ -157,6 +202,42 @@ export async function POST(req: NextRequest) {
                     }
                 }
 
+                // Fallback: if we couldn't build order items from cart/metadata, fetch Stripe line items.
+                if (orderItems.length === 0) {
+                    try {
+                        const lineItemsResponse = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
+                        for (const lineItem of lineItemsResponse.data) {
+                            const productIdFromStripe =
+                                typeof lineItem.description === 'string' && lineItem.description.length > 0
+                                    ? lineItem.description
+                                    : lineItem.price?.product?.toString() ?? 'unknown';
+                            const unitAmount = lineItem.price?.unit_amount ?? 0;
+                            orderItems.push({
+                                productId: productIdFromStripe,
+                                productName: productIdFromStripe,
+                                selectedVariantItemIds: [],
+                                quantity: lineItem.quantity ?? 1,
+                                unitPrice: unitAmount / 100,
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch Stripe line items for fallback', err);
+                    }
+                }
+
+                if (orderItems.length === 0) {
+                    throw new Error(`ORDER_ITEMS_EMPTY:${session.id}`);
+                }
+
+                let orderBillingDetails = cart?.billingDetails;
+                if (!orderBillingDetails && session.metadata?.billingDetails) {
+                    try {
+                        orderBillingDetails = JSON.parse(session.metadata.billingDetails);
+                    } catch (err) {
+                        console.error('Failed to parse billing details metadata', err);
+                    }
+                }
+
                 const orderData: Omit<OrderDocument, '_id' | 'createdAt' | 'updatedAt'> = {
                     sessionId: storefrontSessionId,
                     stripeSessionId: session.id,
@@ -164,6 +245,7 @@ export async function POST(req: NextRequest) {
                     totalAmount: session.amount_total ? session.amount_total / 100 : 0,
                     currency: session.currency || 'usd',
                     status: status,
+                    billingDetails: orderBillingDetails,
                 };
 
                 await createOrder(orderData);
@@ -184,16 +266,25 @@ export async function POST(req: NextRequest) {
                 // Clear the cart ONLY if it's not a Buy Now order
                 if (shouldClearCart) {
                     // Create a minimal session object for clearCart function
-                    const session = {
+                    const minimalSession = {
                         sessionId: storefrontSessionId,
                         status: 'active' as const,
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                         expiresAt: new Date().toISOString(),
                         lastActiveAt: new Date().toISOString(),
+                        userId: storefrontSession?.userId,
                     };
-                    await clearCart(session);
-                    console.log(`Order created and cart cleared for session ${storefrontSessionId}`);
+                    try {
+                        await clearCart(minimalSession);
+                        console.log(`Order created and cart cleared for session ${storefrontSessionId}`);
+                    } catch (clearError) {
+                        if (clearError instanceof AppError && clearError.code === 'CART_NOT_FOUND') {
+                            console.warn(`Cart not found to clear for session ${storefrontSessionId}`);
+                        } else {
+                            throw clearError;
+                        }
+                    }
                 } else {
                     console.log(`Order created (Buy Now) for session ${storefrontSessionId}. Cart preserved.`);
                 }

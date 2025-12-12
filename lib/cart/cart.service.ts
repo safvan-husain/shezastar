@@ -2,6 +2,7 @@ import 'server-only';
 
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
+import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 import { getProduct } from '@/lib/product/product.service';
 import { getVariantCombinationKey } from '@/lib/product/product.utils';
 import { getStorefrontSessionId, ensureStorefrontSession, getStorefrontSession } from '@/lib/storefront-session';
@@ -287,6 +288,44 @@ export async function clearCart(session: StorefrontSession): Promise<Cart> {
     const cart = await findCartOrThrow(session);
     cart.items = [];
     return updateCartDocument(cart);
+}
+
+export async function getBillingDetailsForCurrentSession(): Promise<BillingDetails | null> {
+    const session = await getStorefrontSession();
+    if (!session) {
+        return null;
+    }
+    const cart = await getCart(session);
+    return cart?.billingDetails ?? null;
+}
+
+export async function setBillingDetailsForCurrentSession(billingDetails: BillingDetails): Promise<Cart> {
+    const session = await ensureStorefrontSession();
+    const ensuredCart = await ensureCart(session);
+    const collection = await getCartCollection();
+    const cartObjectId = new ObjectId(ensuredCart.id);
+    const now = new Date();
+
+    await collection.updateOne(
+        { _id: cartObjectId },
+        {
+            $set: {
+                billingDetails,
+                updatedAt: now,
+            },
+        }
+    );
+
+    const updated = await collection.findOne({ _id: cartObjectId });
+    if (!updated) {
+        throw new AppError(500, 'FAILED_TO_UPDATE_CART');
+    }
+    return toCart(updated);
+}
+
+export async function getBillingDetailsBySessionId(sessionId: string): Promise<BillingDetails | null> {
+    const cart = await getCartBySessionId(sessionId);
+    return cart?.billingDetails ?? null;
 }
 
 export async function getCartForCurrentSession(): Promise<Cart | null> {

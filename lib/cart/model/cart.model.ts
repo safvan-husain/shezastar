@@ -1,4 +1,5 @@
 import { ObjectId } from '@/lib/db/mongo-client';
+import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 
 export interface CartItemDocument {
     productId: string;
@@ -22,6 +23,7 @@ export interface CartDocument {
     sessionId: string;
     userId?: ObjectId;
     items: CartItemDocument[];
+    billingDetails?: BillingDetails;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -40,6 +42,7 @@ export interface Cart {
     sessionId: string;
     userId?: string;
     items: CartItem[];
+    billingDetails?: BillingDetails;
     subtotal: number;
     totalItems: number;
     createdAt: string;
@@ -72,6 +75,7 @@ export function toCart(doc: CartDocument): Cart {
             createdAt: item.createdAt.toISOString(),
             updatedAt: item.updatedAt.toISOString(),
         })),
+        billingDetails: doc.billingDetails,
         subtotal,
         totalItems,
         createdAt: doc.createdAt.toISOString(),

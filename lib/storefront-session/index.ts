@@ -3,6 +3,7 @@ export {
     ensureStorefrontSession,
     getStorefrontSession,
     getStorefrontSessionId,
+    getStorefrontSessionBySessionId,
     touchStorefrontSession,
     createStorefrontSession,
     revokeStorefrontSession,

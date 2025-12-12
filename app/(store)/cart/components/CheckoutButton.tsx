@@ -6,9 +6,16 @@ import { useToast } from "@/components/ui/Toast";
 interface CheckoutButtonProps {
   hasStockIssues?: boolean;
   availableCount?: number;
+  hasBillingDetails?: boolean;
+  onMissingBillingDetails?: () => void;
 }
 
-export default function CheckoutButton({ hasStockIssues = false, availableCount }: CheckoutButtonProps) {
+export default function CheckoutButton({
+  hasStockIssues = false,
+  availableCount,
+  hasBillingDetails = true,
+  onMissingBillingDetails,
+}: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -33,6 +40,11 @@ export default function CheckoutButton({ hasStockIssues = false, availableCount 
           method,
         }
       );
+      return;
+    }
+
+    if (!hasBillingDetails) {
+      onMissingBillingDetails?.();
       return;
     }
 
@@ -107,7 +119,9 @@ export default function CheckoutButton({ hasStockIssues = false, availableCount 
     <button
       onClick={handleCheckout}
       disabled={isLoading}
-      className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className={`w-full bg-black text-white py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        !hasBillingDetails ? 'bg-gray-500 hover:bg-gray-500' : 'hover:bg-gray-800'
+      }`}
     >
       {isLoading ? "Processing..." : "Proceed to Checkout"}
     </button>

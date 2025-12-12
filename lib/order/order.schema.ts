@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BillingDetailsSchema } from '@/lib/billing-details/billing-details.schema';
 
 export const OrderItemSchema = z.object({
     productId: z.string().min(1),
@@ -18,6 +19,7 @@ export const OrderSchema = z.object({
     totalAmount: z.number(),
     currency: z.string(),
     status: z.enum(['pending', 'paid', 'cancelled', 'failed', 'completed']),
+    billingDetails: BillingDetailsSchema.optional(),
     createdAt: z.string().min(1),
     updatedAt: z.string().min(1),
 });

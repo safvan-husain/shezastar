@@ -10,6 +10,16 @@ import {
 import type { OrderDocument, OrderStatus } from '@/lib/order/model/order.model';
 import { ObjectId } from '@/test/test-db';
 
+const BILLING_DETAILS = {
+    email: 'customer@example.com',
+    firstName: 'Customer',
+    lastName: 'Test',
+    country: 'United Arab Emirates',
+    streetAddress1: '123 Palm Street',
+    city: 'Dubai',
+    phone: '+971500000000',
+};
+
 const BASE_ORDER_DATA: Omit<OrderDocument, '_id' | 'createdAt' | 'updatedAt'> = {
     sessionId: 'session-1',
     stripeSessionId: 'stripe-1',
@@ -25,6 +35,7 @@ const BASE_ORDER_DATA: Omit<OrderDocument, '_id' | 'createdAt' | 'updatedAt'> = 
     totalAmount: 100,
     currency: 'usd',
     status: 'pending',
+    billingDetails: BILLING_DETAILS,
 };
 
 describe('Order service (admin helpers)', () => {
@@ -38,6 +49,7 @@ describe('Order service (admin helpers)', () => {
         const fetched = await getOrderById(created.id);
         expect(fetched.id).toBe(created.id);
         expect(fetched.totalAmount).toBe(100);
+        expect(fetched.billingDetails).toEqual(expect.objectContaining(BILLING_DETAILS));
     });
 
     it('throws for invalid order id format', async () => {
@@ -75,5 +87,6 @@ describe('Order service (admin helpers)', () => {
 
         const fetched = await getOrderById(created.id);
         expect(fetched.status).toBe('paid');
+        expect(fetched.billingDetails).toEqual(expect.objectContaining(BILLING_DETAILS));
     });
 });
