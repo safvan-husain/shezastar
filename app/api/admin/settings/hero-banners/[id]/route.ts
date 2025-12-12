@@ -36,7 +36,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         const { status, body: result } = await handleUpdateHeroBanner(id, payload);
         try {
-            revalidatePath('/(admin)/settings/hero-banners', 'page');
+            revalidatePath('/manage/settings/hero-banners', 'page');
         } catch (error) {
             // Ignore revalidation errors in test environment
         }
@@ -59,7 +59,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
         const { status, body: result } = await handleDeleteHeroBanner(id);
         try {
-            revalidatePath('/(admin)/settings/hero-banners', 'page');
+            revalidatePath('/manage/settings/hero-banners', 'page');
         } catch (error) {
             // Ignore revalidation errors in test environment
         }

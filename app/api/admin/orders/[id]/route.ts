@@ -18,8 +18,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     if (status >= 200 && status < 300) {
         try {
-            revalidatePath('/(admin)/manage-orders', 'page');
-            revalidatePath(`/(admin)/manage-orders/${id}`, 'page');
+            revalidatePath('/manage/orders', 'page');
+            revalidatePath(`/manage/orders/${id}`, 'page');
         } catch {
             // Ignore revalidation errors in test environment
         }

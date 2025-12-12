@@ -6,7 +6,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     const { id } = await params;
     const { status, body: result } = await handleRemoveFeaturedProduct(id);
     try {
-        revalidatePath('/(admin)/settings/featured-products', 'page');
+        revalidatePath('/manage/settings/featured-products', 'page');
     } catch (error) {
         // Ignore revalidation errors in test environment
     }

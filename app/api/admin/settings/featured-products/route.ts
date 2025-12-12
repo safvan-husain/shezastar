@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { status, body: result } = await handleAddFeaturedProduct(body);
     try {
-        revalidatePath('/(admin)/settings/featured-products', 'page');
+        revalidatePath('/manage/settings/featured-products', 'page');
     } catch (error) {
         // Ignore revalidation errors in test environment
     }

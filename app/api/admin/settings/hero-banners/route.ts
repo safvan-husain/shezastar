@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
         const { status, body: result } = await handleCreateHeroBanner(payload);
         try {
-            revalidatePath('/(admin)/settings/hero-banners', 'page');
+            revalidatePath('/manage/settings/hero-banners', 'page');
         } catch (error) {
             // Ignore revalidation errors in test environment
         }
