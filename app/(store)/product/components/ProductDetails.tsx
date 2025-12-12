@@ -236,6 +236,29 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
           )}
 
+          {/* Description and Highlights - Show above action buttons when no variants */}
+          {(!product.variants || product.variants.length === 0) && (
+            <div className="space-y-2 text-black">
+              <h3>Description</h3>
+              {product.description && (
+                <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
+              )}
+              {product.highlights && product.highlights.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  <h2 className="text-sm font-semibold text-[var(--storefront-text-primary)]">Key highlights</h2>
+                  <ul className="mt-1 space-y-1 text-sm text-[var(--storefront-text-secondary)]">
+                    {product.highlights.map((item, index) => (
+                      <li key={`${item}-${index}`} className="flex gap-2">
+                        <span className="mt-[3px] text-[var(--storefront-text-muted)]">•</span>
+                        <span className="flex-1">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Installation Service */}
           {product.installationService?.enabled && (
             <div className="rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-bg-subtle)] p-4 space-y-2">
@@ -379,25 +402,28 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         </div>
       </div>
 
-      <div className="space-y-2 text-black mt-5">
-        <h3>Description</h3>
-        {product.description && (
-          <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
-        )}
-        {product.highlights && product.highlights.length > 0 && (
-          <div className="mt-3 space-y-1">
-            <h2 className="text-sm font-semibold text-[var(--storefront-text-primary)]">Key highlights</h2>
-            <ul className="mt-1 space-y-1 text-sm text-[var(--storefront-text-secondary)]">
-              {product.highlights.map((item, index) => (
-                <li key={`${item}-${index}`} className="flex gap-2">
-                  <span className="mt-[3px] text-[var(--storefront-text-muted)]">•</span>
-                  <span className="flex-1">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      {/* Description and Highlights - Show below action buttons when variants exist */}
+      {product.variants && product.variants.length > 0 && (
+        <div className="space-y-2 text-black mt-5">
+          <h3>Description</h3>
+          {product.description && (
+            <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
+          )}
+          {product.highlights && product.highlights.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <h2 className="text-sm font-semibold text-[var(--storefront-text-primary)]">Key highlights</h2>
+              <ul className="mt-1 space-y-1 text-sm text-[var(--storefront-text-secondary)]">
+                {product.highlights.map((item, index) => (
+                  <li key={`${item}-${index}`} className="flex gap-2">
+                    <span className="mt-[3px] text-[var(--storefront-text-muted)]">•</span>
+                    <span className="flex-1">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
 
   );
