@@ -16,17 +16,26 @@ async function getOrder(id: string): Promise<{ order: Order | null; error: Toast
         const res = await fetch(url, { cache: 'no-store' });
 
         if (!res.ok) {
-            let body: any = {};
+            let body: unknown = {};
             try {
                 body = await res.json();
             } catch {
                 body = { error: 'Failed to parse response body' };
             }
 
+            const bodyRecord =
+                body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+            const message =
+                typeof bodyRecord.message === 'string'
+                    ? bodyRecord.message
+                    : typeof bodyRecord.error === 'string'
+                        ? bodyRecord.error
+                        : 'Failed to load order';
+
             return {
                 order: null,
                 error: {
-                    message: body.message || body.error || 'Failed to load order',
+                    message,
                     status: res.status,
                     body,
                     url: res.url,
@@ -151,6 +160,54 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                     </p>
                                 </div>
                             </div>
+                        </Card>
+
+                        <Card>
+                            <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
+                                Billing Address
+                            </h2>
+                            {order.billingDetails ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p className="font-medium text-[var(--text-primary)]">
+                                            {order.billingDetails.firstName} {order.billingDetails.lastName}
+                                        </p>
+                                        <p className="text-[var(--text-secondary)] mt-1">
+                                            {order.billingDetails.email}
+                                        </p>
+                                        <p className="text-[var(--text-secondary)] mt-1">
+                                            {order.billingDetails.phone}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1 text-[var(--text-secondary)]">
+                                        <p>{order.billingDetails.streetAddress1}</p>
+                                        {order.billingDetails.streetAddress2 && (
+                                            <p>{order.billingDetails.streetAddress2}</p>
+                                        )}
+                                        <p>
+                                            {order.billingDetails.city}
+                                            {order.billingDetails.stateOrCounty
+                                                ? `, ${order.billingDetails.stateOrCounty}`
+                                                : ''}
+                                        </p>
+                                        <p>{order.billingDetails.country}</p>
+                                    </div>
+                                    {order.billingDetails.orderNotes && (
+                                        <div className="sm:col-span-2">
+                                            <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-1">
+                                                Order Notes
+                                            </h3>
+                                            <p className="text-sm text-[var(--text-secondary)]">
+                                                {order.billingDetails.orderNotes}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-[var(--muted-foreground)]">
+                                    No billing details were captured for this order.
+                                </p>
+                            )}
                         </Card>
 
                         {/* Items */}
