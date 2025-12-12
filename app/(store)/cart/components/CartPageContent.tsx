@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { Cart } from "@/lib/cart";
 import type { Product } from "@/lib/product/model/product.model";
 import { useStorefrontCart } from "@/components/storefront/StorefrontCartProvider";
+import { GuestAuthBanner } from "@/components/storefront/GuestAuthBanner";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
 import CheckoutButton from "./CheckoutButton";
 import { useToast } from "@/components/ui/Toast";
@@ -180,16 +181,19 @@ export function CartPageContent({
 
   if (!effectiveCart || effectiveItems.length === 0) {
     return (
-      <div className="rounded-lg border border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-8 text-center space-y-4">
-        <p className="text-lg text-[var(--storefront-text-secondary)]">
-          Your cart is currently empty.
-        </p>
-        <Link
-          href="/"
-          className="inline-flex items-center px-4 py-2 rounded-md bg-[var(--storefront-button-primary)] text-white text-sm font-medium hover:bg-[var(--storefront-button-primary-hover)] transition"
-        >
-          Continue shopping
-        </Link>
+      <div className="space-y-6">
+        <GuestAuthBanner />
+        <div className="rounded-lg border border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-8 text-center space-y-4">
+          <p className="text-lg text-[var(--storefront-text-secondary)]">
+            Your cart is currently empty.
+          </p>
+          <Link
+            href="/"
+            className="inline-flex items-center px-4 py-2 rounded-md bg-[var(--storefront-button-primary)] text-white text-sm font-medium hover:bg-[var(--storefront-button-primary-hover)] transition"
+          >
+            Continue shopping
+          </Link>
+        </div>
       </div>
     );
   }
@@ -198,6 +202,7 @@ export function CartPageContent({
 
   return (
     <div className="space-y-8">
+      <GuestAuthBanner />
       <div
         ref={billingSectionRef}
         className="rounded-lg border border-[var(--storefront-border-light)] bg-[var(--storefront-bg)] p-6 space-y-4"

@@ -6,6 +6,7 @@ import type { Cart } from '@/lib/cart';
 import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/utils/api-error-handler';
+import { useStorefrontAuthSuggestion } from './StorefrontAuthSuggestionProvider';
 
 interface StorefrontCartContextValue {
     cart: Cart | null;
@@ -33,6 +34,7 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
     const [cart, setCart] = useState<Cart | null>(initialCart);
     const [isLoading, setIsLoading] = useState(false);
     const { showToast } = useToast();
+    const { suggestAuthIfGuest } = useStorefrontAuthSuggestion();
 
     const refreshCart = useCallback(async () => {
         setIsLoading(true);
@@ -101,9 +103,18 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
     );
 
     const addToCart = useCallback(
-        async (productId: string, selectedVariantItemIds: string[], quantity: number = 1) =>
-            mutateCart('POST', { productId, selectedVariantItemIds, quantity }, 'Added to cart'),
-        [mutateCart]
+        async (productId: string, selectedVariantItemIds: string[], quantity: number = 1) => {
+            const data = await mutateCart(
+                'POST',
+                { productId, selectedVariantItemIds, quantity },
+                'Added to cart'
+            );
+            if (data) {
+                suggestAuthIfGuest('cart');
+            }
+            return data;
+        },
+        [mutateCart, suggestAuthIfGuest]
     );
 
     const updateItem = useCallback(

@@ -7,6 +7,9 @@ import { Category } from '@/lib/category/model/category.model';
 import Image from 'next/image';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
+import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
+import { useStorefrontAuthSuggestion } from '@/components/storefront/StorefrontAuthSuggestionProvider';
+import { useToast } from '@/components/ui/Toast';
 
 interface NavbarProps {
   categories: Category[];
@@ -22,6 +25,9 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
   const { items } = useStorefrontWishlist();
   const wishlistCount = items.length;
   const { totalItems } = useStorefrontCart();
+  const { refreshSession } = useStorefrontSession();
+  const { resetAuthSuggestionShown } = useStorefrontAuthSuggestion();
+  const { showToast } = useToast();
 
   const handleMouseEnter = (categoryId: string) => {
     if (timeoutRef.current) {
@@ -64,11 +70,34 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
   };
 
   const handleLogout = async () => {
+    const url = '/api/auth/logout';
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const response = await fetch(url, { method: 'POST' });
+      if (!response.ok) {
+        let body: any = {};
+        try {
+          body = await response.json();
+        } catch {
+          body = { error: 'Failed to parse error response' };
+        }
+        const message = body.message || body.error || 'Logout failed';
+        showToast(message, 'error', {
+          status: response.status,
+          body,
+          url,
+          method: 'POST',
+        });
+        return;
+      }
+
+      resetAuthSuggestionShown();
+      await refreshSession().catch(() => {
+        // refreshSession already surfaces errors via toast
+      });
       router.refresh();
     } catch (error) {
-      console.error('Logout failed', error);
+      const message = error instanceof Error ? error.message : 'Logout failed';
+      showToast(message, 'error', { url, method: 'POST' });
     }
   };
 

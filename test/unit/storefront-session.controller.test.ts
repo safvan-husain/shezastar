@@ -27,6 +27,7 @@ describe('Storefront session controller', () => {
             updatedAt: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 1000).toISOString(),
             lastActiveAt: new Date().toISOString(),
+            userId: 'user123',
         });
 
         const response = await handleEnsureStorefrontSession({
@@ -35,6 +36,7 @@ describe('Storefront session controller', () => {
 
         expect(response.status).toBe(200);
         expect(ensureSessionMock).toHaveBeenCalledWith({ metadata: { userAgent: 'controller-test' } });
+        expect((response.body as any).userId).toBe('user123');
     });
 
     it('returns validation error when payload is invalid', async () => {

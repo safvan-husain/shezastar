@@ -47,11 +47,13 @@ describe('Storefront session route handlers', () => {
         const postBody = await postResponse.json();
         expect(postResponse.status).toBe(200);
         expect(postBody.sessionId).toBeDefined();
+        expect(postBody.userId).toBeUndefined();
 
         const getResponse = await GET(new Request('http://localhost/api/storefront/session'), ctx);
         expect(getResponse.status).toBe(200);
         const getBody = await getResponse.json();
         expect(getBody.sessionId).toBe(postBody.sessionId);
+        expect(getBody.userId).toBeUndefined();
     });
 
     it('revokes a storefront session', async () => {

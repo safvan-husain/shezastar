@@ -5,9 +5,11 @@ import {
     ensureStorefrontSession,
     getStorefrontSession,
     revokeStorefrontSession,
+    bindSessionToUser,
 } from '@/lib/storefront-session';
 import type { StorefrontSessionDocument } from '@/lib/storefront-session/model/storefront-session.model';
 import { STOREFRONT_COOKIE_NAME } from '@/lib/storefront-session/session-token';
+import { ObjectId } from 'mongodb';
 
 const cookieJar: Record<string, { name: string; value: string }> = {};
 
@@ -78,5 +80,19 @@ describe('Storefront session service', () => {
         await revokeStorefrontSession();
         const session = await getStorefrontSession();
         expect(session).toBeNull();
+    });
+
+    it('binds a session to a user and exposes userId', async () => {
+        const session = await ensureStorefrontSession();
+        const userId = new ObjectId().toHexString();
+
+        await bindSessionToUser(session.sessionId, userId);
+
+        const bound = await getStorefrontSession();
+        expect(bound?.userId).toBe(userId);
+
+        const collection = await getCollection<StorefrontSessionDocument>('userSessions');
+        const stored = await collection.findOne({ sessionId: session.sessionId });
+        expect(stored?.userId?.toHexString()).toBe(userId);
     });
 });

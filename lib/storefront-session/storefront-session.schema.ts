@@ -16,6 +16,7 @@ export const StorefrontSessionSchema = z.object({
     lastActiveAt: z.string().min(1),
     cartId: z.string().optional(),
     wishlistId: z.string().optional(),
+    userId: z.string().optional(),
     metadata: StorefrontSessionMetadataSchema.optional(),
 });
 

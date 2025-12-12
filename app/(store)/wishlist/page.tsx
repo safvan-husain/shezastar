@@ -1,6 +1,7 @@
 import type { ToastErrorPayload } from '@/components/ErrorToastHandler';
 import { ErrorToastHandler } from '@/components/ErrorToastHandler';
 import { ProductGrid } from '@/components/ProductGrid';
+import { GuestAuthBanner } from '@/components/storefront/GuestAuthBanner';
 import type { Product } from '@/lib/product/model/product.model';
 import { getProduct } from '@/lib/product/product.service';
 import { getWishlistForCurrentSession } from '@/lib/wishlist/wishlist.service';
@@ -63,6 +64,7 @@ export default async function WishlistPage() {
   return (
     <div className="container mx-auto px-4 py-12 mt-24 space-y-6">
       <ErrorToastHandler error={error} />
+      <GuestAuthBanner />
 
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">

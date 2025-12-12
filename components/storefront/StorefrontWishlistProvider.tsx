@@ -13,6 +13,7 @@ import type { WishlistResponse, WishlistItemResponse } from '@/lib/wishlist';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/utils/api-error-handler';
 import { useStorefrontSession } from './StorefrontSessionProvider';
+import { useStorefrontAuthSuggestion } from './StorefrontAuthSuggestionProvider';
 
 interface StorefrontWishlistContextValue {
   items: WishlistItemResponse[];
@@ -51,6 +52,7 @@ export function StorefrontWishlistProvider({
 }: StorefrontWishlistProviderProps) {
   const { session } = useStorefrontSession();
   const { showToast } = useToast();
+  const { suggestAuthIfGuest } = useStorefrontAuthSuggestion();
 
   const [items, setItems] = useState<WishlistItemResponse[]>(initialWishlist?.items ?? []);
   const [isLoading, setIsLoading] = useState(false);
@@ -144,6 +146,10 @@ export function StorefrontWishlistProvider({
             : 'Added to wishlist',
           'success'
         );
+
+        if (!alreadyInWishlist) {
+          suggestAuthIfGuest('wishlist');
+        }
       } catch (err) {
         const message =
           err instanceof Error
@@ -156,7 +162,7 @@ export function StorefrontWishlistProvider({
         setIsLoading(false);
       }
     },
-    [session, isInWishlist, showToast]
+    [session, isInWishlist, showToast, suggestAuthIfGuest]
   );
 
   const refreshWishlist = useCallback(async () => {
