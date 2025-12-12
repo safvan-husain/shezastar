@@ -10,6 +10,7 @@ export interface WishlistItemDocument {
 export interface WishlistDocument {
     _id: ObjectId;
     sessionId: string;
+    userId?: ObjectId;
     items: WishlistItemDocument[];
     createdAt: Date;
     updatedAt: Date;
@@ -24,6 +25,7 @@ export interface WishlistItem {
 export interface Wishlist {
     id: string;
     sessionId: string;
+    userId?: string;
     items: WishlistItem[];
     itemsCount: number;
     createdAt: string;
@@ -34,6 +36,7 @@ export function toWishlist(doc: WishlistDocument): Wishlist {
     return {
         id: doc._id.toHexString(),
         sessionId: doc.sessionId,
+        userId: doc.userId?.toHexString(),
         items: doc.items.map(item => ({
             productId: item.productId,
             selectedVariantItemIds: item.selectedVariantItemIds,

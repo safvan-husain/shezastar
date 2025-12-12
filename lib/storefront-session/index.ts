@@ -6,4 +6,6 @@ export {
     touchStorefrontSession,
     createStorefrontSession,
     revokeStorefrontSession,
+    bindSessionToUser,
+    unbindSession,
 } from './storefront-session.service';

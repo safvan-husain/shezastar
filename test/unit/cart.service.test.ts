@@ -5,7 +5,7 @@ import {
     addItemToCart,
     clearCart,
     ensureCart,
-    getCartBySessionId,
+    getCart,
     removeItemFromCart,
     updateCartItemQuantity,
 } from '@/lib/cart';
@@ -13,7 +13,7 @@ import { createProduct } from '@/lib/product/product.service';
 import { AppError } from '@/lib/errors/app-error';
 
 describe('Cart service', () => {
-    const sessionId = 'cart-service-session';
+    const session = { sessionId: 'cart-service-session', items: [] } as any;
     let productId: string;
     let variantItemId: string;
 
@@ -47,26 +47,27 @@ describe('Cart service', () => {
                     priceDelta: 10,
                 },
             ],
+            highlights: [],
         });
 
         productId = product.id;
     });
 
     it('ensures a new empty cart for a session', async () => {
-        const cart = await ensureCart(sessionId);
-        expect(cart.sessionId).toBe(sessionId);
+        const cart = await ensureCart(session);
+        expect(cart.sessionId).toBe(session.sessionId);
         expect(cart.items).toHaveLength(0);
         expect(cart.totalItems).toBe(0);
         expect(cart.subtotal).toBe(0);
 
-        const fetched = await getCartBySessionId(sessionId);
+        const fetched = await getCart(session);
         expect(fetched).not.toBeNull();
         expect(fetched?.id).toBe(cart.id);
     });
 
     it('adds items to cart and aggregates duplicates', async () => {
         const first = await addItemToCart({
-            sessionId,
+            session,
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 1,
@@ -79,7 +80,7 @@ describe('Cart service', () => {
         expect(first.subtotal).toBe(110);
 
         const second = await addItemToCart({
-            sessionId,
+            session,
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 2,
@@ -93,7 +94,7 @@ describe('Cart service', () => {
 
     it('updates item quantity and removes item when quantity becomes zero', async () => {
         const created = await addItemToCart({
-            sessionId,
+            session,
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 2,
@@ -102,7 +103,7 @@ describe('Cart service', () => {
         expect(created.items[0].quantity).toBe(2);
 
         const updated = await updateCartItemQuantity({
-            sessionId,
+            session,
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 5,
@@ -112,7 +113,7 @@ describe('Cart service', () => {
         expect(updated.totalItems).toBe(5);
 
         const clearedLine = await updateCartItemQuantity({
-            sessionId,
+            session,
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 0,
@@ -124,10 +125,10 @@ describe('Cart service', () => {
     });
 
     it('removes an item from cart idempotently', async () => {
-        await ensureCart(sessionId);
+        await ensureCart(session);
 
         const afterRemoveMissing = await removeItemFromCart({
-            sessionId,
+            session,
             productId: 'non-existent-product',
             selectedVariantItemIds: [],
         });
@@ -135,7 +136,7 @@ describe('Cart service', () => {
         expect(afterRemoveMissing.items).toHaveLength(0);
 
         const withItem = await addItemToCart({
-            sessionId,
+            session,
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 1,
@@ -143,7 +144,7 @@ describe('Cart service', () => {
         expect(withItem.items).toHaveLength(1);
 
         const afterRemoveExisting = await removeItemFromCart({
-            sessionId,
+            session,
             productId,
             selectedVariantItemIds: [variantItemId],
         });
@@ -152,13 +153,13 @@ describe('Cart service', () => {
 
     it('clears all items from the cart', async () => {
         await addItemToCart({
-            sessionId,
+            session,
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 2,
         });
 
-        const cleared = await clearCart(sessionId);
+        const cleared = await clearCart(session);
         expect(cleared.items).toHaveLength(0);
         expect(cleared.totalItems).toBe(0);
         expect(cleared.subtotal).toBe(0);
@@ -167,7 +168,7 @@ describe('Cart service', () => {
     it('throws when adding an item for a non-existent product', async () => {
         await expect(
             addItemToCart({
-                sessionId,
+                session,
                 productId: '000000000000000000000000',
                 selectedVariantItemIds: [],
                 quantity: 1,

@@ -17,6 +17,7 @@ export interface StorefrontSessionDocument {
     lastActiveAt: Date;
     cartId?: ObjectId;
     wishlistId?: ObjectId;
+    userId?: ObjectId;
     metadata?: StorefrontSessionMetadata;
 }
 
@@ -29,6 +30,7 @@ export interface StorefrontSession {
     lastActiveAt: string;
     cartId?: string;
     wishlistId?: string;
+    userId?: string;
     metadata?: StorefrontSessionMetadata;
 }
 
@@ -61,6 +63,7 @@ export function toStorefrontSession(doc: StorefrontSessionDocument): StorefrontS
         lastActiveAt: doc.lastActiveAt.toISOString(),
         cartId: doc.cartId?.toHexString(),
         wishlistId: doc.wishlistId?.toHexString(),
+        userId: doc.userId?.toHexString(),
         metadata: doc.metadata ?? undefined,
     };
 }

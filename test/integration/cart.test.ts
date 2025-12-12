@@ -47,6 +47,8 @@ describe('Cart API route handlers', () => {
             images: [],
             variants: [],
             subCategoryIds: [],
+            highlights: [],
+            variantStock: [],
         });
         productId = product.id;
     });

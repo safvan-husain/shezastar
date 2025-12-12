@@ -19,6 +19,7 @@ vi.mock('@/lib/cart/cart.service', () => ({
 
 vi.mock('@/lib/storefront-session', () => ({
     getStorefrontSessionId: vi.fn(),
+    getStorefrontSession: vi.fn(),
     ensureStorefrontSession: vi.fn(),
 }));
 
@@ -82,7 +83,7 @@ describe('Cart controller', () => {
 
         expect(response.status).toBe(200);
         expect(cartService.addItemToCart).toHaveBeenCalledWith({
-            sessionId: 'session-123',
+            session: expect.objectContaining({ sessionId: 'session-123' }),
             productId: 'prod-1',
             selectedVariantItemIds: [],
             quantity: 1,
@@ -99,8 +100,8 @@ describe('Cart controller', () => {
         expect(response.status).toBe(400);
     });
 
-    it('returns 404 when updating without a session id', async () => {
-        vi.mocked(storefrontSession.getStorefrontSessionId).mockResolvedValueOnce(null);
+    it('returns 404 when updating without a session', async () => {
+        vi.mocked(storefrontSession.getStorefrontSession).mockResolvedValueOnce(null);
 
         const response = await handleUpdateCartItem({
             productId: 'prod-1',
@@ -112,8 +113,15 @@ describe('Cart controller', () => {
         expect(response.body.error).toBe('CART_NOT_FOUND');
     });
 
-    it('updates cart item quantity when session id is present', async () => {
-        vi.mocked(storefrontSession.getStorefrontSessionId).mockResolvedValueOnce('session-123');
+    it('updates cart item quantity when session is present', async () => {
+        vi.mocked(storefrontSession.getStorefrontSession).mockResolvedValueOnce({
+            sessionId: 'session-123',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 1000).toISOString(),
+            lastActiveAt: new Date().toISOString(),
+        });
         vi.mocked(cartService.updateCartItemQuantity).mockResolvedValueOnce({
             id: 'cart-1',
             sessionId: 'session-123',
@@ -141,15 +149,22 @@ describe('Cart controller', () => {
 
         expect(response.status).toBe(200);
         expect(cartService.updateCartItemQuantity).toHaveBeenCalledWith({
-            sessionId: 'session-123',
+            session: expect.objectContaining({ sessionId: 'session-123' }),
             productId: 'prod-1',
             selectedVariantItemIds: [],
             quantity: 3,
         });
     });
 
-    it('removes a cart item when session id is present', async () => {
-        vi.mocked(storefrontSession.getStorefrontSessionId).mockResolvedValueOnce('session-123');
+    it('removes a cart item when session is present', async () => {
+        vi.mocked(storefrontSession.getStorefrontSession).mockResolvedValueOnce({
+            sessionId: 'session-123',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 1000).toISOString(),
+            lastActiveAt: new Date().toISOString(),
+        });
         vi.mocked(cartService.removeItemFromCart).mockResolvedValueOnce({
             id: 'cart-1',
             sessionId: 'session-123',
@@ -169,8 +184,15 @@ describe('Cart controller', () => {
         expect(response.body.items).toHaveLength(0);
     });
 
-    it('clears the cart when session id is present', async () => {
-        vi.mocked(storefrontSession.getStorefrontSessionId).mockResolvedValueOnce('session-123');
+    it('clears the cart when session is present', async () => {
+        vi.mocked(storefrontSession.getStorefrontSession).mockResolvedValueOnce({
+            sessionId: 'session-123',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 1000).toISOString(),
+            lastActiveAt: new Date().toISOString(),
+        });
         vi.mocked(cartService.clearCart).mockResolvedValueOnce({
             id: 'cart-1',
             sessionId: 'session-123',
@@ -184,7 +206,7 @@ describe('Cart controller', () => {
         const response = await handleClearCart({});
 
         expect(response.status).toBe(200);
-        expect(cartService.clearCart).toHaveBeenCalledWith('session-123');
+        expect(cartService.clearCart).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 'session-123' }));
         expect(response.body.items).toHaveLength(0);
     });
 });

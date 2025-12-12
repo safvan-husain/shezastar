@@ -9,25 +9,34 @@ import {
 } from '@/lib/wishlist/wishlist.controller';
 
 const {
-    getWishlistBySessionIdMock,
+    getWishlistMock,
     ensureWishlistMock,
     addItemToWishlistMock,
     removeItemFromWishlistMock,
     clearWishlistMock,
+    getStorefrontSessionMock,
+    ensureStorefrontSessionMock,
 } = vi.hoisted(() => ({
-    getWishlistBySessionIdMock: vi.fn(),
+    getWishlistMock: vi.fn(),
     ensureWishlistMock: vi.fn(),
     addItemToWishlistMock: vi.fn(),
     removeItemFromWishlistMock: vi.fn(),
     clearWishlistMock: vi.fn(),
+    getStorefrontSessionMock: vi.fn(),
+    ensureStorefrontSessionMock: vi.fn(),
 }));
 
 vi.mock('@/lib/wishlist/wishlist.service', () => ({
-    getWishlistBySessionId: getWishlistBySessionIdMock,
+    getWishlist: getWishlistMock,
     ensureWishlist: ensureWishlistMock,
     addItemToWishlist: addItemToWishlistMock,
     removeItemFromWishlist: removeItemFromWishlistMock,
     clearWishlist: clearWishlistMock,
+}));
+
+vi.mock('@/lib/storefront-session', () => ({
+    getStorefrontSession: getStorefrontSessionMock,
+    ensureStorefrontSession: ensureStorefrontSessionMock,
 }));
 
 const baseWishlist = {
@@ -40,42 +49,50 @@ const baseWishlist = {
 };
 
 describe('Wishlist controller', () => {
+    const session = { sessionId: 'session-1', items: [] } as any;
+
     beforeEach(() => {
-        getWishlistBySessionIdMock.mockReset();
+        getWishlistMock.mockReset();
         ensureWishlistMock.mockReset();
         addItemToWishlistMock.mockReset();
         removeItemFromWishlistMock.mockReset();
         clearWishlistMock.mockReset();
+        getStorefrontSessionMock.mockReset();
+        ensureStorefrontSessionMock.mockReset();
+
+        getStorefrontSessionMock.mockResolvedValue(session);
+        ensureStorefrontSessionMock.mockResolvedValue(session);
     });
 
     it('returns existing wishlist via handleGetWishlist', async () => {
-        getWishlistBySessionIdMock.mockResolvedValueOnce(baseWishlist);
+        getWishlistMock.mockResolvedValueOnce(baseWishlist);
 
-        const response = await handleGetWishlist('session-1');
+        const response = await handleGetWishlist();
 
         expect(response.status).toBe(200);
         expect(response.body.id).toBe(baseWishlist.id);
-        expect(getWishlistBySessionIdMock).toHaveBeenCalledWith('session-1');
+        expect(getWishlistMock).toHaveBeenCalledWith(session);
         expect(ensureWishlistMock).not.toHaveBeenCalled();
     });
 
     it('ensures wishlist when none exists in handleGetWishlist', async () => {
-        getWishlistBySessionIdMock.mockResolvedValueOnce(null);
+        getWishlistMock.mockResolvedValueOnce(null);
         ensureWishlistMock.mockResolvedValueOnce(baseWishlist);
 
-        const response = await handleGetWishlist('session-1');
+        const response = await handleGetWishlist();
 
         expect(response.status).toBe(200);
         expect(response.body.id).toBe(baseWishlist.id);
-        expect(ensureWishlistMock).toHaveBeenCalledWith('session-1');
+        expect(ensureWishlistMock).toHaveBeenCalledWith(session);
     });
 
     it('ensures wishlist explicitly via handleEnsureWishlist', async () => {
         ensureWishlistMock.mockResolvedValueOnce(baseWishlist);
 
-        const response = await handleEnsureWishlist('session-1');
+        const response = await handleEnsureWishlist();
         expect(response.status).toBe(200);
         expect(response.body.sessionId).toBe('session-1');
+        expect(ensureWishlistMock).toHaveBeenCalledWith(session);
     });
 
     it('adds item to wishlist and validates payload', async () => {
@@ -102,6 +119,7 @@ describe('Wishlist controller', () => {
             sessionId: 'session-1',
             productId: 'product-1',
             selectedVariantItemIds: [],
+            session,
         });
         expect(response.body.items).toHaveLength(1);
     });
@@ -130,6 +148,7 @@ describe('Wishlist controller', () => {
             sessionId: 'session-1',
             productId: 'product-1',
             selectedVariantItemIds: [],
+            session,
         });
     });
 
@@ -139,6 +158,6 @@ describe('Wishlist controller', () => {
         const response = await handleClearWishlist({ sessionId: 'session-1' });
 
         expect(response.status).toBe(200);
-        expect(clearWishlistMock).toHaveBeenCalledWith('session-1');
+        expect(clearWishlistMock).toHaveBeenCalledWith(session);
     });
 });

@@ -20,6 +20,7 @@ export interface CartItemDocument {
 export interface CartDocument {
     _id: ObjectId;
     sessionId: string;
+    userId?: ObjectId;
     items: CartItemDocument[];
     createdAt: Date;
     updatedAt: Date;
@@ -37,6 +38,7 @@ export interface CartItem {
 export interface Cart {
     id: string;
     sessionId: string;
+    userId?: string;
     items: CartItem[];
     subtotal: number;
     totalItems: number;
@@ -61,6 +63,7 @@ export function toCart(doc: CartDocument): Cart {
     return {
         id: doc._id.toHexString(),
         sessionId: doc.sessionId,
+        userId: doc.userId?.toHexString(),
         items: doc.items.map(item => ({
             productId: item.productId,
             selectedVariantItemIds: item.selectedVariantItemIds,

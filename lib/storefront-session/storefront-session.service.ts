@@ -102,7 +102,7 @@ async function updateActivity(
         { $set: updateDoc },
         { returnDocument: 'after' }
     );
-    
+
     if (!updated) {
         throw new AppError(500, 'SESSION_UPDATE_FAILED');
     }
@@ -205,6 +205,33 @@ export async function revokeStorefrontSession(sessionId?: string) {
 }
 
 export async function getStorefrontSessionId(): Promise<string | null> {
-    const token = await getCurrentStorefrontSessionToken();
     return token?.sessionId ?? null;
+}
+
+export async function bindSessionToUser(sessionId: string, userId: string): Promise<void> {
+    const { ObjectId } = await import('mongodb');
+    const collection = await getSessionCollection();
+    const result = await collection.updateOne(
+        { sessionId },
+        { $set: { userId: new ObjectId(userId), updatedAt: new Date() } }
+    );
+
+    if (result.matchedCount === 0) {
+        throw new AppError(404, 'SESSION_NOT_FOUND');
+    }
+}
+
+export async function unbindSession(sessionId: string): Promise<void> {
+    const collection = await getSessionCollection();
+    const result = await collection.updateOne(
+        { sessionId },
+        {
+            $unset: { userId: "" },
+            $set: { updatedAt: new Date() }
+        }
+    );
+
+    if (result.matchedCount === 0) {
+        throw new AppError(404, 'SESSION_NOT_FOUND');
+    }
 }

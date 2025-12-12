@@ -5,12 +5,16 @@ import { GET, POST, DELETE } from '@/app/api/storefront/wishlist/route';
 import { PATCH } from '@/app/api/storefront/wishlist/clear/route';
 import { createProduct } from '@/lib/product/product.service';
 
-const { getStorefrontSessionIdMock } = vi.hoisted(() => ({
+const { getStorefrontSessionIdMock, ensureStorefrontSessionMock, getStorefrontSessionMock } = vi.hoisted(() => ({
     getStorefrontSessionIdMock: vi.fn(),
+    ensureStorefrontSessionMock: vi.fn(),
+    getStorefrontSessionMock: vi.fn(),
 }));
 
 vi.mock('@/lib/storefront-session', () => ({
     getStorefrontSessionId: getStorefrontSessionIdMock,
+    ensureStorefrontSession: ensureStorefrontSessionMock,
+    getStorefrontSession: getStorefrontSessionMock,
 }));
 
 const ctx = { params: Promise.resolve({}) };
@@ -19,7 +23,13 @@ describe('Storefront wishlist route handlers', () => {
     beforeEach(async () => {
         await clear();
         getStorefrontSessionIdMock.mockReset();
+        ensureStorefrontSessionMock.mockReset();
+        getStorefrontSessionMock.mockReset();
+
+        const mockSession = { sessionId: 'session-integration', items: [] };
         getStorefrontSessionIdMock.mockResolvedValue('session-integration');
+        ensureStorefrontSessionMock.mockResolvedValue(mockSession);
+        getStorefrontSessionMock.mockResolvedValue(mockSession);
     });
 
     it('adds an item via POST and returns it via GET', async () => {
@@ -29,6 +39,8 @@ describe('Storefront wishlist route handlers', () => {
             images: [],
             variants: [],
             subCategoryIds: [],
+            variantStock: [],
+            highlights: [],
         });
 
         const postResponse = await POST(
@@ -67,6 +79,8 @@ describe('Storefront wishlist route handlers', () => {
             images: [],
             variants: [],
             subCategoryIds: [],
+            variantStock: [],
+            highlights: [],
         });
 
         await POST(
@@ -109,6 +123,8 @@ describe('Storefront wishlist route handlers', () => {
             images: [],
             variants: [],
             subCategoryIds: [],
+            variantStock: [],
+            highlights: [],
         });
 
         await POST(
@@ -137,14 +153,16 @@ describe('Storefront wishlist route handlers', () => {
         expect(patchBody.items).toHaveLength(0);
     });
 
-    it('returns 401 when session is missing', async () => {
+    it('creates a session when missing (200 OK)', async () => {
         getStorefrontSessionIdMock.mockResolvedValueOnce(null);
+        getStorefrontSessionMock.mockResolvedValueOnce(null);
+        ensureStorefrontSessionMock.mockResolvedValueOnce({ sessionId: 'new-session', items: [] });
 
         const response = await GET(
             new Request('http://localhost/api/storefront/wishlist'),
             ctx
         );
 
-        expect(response.status).toBe(401);
+        expect(response.status).toBe(200);
     });
 });

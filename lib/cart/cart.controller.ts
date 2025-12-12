@@ -14,7 +14,7 @@ import {
     updateCartItemQuantity,
     ensureCartForCurrentSession,
 } from './cart.service';
-import { getStorefrontSessionId, ensureStorefrontSession } from '@/lib/storefront-session';
+import { ensureStorefrontSession, getStorefrontSession } from '@/lib/storefront-session';
 
 export async function handleGetCartForCurrentSession() {
     try {
@@ -23,6 +23,7 @@ export async function handleGetCartForCurrentSession() {
             return { status: 200, body: CartSchema.parse(cart) };
         }
 
+        // If no cart found, should we ensure it? The original code did.
         const ensuredCart = await ensureCartForCurrentSession();
         return { status: 200, body: CartSchema.parse(ensuredCart) };
     } catch (err) {
@@ -45,7 +46,7 @@ export async function handleAddToCart(input: unknown) {
         const session = await ensureStorefrontSession();
 
         const cart = await addItemToCart({
-            sessionId: session.sessionId,
+            session,
             productId: parsed.productId,
             selectedVariantItemIds: parsed.selectedVariantItemIds,
             quantity: parsed.quantity,
@@ -60,8 +61,9 @@ export async function handleAddToCart(input: unknown) {
 export async function handleUpdateCartItem(input: unknown) {
     try {
         const parsed = UpdateCartItemSchema.parse(input);
-        const sessionId = await getStorefrontSessionId();
-        if (!sessionId) {
+        const session = await getStorefrontSession();
+
+        if (!session) {
             return {
                 status: 404,
                 body: {
@@ -72,7 +74,7 @@ export async function handleUpdateCartItem(input: unknown) {
         }
 
         const cart = await updateCartItemQuantity({
-            sessionId,
+            session,
             productId: parsed.productId,
             selectedVariantItemIds: parsed.selectedVariantItemIds,
             quantity: parsed.quantity,
@@ -87,8 +89,9 @@ export async function handleUpdateCartItem(input: unknown) {
 export async function handleRemoveCartItem(input: unknown) {
     try {
         const parsed = RemoveFromCartSchema.parse(input);
-        const sessionId = await getStorefrontSessionId();
-        if (!sessionId) {
+        const session = await getStorefrontSession();
+
+        if (!session) {
             return {
                 status: 404,
                 body: {
@@ -99,7 +102,7 @@ export async function handleRemoveCartItem(input: unknown) {
         }
 
         const cart = await removeItemFromCart({
-            sessionId,
+            session,
             productId: parsed.productId,
             selectedVariantItemIds: parsed.selectedVariantItemIds,
         });
@@ -113,8 +116,9 @@ export async function handleRemoveCartItem(input: unknown) {
 export async function handleClearCart(input: unknown) {
     try {
         ClearCartSchema.parse(input ?? {});
-        const sessionId = await getStorefrontSessionId();
-        if (!sessionId) {
+        const session = await getStorefrontSession();
+
+        if (!session) {
             return {
                 status: 404,
                 body: {
@@ -124,7 +128,7 @@ export async function handleClearCart(input: unknown) {
             };
         }
 
-        const cart = await clearCart(sessionId);
+        const cart = await clearCart(session);
         return { status: 200, body: CartSchema.parse(cart) };
     } catch (err) {
         return catchError(err);

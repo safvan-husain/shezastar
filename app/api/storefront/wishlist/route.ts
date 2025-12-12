@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 
-import { getStorefrontSessionId } from '@/lib/storefront-session';
+
 import {
     handleAddToWishlist,
     handleGetWishlist,
@@ -10,39 +10,15 @@ import {
 
 type RouteParams = { params: Promise<Record<string, string>> };
 
-async function requireSessionId() {
-    const sessionId = await getStorefrontSessionId();
-    if (!sessionId) {
-        return null;
-    }
-    return sessionId;
-}
-
 export async function GET(req: Request, ctx: RouteParams) {
     await ctx.params;
 
-    const sessionId = await requireSessionId();
-    if (!sessionId) {
-        return NextResponse.json(
-            { code: 'SESSION_REQUIRED', error: 'SESSION_REQUIRED' },
-            { status: 401, headers: { 'x-request-method': 'GET' } }
-        );
-    }
-
-    const { status, body } = await handleGetWishlist(sessionId);
+    const { status, body } = await handleGetWishlist();
     return NextResponse.json(body, { status, headers: { 'x-request-method': 'GET' } });
 }
 
 export async function POST(req: Request, ctx: RouteParams) {
     await ctx.params;
-
-    const sessionId = await requireSessionId();
-    if (!sessionId) {
-        return NextResponse.json(
-            { code: 'SESSION_REQUIRED', error: 'SESSION_REQUIRED' },
-            { status: 401, headers: { 'x-request-method': 'POST' } }
-        );
-    }
 
     let payload: any = {};
     try {
@@ -51,10 +27,7 @@ export async function POST(req: Request, ctx: RouteParams) {
         payload = {};
     }
 
-    const { status, body } = await handleAddToWishlist({
-        ...payload,
-        sessionId,
-    });
+    const { status, body } = await handleAddToWishlist(payload);
 
     if (status >= 200 && status < 300) {
         revalidatePath('/(store)/wishlist', 'page');
@@ -65,14 +38,6 @@ export async function POST(req: Request, ctx: RouteParams) {
 
 export async function DELETE(req: Request, ctx: RouteParams) {
     await ctx.params;
-
-    const sessionId = await requireSessionId();
-    if (!sessionId) {
-        return NextResponse.json(
-            { code: 'SESSION_REQUIRED', error: 'SESSION_REQUIRED' },
-            { status: 401, headers: { 'x-request-method': 'DELETE' } }
-        );
-    }
 
     const url = new URL(req.url);
     const productId = url.searchParams.get('productId');
@@ -95,10 +60,7 @@ export async function DELETE(req: Request, ctx: RouteParams) {
         }
     }
 
-    const { status, body } = await handleRemoveFromWishlist({
-        ...payload,
-        sessionId,
-    });
+    const { status, body } = await handleRemoveFromWishlist(payload);
 
     if (status >= 200 && status < 300) {
         revalidatePath('/(store)/wishlist', 'page');

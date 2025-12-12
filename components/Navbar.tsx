@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Category } from '@/lib/category/model/category.model';
 import Image from 'next/image';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
@@ -9,9 +10,11 @@ import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvide
 
 interface NavbarProps {
   categories: Category[];
+  isAuthenticated: boolean;
 }
 
-export function Navbar({ categories }: NavbarProps) {
+export function Navbar({ categories, isAuthenticated }: NavbarProps) {
+  const router = useRouter();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -58,6 +61,15 @@ export function Navbar({ categories }: NavbarProps) {
 
   const hasSubSubCategories = (category: Category) => {
     return category.subCategories.some(sub => sub.subSubCategories.length > 0);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.refresh();
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
   };
 
   return (
@@ -176,6 +188,29 @@ export function Navbar({ categories }: NavbarProps) {
             )}
           </Link>
 
+          {/* Auth Link (Desktop) */}
+          {isAuthenticated ? (
+            <button
+              onClick={handleLogout}
+              className="hidden lg:inline-flex items-center justify-center p-2 hover:bg-gray-800 rounded transition-colors"
+              aria-label="Logout"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          ) : (
+            <Link
+              href="/account"
+              className="hidden lg:inline-flex items-center justify-center p-2 hover:bg-gray-800 rounded transition-colors"
+              aria-label="Login"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+            </Link>
+          )}
+
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(true)}
@@ -239,6 +274,35 @@ export function Navbar({ categories }: NavbarProps) {
                   </svg>
                 </div>
               </Link>
+            </div>
+
+            {/* Auth Link (Mobile) */}
+            <div className="py-2 border-b border-gray-800">
+              {isAuthenticated ? (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-200 hover:text-white hover:bg-gray-800 transition-colors"
+                >
+                  <span className="font-medium">Logout</span>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              ) : (
+                <Link
+                  href="/account"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-4 py-3 text-sm text-gray-200 hover:text-white hover:bg-gray-800 transition-colors"
+                >
+                  <span className="font-medium">Login / Register</span>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                </Link>
+              )}
             </div>
 
             {/* Categories List */}
