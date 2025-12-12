@@ -142,19 +142,30 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                             {order.currency.toUpperCase()}
                                         </span>
                                     </p>
-                                    <p className="text-[var(--text-secondary)] mt-1">
-                                        Stripe session:{' '}
-                                        {order.stripeSessionId ?? 'N/A'}
-                                    </p>
                                 </div>
                                 <div>
                                     <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">
-                                        Metadata
+                                        Identifiers
                                     </h2>
-                                    <p className="text-[var(--text-secondary)]">
-                                        Session ID: <span className="font-mono">{order.sessionId}</span>
+                                    <p className="text-[var(--text-secondary)] text-xs sm:text-sm">
+                                        Order ID:{' '}
+                                        <span className="font-mono text-[var(--text-primary)] break-all">
+                                            {order.id}
+                                        </span>
                                     </p>
-                                    <p className="text-[var(--text-secondary)] mt-1">
+                                    <p className="text-[var(--text-secondary)] text-xs sm:text-sm mt-1">
+                                        Stripe session:{' '}
+                                        <span className="font-mono text-[var(--text-primary)] break-all">
+                                            {order.stripeSessionId ?? 'N/A'}
+                                        </span>
+                                    </p>
+                                    <p className="text-[var(--text-secondary)] text-xs sm:text-sm mt-1">
+                                        Session ID:{' '}
+                                        <span className="font-mono text-[var(--text-primary)] break-all">
+                                            {order.sessionId}
+                                        </span>
+                                    </p>
+                                    <p className="text-[var(--text-secondary)] mt-2">
                                         Updated:{' '}
                                         {formatDate(order.updatedAt)}
                                     </p>

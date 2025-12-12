@@ -104,6 +104,30 @@ function formatStatus(status: Order['status']) {
     return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function getCustomerName(order: Order) {
+    const firstName = order.billingDetails?.firstName?.trim();
+    const lastName = order.billingDetails?.lastName?.trim();
+    const parts = [firstName, lastName].filter(Boolean);
+
+    if (parts.length > 0) {
+        return parts.join(' ');
+    }
+
+    return 'Guest checkout';
+}
+
+function getCustomerContact(order: Order) {
+    if (order.billingDetails?.email) {
+        return order.billingDetails.email;
+    }
+
+    if (order.billingDetails?.phone) {
+        return order.billingDetails.phone;
+    }
+
+    return 'No contact info';
+}
+
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     const { page = '1', status } = await searchParams;
     const { orders, pagination, error } = await getOrders(page, status);
@@ -200,13 +224,13 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     </Card>
                 ) : (
                     <>
-                        <Card className="mb-6 overflow-hidden">
+                        <Card className="hidden md:block mb-6 overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-[var(--border-subtle)]">
                                     <thead className="bg-[var(--bg-subtle)]">
                                         <tr>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                                                Order
+                                                Customer
                                             </th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                                                 Created
@@ -225,17 +249,18 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                     </thead>
                                     <tbody className="bg-[var(--bg-base)] divide-y divide-[var(--border-subtle)]">
                                         {orders.map(order => {
+                                            const customerName = getCustomerName(order);
+                                            const customerContact = getCustomerContact(order);
                                             const itemsCount = order.items.length;
-                                            const idShort = order.id.slice(0, 8);
                                             const statusLabel = formatStatus(order.status);
 
                                             return (
                                                 <tr key={order.id} className="hover:bg-[var(--bg-subtle)]">
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--text-primary)]">
                                                         <div className="flex flex-col">
-                                                            <span className="font-medium">#{idShort}</span>
+                                                            <span className="font-medium">{customerName}</span>
                                                             <span className="text-[var(--text-muted)] text-xs">
-                                                                Session: {order.sessionId}
+                                                                {customerContact}
                                                             </span>
                                                         </div>
                                                     </td>
@@ -269,6 +294,63 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                 </table>
                             </div>
                         </Card>
+
+                        <div className="space-y-4 mb-6 md:hidden">
+                            {orders.map(order => {
+                                const customerName = getCustomerName(order);
+                                const customerContact = getCustomerContact(order);
+                                const statusLabel = formatStatus(order.status);
+                                const itemsCount = order.items.length;
+
+                                return (
+                                    <Card key={order.id} className="p-4">
+                                        <div className="flex justify-between items-start gap-4">
+                                            <div>
+                                                <p className="text-sm font-medium text-[var(--text-primary)]">
+                                                    {customerName}
+                                                </p>
+                                                <p className="text-xs text-[var(--text-secondary)]">
+                                                    {customerContact}
+                                                </p>
+                                            </div>
+                                            <span
+                                                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border border-[var(--border-subtle)] bg-[var(--bg-subtle)] text-[var(--text-secondary)]"
+                                            >
+                                                {statusLabel}
+                                            </span>
+                                        </div>
+                                        <div className="mt-3 grid grid-cols-2 gap-3 text-[var(--text-secondary)] text-xs">
+                                            <div>
+                                                <p className="uppercase tracking-wide text-[var(--muted-foreground)] text-[10px]">
+                                                    Created
+                                                </p>
+                                                <p className="text-sm font-semibold text-[var(--text-primary)]">
+                                                    {formatDate(order.createdAt)}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="uppercase tracking-wide text-[var(--muted-foreground)] text-[10px]">
+                                                    Items
+                                                </p>
+                                                <p className="text-sm font-semibold text-[var(--text-primary)]">
+                                                    {itemsCount}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 flex items-center justify-between">
+                                            <p className="text-sm font-semibold text-[var(--text-primary)]">
+                                                {order.totalAmount.toFixed(2)} {order.currency.toUpperCase()}
+                                            </p>
+                                            <Link href={`/manage/orders/${order.id}`}>
+                                                <Button size="sm" variant="ghost">
+                                                    View
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </Card>
+                                );
+                            })}
+                        </div>
 
                         {/* Pagination */}
                         {pagination.totalPages > 1 && (
