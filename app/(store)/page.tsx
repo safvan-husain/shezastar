@@ -195,8 +195,7 @@ export default async function Home() {
           {featuredError && <ErrorToastHandler error={featuredError} />}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <p className="text-sm text-[var(--text-muted)]">Handpicked for you</p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">Featured Products</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-black">Featured Products</h2>
             </div>
           </div>
           <ProductGrid products={firstFeaturedProducts} emptyMessage="" />
@@ -230,8 +229,7 @@ export default async function Home() {
           {productsError && <ErrorToastHandler error={productsError} />}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <p className="text-sm text-[var(--text-muted)]">All products</p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">In-stock catalog</h2>
+              <p className="text-xs sm:text-sm text-[var(--text-muted)] font-medium tracking-wide uppercase">All products</p>
             </div>
             <div className="text-sm text-[var(--text-muted)]">{nonFeaturedProducts.length} items</div>
           </div>

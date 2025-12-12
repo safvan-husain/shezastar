@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/lib/product/model/product.model';
@@ -71,7 +69,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
   const { isInWishlist, toggleWishlistItem } = useStorefrontWishlist();
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {products.map((product) => {
         const primaryImage = product.images?.[0];
         const imageIndicators = Math.min(product.images?.length ?? 0, 4);
@@ -138,7 +136,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
               )}
             </div>
 
-            <div className="flex flex-1 flex-col gap-3 p-4">
+            <div className="flex flex-1 flex-col gap-3 p-3 sm:p-4">
               <div className="space-y-1">
                 <h3 className="text-base font-medium text-[var(--storefront-text-primary)] line-clamp-2">{product.name}</h3>
                 {product.description && (
@@ -146,15 +144,21 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 )}
               </div>
 
-              <div className="mt-auto flex items-center justify-between">
-                <div className="flex items-baseline gap-2">
+              <div className="mt-auto flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex flex-wrap items-baseline gap-2">
                   {product.offerPrice ? (
                     <>
-                      <span className="text-2xl font-semibold text-[var(--storefront-sale)]">{formatPrice(product.offerPrice)}</span>
-                      <span className="text-sm text-[var(--storefront-text-muted)] line-through">{formatPrice(product.basePrice)}</span>
+                      <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
+                        {formatPrice(product.offerPrice)}
+                      </span>
+                      <span className="text-xs text-[var(--storefront-text-muted)] line-through sm:text-sm">
+                        {formatPrice(product.basePrice)}
+                      </span>
                     </>
                   ) : (
-                    <span className="text-2xl font-semibold text-[var(--storefront-sale)]">{formatPrice(product.basePrice)}</span>
+                    <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
+                      {formatPrice(product.basePrice)}
+                    </span>
                   )}
                 </div>
 
