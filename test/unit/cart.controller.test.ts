@@ -91,6 +91,7 @@ describe('Cart controller', () => {
             productId: 'prod-1',
             selectedVariantItemIds: [],
             quantity: 1,
+            installationOption: 'none',
         });
         expect(response.body.totalItems).toBe(1);
     });
@@ -157,6 +158,7 @@ describe('Cart controller', () => {
             productId: 'prod-1',
             selectedVariantItemIds: [],
             quantity: 3,
+            installationOption: 'none',
         });
     });
 

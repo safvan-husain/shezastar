@@ -1,11 +1,16 @@
 import { z } from 'zod';
 import { BillingDetailsSchema } from '@/lib/billing-details/billing-details.schema';
 
+export const InstallationOptionSchema = z.enum(['none', 'store', 'home']);
+export type InstallationOption = z.infer<typeof InstallationOptionSchema>;
+
 export const CartItemSchema = z.object({
     productId: z.string().min(1),
     selectedVariantItemIds: z.array(z.string().min(1)).default([]),
     quantity: z.number().int().min(1),
     unitPrice: z.number(),
+    installationOption: InstallationOptionSchema.default('none'),
+    installationAddOnPrice: z.number().min(0).default(0),
     createdAt: z.string().min(1),
     updatedAt: z.string().min(1),
 });
@@ -26,17 +31,20 @@ export const AddToCartSchema = z.object({
     productId: z.string().min(1),
     selectedVariantItemIds: z.array(z.string().min(1)).default([]),
     quantity: z.number().int().min(1),
+    installationOption: InstallationOptionSchema.default('none'),
 });
 
 export const UpdateCartItemSchema = z.object({
     productId: z.string().min(1),
     selectedVariantItemIds: z.array(z.string().min(1)).default([]),
     quantity: z.number().int(),
+    installationOption: InstallationOptionSchema.default('none'),
 });
 
 export const RemoveFromCartSchema = z.object({
     productId: z.string().min(1),
     selectedVariantItemIds: z.array(z.string().min(1)).default([]),
+    installationOption: InstallationOptionSchema.default('none'),
 });
 
 export const ClearCartSchema = z.object({});

@@ -1,5 +1,6 @@
 import { ObjectId } from '@/lib/db/mongo-client';
 import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
+import type { InstallationOption } from '@/lib/cart/cart.schema';
 
 export interface CartItemDocument {
     productId: string;
@@ -14,6 +15,8 @@ export interface CartItemDocument {
      * at the time it was last updated.
      */
     unitPrice: number;
+    installationOption?: InstallationOption;
+    installationAddOnPrice?: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -33,6 +36,8 @@ export interface CartItem {
     selectedVariantItemIds: string[];
     quantity: number;
     unitPrice: number;
+    installationOption: InstallationOption;
+    installationAddOnPrice: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -67,14 +72,16 @@ export function toCart(doc: CartDocument): Cart {
         id: doc._id.toHexString(),
         sessionId: doc.sessionId,
         userId: doc.userId?.toHexString(),
-        items: doc.items.map(item => ({
-            productId: item.productId,
-            selectedVariantItemIds: item.selectedVariantItemIds,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            createdAt: item.createdAt.toISOString(),
-            updatedAt: item.updatedAt.toISOString(),
-        })),
+    items: doc.items.map(item => ({
+        productId: item.productId,
+        selectedVariantItemIds: item.selectedVariantItemIds,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        installationOption: item.installationOption ?? 'none',
+        installationAddOnPrice: item.installationAddOnPrice ?? 0,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+    })),
         billingDetails: doc.billingDetails,
         subtotal,
         totalItems,

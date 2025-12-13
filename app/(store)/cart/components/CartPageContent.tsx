@@ -37,6 +37,16 @@ function formatPrice(value: number) {
   return `AED ${value.toFixed(2)}`;
 }
 
+function getInstallationOptionLabel(option: string) {
+  if (option === 'store') {
+    return 'At store';
+  }
+  if (option === 'home') {
+    return 'At home';
+  }
+  return 'None';
+}
+
 function computeAvailableStock(product: Product | null, selectedVariantItemIds: string[]): number | null {
   if (!product) return null;
 
@@ -361,38 +371,48 @@ export function CartPageContent({
 
               <div className="flex-1 flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-[var(--storefront-text-primary)]">
-                      {product?.name ?? "Product unavailable"}
-                    </p>
-                    {product ? (
-                      <p className="text-sm text-[var(--storefront-text-secondary)]">
-                        {product.description}
+                    <div>
+                      <p className="font-semibold text-[var(--storefront-text-primary)]">
+                        {product?.name ?? "Product unavailable"}
                       </p>
-                    ) : (
-                      <p className="text-xs text-[var(--storefront-text-muted)]">
-                        This product is no longer available.
-                      </p>
-                    )}
-                    {isOutOfStock && (
-                      <p className="mt-2 text-xs text-[var(--storefront-sale-text)]">
-                        This product has not this much count.{" "}
-                        {availableForLine != null && (
-                          <>
-                            There is only {availableForLine} left.{" "}
-                          </>
-                        )}
-                        Please adjust the count.
-                      </p>
-                    )}
-                  </div>
+                      {product ? (
+                        <p className="text-sm text-[var(--storefront-text-secondary)]">
+                          {product.description}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[var(--storefront-text-muted)]">
+                          This product is no longer available.
+                        </p>
+                      )}
+                      {item.installationOption && item.installationOption !== 'none' && (
+                        <p className="text-sm text-[var(--storefront-text-secondary)]">
+                          Installation: {getInstallationOptionLabel(item.installationOption)} (
+                          +{formatPrice(item.installationAddOnPrice)})
+                        </p>
+                      )}
+                      {isOutOfStock && (
+                        <p className="mt-2 text-xs text-[var(--storefront-sale-text)]">
+                          This product has not this much count.{" "}
+                          {availableForLine != null && (
+                            <>
+                              There is only {availableForLine} left.{" "}
+                            </>
+                          )}
+                          Please adjust the count.
+                        </p>
+                      )}
+                    </div>
 
                   <button
                     type="button"
                     className="text-xs text-[var(--storefront-text-muted)] hover:text-[var(--storefront-text-primary)]"
                     disabled={isLoading}
                     onClick={async () => {
-                      await removeItem(item.productId, item.selectedVariantItemIds);
+                      await removeItem(
+                        item.productId,
+                        item.selectedVariantItemIds,
+                        item.installationOption
+                      );
                     }}
                   >
                     Remove
@@ -413,7 +433,8 @@ export function CartPageContent({
                           await updateItem(
                             item.productId,
                             item.selectedVariantItemIds,
-                            item.quantity - 1
+                            item.quantity - 1,
+                            item.installationOption
                           );
                         }}
                         aria-label="Decrease quantity"
@@ -434,7 +455,8 @@ export function CartPageContent({
                           await updateItem(
                             item.productId,
                             item.selectedVariantItemIds,
-                            item.quantity + 1
+                            item.quantity + 1,
+                            item.installationOption
                           );
                         }}
                         aria-label="Increase quantity"

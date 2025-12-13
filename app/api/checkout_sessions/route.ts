@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getCartForCurrentSession } from '@/lib/cart/cart.service';
+import { computeCartItemPricing, getCartForCurrentSession } from '@/lib/cart/cart.service';
+import type { InstallationOption } from '@/lib/cart/cart.schema';
 import { getStorefrontSessionId } from '@/lib/storefront-session';
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -48,24 +49,70 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json().catch(() => ({}));
-        const buyNowItems = body.items;
+        const rawItems = Array.isArray(body.items) ? body.items : [];
 
         // Prepare items for stock validation
         let itemsToValidate: Array<{ productId: string; selectedVariantItemIds: string[]; quantity: number }> = [];
 
-        if (buyNowItems && Array.isArray(buyNowItems) && buyNowItems.length > 0) {
-            // Buy Now Flow
-            itemsToValidate = buyNowItems.map((item: any) => ({
+        if (rawItems.length > 0) {
+            const processedBuyNowItems: Array<{
+                productId: string;
+                selectedVariantItemIds: string[];
+                quantity: number;
+                installationOption: InstallationOption;
+                installationAddOnPrice: number;
+                unitPrice: number;
+            }> = [];
+
+            for (const item of rawItems) {
+                if (!item || typeof item.productId !== 'string') {
+                    continue;
+                }
+
+                const rawQuantity = Number(item.quantity);
+                if (!Number.isFinite(rawQuantity) || rawQuantity <= 0 || !Number.isInteger(rawQuantity)) {
+                    continue;
+                }
+
+                const quantity = rawQuantity;
+                const selectedVariantItemIds = Array.isArray(item.selectedVariantItemIds)
+                    ? item.selectedVariantItemIds.filter((id: unknown): id is string => typeof id === 'string')
+                    : [];
+
+                const requestedOption: InstallationOption =
+                    item.installationOption === 'store'
+                        ? 'store'
+                        : item.installationOption === 'home'
+                            ? 'home'
+                            : 'none';
+
+                const pricing = await computeCartItemPricing(item.productId, selectedVariantItemIds, requestedOption);
+
+                processedBuyNowItems.push({
+                    productId: item.productId,
+                    selectedVariantItemIds,
+                    quantity,
+                    installationOption: pricing.installationOption,
+                    installationAddOnPrice: pricing.installationAddOnPrice,
+                    unitPrice: pricing.unitPrice,
+                });
+            }
+
+            if (processedBuyNowItems.length === 0) {
+                return NextResponse.json({ error: 'Invalid buy now payload' }, { status: 400 });
+            }
+
+            itemsToValidate = processedBuyNowItems.map((item) => ({
                 productId: item.productId,
-                selectedVariantItemIds: item.selectedVariantItemIds || [],
-                quantity: item.quantity
+                selectedVariantItemIds: item.selectedVariantItemIds,
+                quantity: item.quantity,
             }));
 
-            lineItems = buyNowItems.map((item: any) => ({
+            lineItems = processedBuyNowItems.map((item) => ({
                 price_data: {
                     currency: 'usd',
                     product_data: {
-                        name: item.productId, // We will fetch details in webhook
+                        name: item.productId,
                     },
                     unit_amount: Math.round(item.unitPrice * 100),
                 },
@@ -73,7 +120,7 @@ export async function POST(req: NextRequest) {
             }));
 
             metadata.type = 'buy_now';
-            metadata.buyNowItems = JSON.stringify(buyNowItems);
+            metadata.buyNowItems = JSON.stringify(processedBuyNowItems);
         } else {
             // Standard Cart Flow
             if (!cart || cart.items.length === 0) {

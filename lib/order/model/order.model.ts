@@ -1,5 +1,6 @@
 import { ObjectId } from '@/lib/db/mongo-client';
 import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
+import type { InstallationOption } from '@/lib/cart/cart.schema';
 
 export type OrderStatus = 'pending' | 'paid' | 'cancelled' | 'failed' | 'completed';
 
@@ -11,6 +12,8 @@ export interface OrderItemDocument {
     selectedVariantItemIds: string[];
     quantity: number;
     unitPrice: number;
+    installationOption?: InstallationOption;
+    installationAddOnPrice?: number;
 }
 
 export interface OrderDocument {
@@ -34,6 +37,8 @@ export interface OrderItem {
     selectedVariantItemIds: string[];
     quantity: number;
     unitPrice: number;
+    installationOption: InstallationOption;
+    installationAddOnPrice: number;
 }
 
 export interface Order {
@@ -62,6 +67,8 @@ export function toOrder(doc: OrderDocument): Order {
             selectedVariantItemIds: item.selectedVariantItemIds,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
+            installationOption: item.installationOption ?? 'none',
+            installationAddOnPrice: item.installationAddOnPrice ?? 0,
         })),
         totalAmount: doc.totalAmount,
         currency: doc.currency,

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { BillingDetailsSchema } from '@/lib/billing-details/billing-details.schema';
+import { InstallationOptionSchema } from '@/lib/cart/cart.schema';
 
 export const OrderItemSchema = z.object({
     productId: z.string().min(1),
@@ -9,6 +10,8 @@ export const OrderItemSchema = z.object({
     selectedVariantItemIds: z.array(z.string().min(1)).default([]),
     quantity: z.number().int().min(1),
     unitPrice: z.number(),
+    installationOption: InstallationOptionSchema.default('none'),
+    installationAddOnPrice: z.number().min(0).default(0),
 });
 
 export const OrderSchema = z.object({

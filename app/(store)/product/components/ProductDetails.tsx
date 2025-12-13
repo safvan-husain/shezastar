@@ -8,12 +8,12 @@ import { getVariantCombinationKey } from '@/lib/product/product.utils';
 import { useToast } from '@/components/ui/Toast';
 import { ProductImageGallery } from './ProductImageGallery';
 import { BuyNowButton } from './BuyNowButton';
+import type { InstallationOption } from '@/lib/cart/cart.schema';
 
 interface ProductDetailsProps {
   product: Product;
 }
 
-type InstallationOption = 'none' | 'store' | 'home';
 
 function formatPrice(value: number) {
   return `AED ${value.toFixed(2)}`;
@@ -352,7 +352,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     showToast('Lack of stock.', 'error');
                     return;
                   }
-                  await addToCart(product.id, selectedVariantItemIds, quantity);
+                  await addToCart(product.id, selectedVariantItemIds, quantity, installationOption);
                 }}
                 aria-label={`Add ${product.name} to cart`}
               >
@@ -391,8 +391,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <BuyNowButton
                 product={product}
                 quantity={quantity}
-                addOnPrice={addOnPrice}
                 selectedVariantItemIds={selectedVariantItemIds}
+                installationOption={installationOption}
                 disabled={!allVariantsSelected}
               />
 

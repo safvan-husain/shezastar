@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 import { useToast } from '@/components/ui/Toast';
 import type { Product } from '@/lib/product/model/product.model';
+import type { InstallationOption } from '@/lib/cart/cart.schema';
 import {
   BillingDetailsForm,
   EMPTY_BILLING_DETAILS,
@@ -18,12 +19,18 @@ import {
 interface BuyNowButtonProps {
   product: Product;
   quantity: number;
-  addOnPrice: number;
   selectedVariantItemIds: string[];
+  installationOption: InstallationOption;
   disabled?: boolean;
 }
 
-export function BuyNowButton({ product, quantity, addOnPrice, selectedVariantItemIds, disabled }: BuyNowButtonProps) {
+export function BuyNowButton({
+  product,
+  quantity,
+  installationOption,
+  selectedVariantItemIds,
+  disabled,
+}: BuyNowButtonProps) {
   const { showToast } = useToast();
   const { billingDetails, saveBillingDetails } = useStorefrontCart();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -44,11 +51,11 @@ export function BuyNowButton({ product, quantity, addOnPrice, selectedVariantIte
       {
         productId: product.id,
         quantity,
-        unitPrice: (product.offerPrice ?? product.basePrice) + addOnPrice,
         selectedVariantItemIds,
+        installationOption,
       },
     ],
-    [product.id, product.offerPrice, product.basePrice, addOnPrice, quantity, selectedVariantItemIds]
+    [product.id, quantity, selectedVariantItemIds, installationOption]
   );
 
   const startCheckout = async () => {

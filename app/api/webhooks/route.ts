@@ -123,24 +123,28 @@ export async function POST(req: NextRequest) {
                                 }
                                 const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
 
-                                    orderItems.push({
-                                        productId: item.productId,
-                                        productName: product.name,
-                                        productImage: productImage,
-                                        variantName: variantName,
-                                        selectedVariantItemIds: item.selectedVariantItemIds || [],
-                                        quantity: item.quantity,
-                                        unitPrice: item.unitPrice,
-                                    });
+                                orderItems.push({
+                                    productId: item.productId,
+                                    productName: product.name,
+                                    productImage: productImage,
+                                    variantName: variantName,
+                                    selectedVariantItemIds: item.selectedVariantItemIds || [],
+                                    quantity: item.quantity,
+                                    unitPrice: item.unitPrice,
+                                    installationOption: item.installationOption ?? 'none',
+                                    installationAddOnPrice: item.installationAddOnPrice ?? 0,
+                                });
                                 } catch (err) {
                                     console.error(`Failed to fetch product details for buy now product ${item.productId}`, err);
-                                    orderItems.push({
-                                        productId: item.productId,
-                                        productName: 'Unknown Product',
-                                        selectedVariantItemIds: item.selectedVariantItemIds || [],
-                                        quantity: item.quantity,
-                                        unitPrice: item.unitPrice,
-                                    });
+                                orderItems.push({
+                                    productId: item.productId,
+                                    productName: 'Unknown Product',
+                                    selectedVariantItemIds: item.selectedVariantItemIds || [],
+                                    quantity: item.quantity,
+                                    unitPrice: item.unitPrice,
+                                    installationOption: item.installationOption ?? 'none',
+                                    installationAddOnPrice: item.installationAddOnPrice ?? 0,
+                                });
                                 }
                             }
                         }
@@ -186,6 +190,8 @@ export async function POST(req: NextRequest) {
                                     selectedVariantItemIds: cartItem.selectedVariantItemIds,
                                     quantity: cartItem.quantity,
                                     unitPrice: cartItem.unitPrice,
+                                    installationOption: cartItem.installationOption ?? 'none',
+                                    installationAddOnPrice: cartItem.installationAddOnPrice ?? 0,
                                 });
                             } catch (err) {
                                 console.error(`Failed to fetch product details for product ${cartItem.productId} in session ${storefrontSessionId}`, err);
@@ -212,13 +218,15 @@ export async function POST(req: NextRequest) {
                                     ? lineItem.description
                                     : lineItem.price?.product?.toString() ?? 'unknown';
                             const unitAmount = lineItem.price?.unit_amount ?? 0;
-                            orderItems.push({
-                                productId: productIdFromStripe,
-                                productName: productIdFromStripe,
-                                selectedVariantItemIds: [],
-                                quantity: lineItem.quantity ?? 1,
-                                unitPrice: unitAmount / 100,
-                            });
+                        orderItems.push({
+                            productId: productIdFromStripe,
+                            productName: productIdFromStripe,
+                            selectedVariantItemIds: [],
+                            quantity: lineItem.quantity ?? 1,
+                            unitPrice: unitAmount / 100,
+                            installationOption: 'none',
+                            installationAddOnPrice: 0,
+                        });
                         }
                     } catch (err) {
                         console.error('Failed to fetch Stripe line items for fallback', err);

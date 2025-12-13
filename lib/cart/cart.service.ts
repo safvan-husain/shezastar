@@ -4,10 +4,12 @@ import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 import { getProduct } from '@/lib/product/product.service';
+import type { Product } from '@/lib/product/model/product.model';
 import { getVariantCombinationKey } from '@/lib/product/product.utils';
-import { getStorefrontSessionId, ensureStorefrontSession, getStorefrontSession } from '@/lib/storefront-session';
+import { ensureStorefrontSession, getStorefrontSession } from '@/lib/storefront-session';
 import { StorefrontSession } from '@/lib/storefront-session/model/storefront-session.model';
 import { Cart, CartDocument, CartItemDocument, toCart } from './model/cart.model';
+import type { InstallationOption } from '@/lib/cart/cart.schema';
 
 const COLLECTION = 'storefrontCarts';
 
@@ -34,6 +36,75 @@ async function getCartCollection() {
 
 function normalizeVariantItemIds(ids: string[]): string[] {
     return Array.from(new Set(ids)).sort();
+}
+
+const DEFAULT_INSTALLATION_OPTION: InstallationOption = 'none';
+
+interface CartItemPricing {
+    unitPrice: number;
+    installationAddOnPrice: number;
+    installationOption: InstallationOption;
+}
+
+function resolveInstallationChoice(
+    product: Product,
+    requestedOption: InstallationOption
+): { installationOption: InstallationOption; installationAddOnPrice: number } {
+    const service = product.installationService;
+    if (!service?.enabled) {
+        return {
+            installationOption: 'none',
+            installationAddOnPrice: 0,
+        };
+    }
+
+    if (requestedOption === 'store') {
+        return {
+            installationOption: 'store',
+            installationAddOnPrice: service.inStorePrice ?? 0,
+        };
+    }
+
+    if (requestedOption === 'home') {
+        return {
+            installationOption: 'home',
+            installationAddOnPrice: service.atHomePrice ?? 0,
+        };
+    }
+
+    return {
+        installationOption: 'none',
+        installationAddOnPrice: 0,
+    };
+}
+
+export async function computeCartItemPricing(
+    productId: string,
+    normalizedVariantItemIds: string[],
+    requestedInstallationOption: InstallationOption = DEFAULT_INSTALLATION_OPTION
+): Promise<CartItemPricing> {
+    const product = await getProduct(productId);
+    const base = product.offerPrice ?? product.basePrice;
+
+    let priceDelta = 0;
+    if (product.variantStock && product.variantStock.length > 0) {
+        const key = getVariantCombinationKey(normalizedVariantItemIds);
+        const entry = product.variantStock.find(vs => vs.variantCombinationKey === key);
+        if (entry && entry.priceDelta != null) {
+            priceDelta = entry.priceDelta;
+        }
+    }
+
+    const { installationOption, installationAddOnPrice } = resolveInstallationChoice(
+        product,
+        requestedInstallationOption
+    );
+
+    return {
+        unitPrice: base + priceDelta + installationAddOnPrice,
+        installationAddOnPrice,
+        installationOption,
+    };
 }
 
 function buildEmptyCartDocument(sessionId: string, userId?: string): Omit<CartDocument, '_id'> {
@@ -120,31 +191,30 @@ async function findCartOrThrow(session: StorefrontSession): Promise<CartDocument
     return doc;
 }
 
-async function computeUnitPrice(productId: string, selectedVariantItemIds: string[]): Promise<number> {
-    const product = await getProduct(productId);
-    const normalized = normalizeVariantItemIds(selectedVariantItemIds);
-    const base = product.offerPrice ?? product.basePrice;
-
-    if (!product.variantStock || product.variantStock.length === 0) {
-        return base;
-    }
-
-    const key = getVariantCombinationKey(normalized);
-    const stockEntry = product.variantStock.find(vs => vs.variantCombinationKey === key);
-
-    if (!stockEntry || stockEntry.priceDelta === undefined || stockEntry.priceDelta === null) {
-        return base;
-    }
-
-    return base + stockEntry.priceDelta;
+function cartItemsMatch(
+    item: CartItemDocument,
+    productId: string,
+    normalizedVariantItemIds: string[],
+    installationOption: InstallationOption
+): boolean {
+    const normalizedOption = installationOption ?? DEFAULT_INSTALLATION_OPTION;
+    const itemOption = item.installationOption ?? DEFAULT_INSTALLATION_OPTION;
+    return (
+        item.productId === productId &&
+        itemOption === normalizedOption &&
+        item.selectedVariantItemIds.length === normalizedVariantItemIds.length &&
+        item.selectedVariantItemIds.every((id, index) => id === normalizedVariantItemIds[index])
+    );
 }
 
-function findItemIndex(cart: CartDocument, productId: string, normalizedVariantItemIds: string[]): number {
-    return cart.items.findIndex(
-        item =>
-            item.productId === productId &&
-            item.selectedVariantItemIds.length === normalizedVariantItemIds.length &&
-            item.selectedVariantItemIds.every((id, index) => id === normalizedVariantItemIds[index])
+function findItemIndex(
+    cart: CartDocument,
+    productId: string,
+    normalizedVariantItemIds: string[],
+    installationOption: InstallationOption
+): number {
+    return cart.items.findIndex(item =>
+        cartItemsMatch(item, productId, normalizedVariantItemIds, installationOption)
     );
 }
 
@@ -175,10 +245,17 @@ interface AddItemParams {
     productId: string;
     selectedVariantItemIds: string[];
     quantity: number;
+    installationOption: InstallationOption;
 }
 
 export async function addItemToCart(params: AddItemParams): Promise<Cart> {
-    const { session, productId, selectedVariantItemIds, quantity } = params;
+    const {
+        session,
+        productId,
+        selectedVariantItemIds,
+        quantity,
+        installationOption = DEFAULT_INSTALLATION_OPTION,
+    } = params;
     if (quantity <= 0) {
         throw new AppError(400, 'INVALID_QUANTITY', { message: 'Quantity must be positive' });
     }
@@ -204,10 +281,15 @@ export async function addItemToCart(params: AddItemParams): Promise<Cart> {
     }
 
     const normalizedVariantItemIds = normalizeVariantItemIds(selectedVariantItemIds);
-    const unitPrice = await computeUnitPrice(productId, normalizedVariantItemIds);
+    const pricing = await computeCartItemPricing(
+        productId,
+        normalizedVariantItemIds,
+        installationOption
+    );
+    const { unitPrice, installationOption: resolvedInstallationOption, installationAddOnPrice } = pricing;
 
     const now = new Date();
-    const index = findItemIndex(cart, productId, normalizedVariantItemIds);
+    const index = findItemIndex(cart, productId, normalizedVariantItemIds, resolvedInstallationOption);
 
     if (index === -1) {
         const newItem: CartItemDocument = {
@@ -215,6 +297,8 @@ export async function addItemToCart(params: AddItemParams): Promise<Cart> {
             selectedVariantItemIds: normalizedVariantItemIds,
             quantity,
             unitPrice,
+            installationOption: resolvedInstallationOption,
+            installationAddOnPrice,
             createdAt: now,
             updatedAt: now,
         };
@@ -225,6 +309,8 @@ export async function addItemToCart(params: AddItemParams): Promise<Cart> {
             ...existing,
             quantity: existing.quantity + quantity,
             unitPrice,
+            installationOption: resolvedInstallationOption,
+            installationAddOnPrice,
             updatedAt: now,
         };
     }
@@ -237,13 +323,20 @@ interface UpdateItemParams {
     productId: string;
     selectedVariantItemIds: string[];
     quantity: number;
+    installationOption: InstallationOption;
 }
 
 export async function updateCartItemQuantity(params: UpdateItemParams): Promise<Cart> {
-    const { session, productId, selectedVariantItemIds, quantity } = params;
+    const {
+        session,
+        productId,
+        selectedVariantItemIds,
+        quantity,
+        installationOption = DEFAULT_INSTALLATION_OPTION,
+    } = params;
     const cart = await findCartOrThrow(session);
     const normalizedVariantItemIds = normalizeVariantItemIds(selectedVariantItemIds);
-    const index = findItemIndex(cart, productId, normalizedVariantItemIds);
+    const index = findItemIndex(cart, productId, normalizedVariantItemIds, installationOption);
 
     if (index === -1) {
         throw new AppError(404, 'CART_ITEM_NOT_FOUND');
@@ -252,12 +345,19 @@ export async function updateCartItemQuantity(params: UpdateItemParams): Promise<
     if (quantity <= 0) {
         cart.items.splice(index, 1);
     } else {
-        const unitPrice = await computeUnitPrice(productId, normalizedVariantItemIds);
+        const pricing = await computeCartItemPricing(
+            productId,
+            normalizedVariantItemIds,
+            installationOption
+        );
+        const { unitPrice, installationOption: resolvedInstallationOption, installationAddOnPrice } = pricing;
         const now = new Date();
         cart.items[index] = {
             ...cart.items[index],
             quantity,
             unitPrice,
+            installationOption: resolvedInstallationOption,
+            installationAddOnPrice,
             updatedAt: now,
         };
     }
@@ -269,13 +369,19 @@ interface RemoveItemParams {
     session: StorefrontSession;
     productId: string;
     selectedVariantItemIds: string[];
+    installationOption: InstallationOption;
 }
 
 export async function removeItemFromCart(params: RemoveItemParams): Promise<Cart> {
-    const { session, productId, selectedVariantItemIds } = params;
+    const {
+        session,
+        productId,
+        selectedVariantItemIds,
+        installationOption = DEFAULT_INSTALLATION_OPTION,
+    } = params;
     const cart = await findCartOrThrow(session);
     const normalizedVariantItemIds = normalizeVariantItemIds(selectedVariantItemIds);
-    const index = findItemIndex(cart, productId, normalizedVariantItemIds);
+    const index = findItemIndex(cart, productId, normalizedVariantItemIds, installationOption);
 
     if (index !== -1) {
         cart.items.splice(index, 1);
@@ -376,16 +482,22 @@ export async function mergeCarts(sessionId: string, userId: string): Promise<Car
     const mergedItems = [...userCart.items];
 
     for (const guestItem of guestCart.items) {
-        const existingIndex = mergedItems.findIndex(i =>
-            i.productId === guestItem.productId &&
-            normalizeVariantItemIds(i.selectedVariantItemIds).join(',') === normalizeVariantItemIds(guestItem.selectedVariantItemIds).join(',')
+        const normalizedGuestVariants = normalizeVariantItemIds(guestItem.selectedVariantItemIds);
+        const guestOption = guestItem.installationOption ?? DEFAULT_INSTALLATION_OPTION;
+        const existingIndex = mergedItems.findIndex(item =>
+            cartItemsMatch(item, guestItem.productId, normalizedGuestVariants, guestOption)
         );
 
         if (existingIndex !== -1) {
             mergedItems[existingIndex].quantity += guestItem.quantity;
             mergedItems[existingIndex].updatedAt = new Date();
         } else {
-            mergedItems.push(guestItem);
+            mergedItems.push({
+                ...guestItem,
+                selectedVariantItemIds: normalizedGuestVariants,
+                installationOption: guestOption,
+                installationAddOnPrice: guestItem.installationAddOnPrice ?? 0,
+            });
         }
     }
 

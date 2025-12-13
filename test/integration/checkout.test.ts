@@ -43,8 +43,15 @@ const getCartForCurrentSessionMock = vi.fn().mockResolvedValue({
 });
 
 // Mock Cart Service to avoid DB calls
+const computeCartItemPricingMock = vi.fn().mockResolvedValue({
+    unitPrice: 50,
+    installationAddOnPrice: 0,
+    installationOption: 'none'
+});
+
 vi.mock('@/lib/cart/cart.service', () => ({
     getCartForCurrentSession: getCartForCurrentSessionMock,
+    computeCartItemPricing: computeCartItemPricingMock,
 }));
 
 // Mock Stock Service
@@ -65,6 +72,12 @@ describe('Checkout Session API', () => {
         mockCreateSession.mockClear();
         validateStockAvailabilityMock.mockClear();
         getCartForCurrentSessionMock.mockClear();
+        computeCartItemPricingMock.mockClear();
+        computeCartItemPricingMock.mockResolvedValue({
+            unitPrice: 50,
+            installationAddOnPrice: 0,
+            installationOption: 'none'
+        });
         getCartForCurrentSessionMock.mockResolvedValue({
             items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100, selectedVariantItemIds: [] }],
             isEmpty: false,

@@ -74,6 +74,16 @@ function formatStatus(status: Order['status']) {
     return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function getInstallationOptionLabel(option: string) {
+    if (option === 'store') {
+        return 'At store';
+    }
+    if (option === 'home') {
+        return 'At home';
+    }
+    return 'None';
+}
+
 export default async function OrderDetailPage({ params }: OrderDetailPageProps) {
     const { id } = await params;
     const { order, error } = await getOrder(id);
@@ -255,19 +265,26 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div>
                                                         <p className="text-sm font-medium text-[var(--text-primary)]">
-                                                            {item.productName}
-                                                        </p>
-                                                        {item.variantName && (
-                                                            <p className="text-xs text-[var(--text-secondary)]">
-                                                                {item.variantName}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-right text-sm text-[var(--text-secondary)]">
-                                                        <p>
-                                                            Qty:{' '}
-                                                            <span className="font-semibold">
-                                                                {item.quantity}
+                                                    {item.productName}
+                                                </p>
+                                                {item.variantName && (
+                                                    <p className="text-xs text-[var(--text-secondary)]">
+                                                        {item.variantName}
+                                                    </p>
+                                                )}
+                                                {item.installationOption && item.installationOption !== 'none' && (
+                                                    <p className="text-xs text-[var(--text-secondary)]">
+                                                        Installation: {getInstallationOptionLabel(item.installationOption)} (
+                                                        +{item.installationAddOnPrice.toFixed(2)}{' '}
+                                                        {order.currency.toUpperCase()})
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="text-right text-sm text-[var(--text-secondary)]">
+                                                <p>
+                                                    Qty:{' '}
+                                                    <span className="font-semibold">
+                                                        {item.quantity}
                                                             </span>
                                                         </p>
                                                         <p>

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
-import type { Cart } from '@/lib/cart';
+import type { Cart, InstallationOption } from '@/lib/cart';
 import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/utils/api-error-handler';
@@ -14,9 +14,23 @@ interface StorefrontCartContextValue {
     totalItems: number;
     subtotal: number;
     billingDetails: Cart['billingDetails'];
-    addToCart: (productId: string, selectedVariantItemIds: string[], quantity?: number) => Promise<Cart | void>;
-    updateItem: (productId: string, selectedVariantItemIds: string[], quantity: number) => Promise<Cart | void>;
-    removeItem: (productId: string, selectedVariantItemIds: string[]) => Promise<Cart | void>;
+    addToCart: (
+        productId: string,
+        selectedVariantItemIds: string[],
+        quantity?: number,
+        installationOption?: InstallationOption
+    ) => Promise<Cart | void>;
+    updateItem: (
+        productId: string,
+        selectedVariantItemIds: string[],
+        quantity: number,
+        installationOption?: InstallationOption
+    ) => Promise<Cart | void>;
+    removeItem: (
+        productId: string,
+        selectedVariantItemIds: string[],
+        installationOption?: InstallationOption
+    ) => Promise<Cart | void>;
     clearCart: () => Promise<Cart | void>;
     refreshCart: () => Promise<Cart | void>;
     saveBillingDetails: (details: BillingDetails) => Promise<Cart | void>;
@@ -103,10 +117,15 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
     );
 
     const addToCart = useCallback(
-        async (productId: string, selectedVariantItemIds: string[], quantity: number = 1) => {
+        async (
+            productId: string,
+            selectedVariantItemIds: string[],
+            quantity: number = 1,
+            installationOption?: InstallationOption
+        ) => {
             const data = await mutateCart(
                 'POST',
-                { productId, selectedVariantItemIds, quantity },
+                { productId, selectedVariantItemIds, quantity, installationOption },
                 'Added to cart'
             );
             if (data) {
@@ -118,14 +137,27 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
     );
 
     const updateItem = useCallback(
-        async (productId: string, selectedVariantItemIds: string[], quantity: number) =>
-            mutateCart('PATCH', { productId, selectedVariantItemIds, quantity }, 'Cart updated'),
+        async (
+            productId: string,
+            selectedVariantItemIds: string[],
+            quantity: number,
+            installationOption?: InstallationOption
+        ) =>
+            mutateCart(
+                'PATCH',
+                { productId, selectedVariantItemIds, quantity, installationOption },
+                'Cart updated'
+            ),
         [mutateCart]
     );
 
     const removeItem = useCallback(
-        async (productId: string, selectedVariantItemIds: string[]) =>
-            mutateCart('DELETE', { productId, selectedVariantItemIds }, 'Item removed from cart'),
+        async (productId: string, selectedVariantItemIds: string[], installationOption?: InstallationOption) =>
+            mutateCart(
+                'DELETE',
+                { productId, selectedVariantItemIds, installationOption },
+                'Item removed from cart'
+            ),
         [mutateCart]
     );
 
