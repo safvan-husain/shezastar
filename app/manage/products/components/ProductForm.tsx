@@ -168,7 +168,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 initialData?.id ? 'Product updated successfully' : 'Product created successfully',
                 'success'
             );
-            router.push('/products');
+            router.push('/manage/products');
             router.refresh();
         } catch (err: any) {
             setError(err.message);

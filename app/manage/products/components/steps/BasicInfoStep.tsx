@@ -1,6 +1,7 @@
 // app/(admin)/products/components/steps/BasicInfoStep.tsx
 'use client';
 
+import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 
@@ -29,6 +30,7 @@ export function BasicInfoStep({
     onOfferPriceChange,
     onHighlightsChange,
 }: BasicInfoStepProps) {
+    const [newHighlight, setNewHighlight] = useState('');
     return (
         <Card>
             <div className="flex items-center gap-3 mb-6">
@@ -81,23 +83,11 @@ export function BasicInfoStep({
                     />
                 </div>
                 <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-semibold text-[var(--foreground)]">
-                            Product Highlights
-                        </label>
-                        <button
-                            type="button"
-                            className="text-xs font-medium text-[var(--primary)] hover:underline"
-                            onClick={() => {
-                                if (highlights.length >= 10) return;
-                                onHighlightsChange([...highlights, '']);
-                            }}
-                        >
-                            + Add highlight
-                        </button>
-                    </div>
+                    <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
+                        Product Highlights
+                    </label>
                     <p className="text-xs text-[var(--muted-foreground)] mb-3">
-                        Short, benefit-focused bullet points. One per row (max 10).
+                        Short, benefit-focused bullet points. Press Enter to add each highlight.
                     </p>
                     <div className="space-y-2">
                         {highlights.map((value, index) => (
@@ -124,15 +114,20 @@ export function BasicInfoStep({
                                 </button>
                             </div>
                         ))}
-                        {highlights.length === 0 && (
-                            <button
-                                type="button"
-                                className="text-xs font-medium text-[var(--primary)] hover:underline"
-                                onClick={() => onHighlightsChange([''])}
-                            >
-                                Add your first highlight
-                            </button>
-                        )}
+                        <div className="flex gap-2 items-start">
+                            <Input
+                                value={newHighlight}
+                                onChange={(e) => setNewHighlight(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && newHighlight.trim()) {
+                                        e.preventDefault();
+                                        onHighlightsChange([...highlights, newHighlight.trim()]);
+                                        setNewHighlight('');
+                                    }
+                                }}
+                                placeholder="Type a highlight and press Enter to add..."
+                            />
+                        </div>
                     </div>
                 </div>
                 {offerPrice && parseFloat(offerPrice) < parseFloat(basePrice) && (
