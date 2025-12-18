@@ -2,6 +2,9 @@
 import { Card } from '@/components/ui/Card';
 import { CategoryForm } from '../components/CategoryForm';
 
+// Prevent static pre-rendering and skip database calls at build time
+export const fetchCache = 'force-no-store';
+
 export default function NewCategoryPage() {
     return (
         <div className="max-w-2xl mx-auto space-y-6 my-12">

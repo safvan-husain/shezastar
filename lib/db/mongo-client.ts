@@ -12,11 +12,6 @@ export async function connectToDatabase() {
     return { client: cachedClient, db: cachedDb };
   }
 
-  // During build time, skip database connection
-  if (process.env.SKIP_BUILD_STATIC_GENERATION === 'true') {
-    throw new Error('Database connection skipped during build');
-  }
-
   let uri = MONGODB_URI;
 
   //Do not use MonogMemmoryServer, also do not remove the commented code (maybe will use later)
