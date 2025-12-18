@@ -389,6 +389,57 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
 
             </div>
+
+            {/* Product Features Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4 pt-8 border-t border-[var(--storefront-border)]">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[var(--storefront-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">Low Prices</h4>
+                  <p className="text-xs text-[var(--storefront-text-muted)]">Price match guarantee</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[var(--storefront-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[var(--storefront-text-primary)]  text-sm">Guaranteed Fitment.</h4>
+                  <p className="text-xs text-[var(--storefront-text-muted)]">Always the correct part</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[var(--storefront-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 11a9 9 0 0118 0v7a2 2 0 01-2 2h-3a2 2 0 01-2-2v-5a2 2 0 012-2h3V11a7 7 0 00-14 0v2h3a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-7" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">In-House Experts.</h4>
+                  <p className="text-xs text-[var(--storefront-text-muted)]">We know our products</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[var(--storefront-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">Easy Returns.</h4>
+                  <p className="text-xs text-[var(--storefront-text-muted)]">Quick & Hassle Free</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
