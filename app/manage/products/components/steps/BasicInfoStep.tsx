@@ -7,30 +7,39 @@ import { Input } from '@/components/ui/Input';
 
 interface BasicInfoStepProps {
     name: string;
+    subtitle: string;
     description: string;
     basePrice: string;
     offerPrice: string;
     highlights: string[];
+    specifications: Array<{ title: string; items: string[] }>;
     onNameChange: (value: string) => void;
+    onSubtitleChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
     onBasePriceChange: (value: string) => void;
     onOfferPriceChange: (value: string) => void;
     onHighlightsChange: (value: string[]) => void;
+    onSpecificationsChange: (value: Array<{ title: string; items: string[] }>) => void;
 }
 
 export function BasicInfoStep({
     name,
+    subtitle,
     description,
     basePrice,
     offerPrice,
     highlights,
+    specifications,
     onNameChange,
+    onSubtitleChange,
     onDescriptionChange,
     onBasePriceChange,
     onOfferPriceChange,
     onHighlightsChange,
+    onSpecificationsChange,
 }: BasicInfoStepProps) {
     const [newHighlight, setNewHighlight] = useState('');
+    const [newSpecTitle, setNewSpecTitle] = useState('');
     return (
         <Card>
             <div className="flex items-center gap-3 mb-6">
@@ -47,6 +56,13 @@ export function BasicInfoStep({
                     value={name}
                     onChange={(e) => onNameChange(e.target.value)}
                     placeholder="e.g., Wireless Dash Cam"
+                    required
+                />
+                <Input
+                    label="Subtitle *"
+                    value={subtitle}
+                    onChange={(e) => onSubtitleChange(e.target.value)}
+                    placeholder="e.g., 4K Ultra HD Dual Camera with Night Vision"
                     required
                 />
                 <div>
@@ -84,48 +100,112 @@ export function BasicInfoStep({
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
-                        Product Highlights
+                        Product Specifications
                     </label>
                     <p className="text-xs text-[var(--muted-foreground)] mb-3">
-                        Short, benefit-focused bullet points. Press Enter to add each highlight.
+                        Detailed technical specs. Add a title (e.g., "Display") and its bullet points.
                     </p>
-                    <div className="space-y-2">
-                        {highlights.map((value, index) => (
-                            <div key={index} className="flex gap-2 items-start">
-                                <Input
-                                    value={value}
-                                    onChange={(e) => {
-                                        const next = [...highlights];
-                                        next[index] = e.target.value;
-                                        onHighlightsChange(next);
-                                    }}
-                                    placeholder="e.g., Easy plug-and-play installation"
-                                />
-                                <button
-                                    type="button"
-                                    className="text-xs text-[var(--muted-foreground)] hover:text-[var(--danger)] mt-2"
-                                    onClick={() => {
-                                        const next = highlights.filter((_, i) => i !== index);
-                                        onHighlightsChange(next);
-                                    }}
-                                    aria-label="Remove highlight"
-                                >
-                                    Remove
-                                </button>
+
+                    <div className="space-y-4">
+                        {specifications.map((spec, sIndex) => (
+                            <div key={sIndex} className="p-4 border-2 border-[var(--border)] rounded-xl space-y-3 bg-[var(--bg-subtle)]/30">
+                                <div className="flex justify-between items-center">
+                                    <input
+                                        className="text-sm font-bold bg-transparent border-none focus:outline-none focus:ring-0 text-[var(--foreground)] w-full"
+                                        value={spec.title}
+                                        onChange={(e) => {
+                                            const next = [...specifications];
+                                            next[sIndex].title = e.target.value;
+                                            onSpecificationsChange(next);
+                                        }}
+                                        placeholder="Specification Title (e.g. Dimensions)"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="text-xs text-[var(--danger)] hover:underline"
+                                        onClick={() => {
+                                            const next = specifications.filter((_, i) => i !== sIndex);
+                                            onSpecificationsChange(next);
+                                        }}
+                                    >
+                                        Remove Section
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2 pl-2 border-l-2 border-[var(--primary)]/20">
+                                    {spec.items.map((item, iIndex) => (
+                                        <div key={iIndex} className="flex gap-2 items-center">
+                                            <span className="text-[var(--primary)] text-xs">•</span>
+                                            <input
+                                                className="flex-1 text-sm bg-transparent border-none focus:outline-none focus:ring-0 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
+                                                value={item}
+                                                autoFocus={iIndex === spec.items.length - 1 && item === ''}
+                                                onChange={(e) => {
+                                                    const next = [...specifications];
+                                                    next[sIndex].items[iIndex] = e.target.value;
+                                                    onSpecificationsChange(next);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        const next = [...specifications];
+                                                        next[sIndex].items.push('');
+                                                        onSpecificationsChange(next);
+                                                    } else if (e.key === 'Backspace' && item === '' && spec.items.length > 1) {
+                                                        e.preventDefault();
+                                                        const next = [...specifications];
+                                                        next[sIndex].items.splice(iIndex, 1);
+                                                        onSpecificationsChange(next);
+                                                    }
+                                                }}
+                                                placeholder="Add a detail..."
+                                            />
+                                            <button
+                                                type="button"
+                                                className="text-[10px] text-[var(--muted-foreground)] hover:text-[var(--danger)]"
+                                                onClick={() => {
+                                                    const next = [...specifications];
+                                                    next[sIndex].items.splice(iIndex, 1);
+                                                    onSpecificationsChange(next);
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1"
+                                        onClick={() => {
+                                            const next = [...specifications];
+                                            next[sIndex].items.push('');
+                                            onSpecificationsChange(next);
+                                        }}
+                                    >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Add Detail
+                                    </button>
+                                </div>
                             </div>
                         ))}
-                        <div className="flex gap-2 items-start">
+
+                        <div className="flex gap-2">
                             <Input
-                                value={newHighlight}
-                                onChange={(e) => setNewHighlight(e.target.value)}
+                                value={newSpecTitle}
+                                onChange={(e) => setNewSpecTitle(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && newHighlight.trim()) {
+                                    if (e.key === 'Enter' && newSpecTitle.trim()) {
                                         e.preventDefault();
-                                        onHighlightsChange([...highlights, newHighlight.trim()]);
-                                        setNewHighlight('');
+                                        onSpecificationsChange([
+                                            ...specifications,
+                                            { title: newSpecTitle.trim(), items: [''] }
+                                        ]);
+                                        setNewSpecTitle('');
                                     }
                                 }}
-                                placeholder="Type a highlight and press Enter to add..."
+                                placeholder="Add new section title (e.g. Battery) and press Enter..."
                             />
                         </div>
                     </div>

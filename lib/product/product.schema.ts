@@ -8,6 +8,11 @@ export const ProductImageSchema = z.object({
     order: z.number().default(0),
 });
 
+export const ProductSpecificationSchema = z.object({
+    title: z.string().min(1, 'Specification title is required'),
+    items: z.array(z.string().min(1).trim()).default([]),
+});
+
 export const ProductVariantSchema = z.object({
     variantTypeId: z.string(),
     variantTypeName: z.string(),
@@ -33,10 +38,12 @@ export const InstallationServiceSchema = z.object({
 
 export const CreateProductSchema = z.object({
     name: z.string().min(1, 'Product name is required'),
+    subtitle: z.string().min(1, 'Product subtitle is required'),
     description: z.string().optional(),
     basePrice: z.number().min(0, 'Base price must be positive'),
     offerPrice: z.number().min(0).optional(),
     highlights: z.array(z.string().min(1).trim()).default([]),
+    specifications: z.array(ProductSpecificationSchema).default([]),
     images: z.array(ProductImageSchema).default([]),
     variants: z.array(ProductVariantSchema).default([]),
     subCategoryIds: z.array(z.string()).default([]),
@@ -46,10 +53,12 @@ export const CreateProductSchema = z.object({
 
 export const UpdateProductSchema = z.object({
     name: z.string().min(1).optional(),
+    subtitle: z.string().min(1).optional(),
     description: z.string().optional(),
     basePrice: z.number().min(0).optional(),
     offerPrice: z.number().min(0).optional(),
     highlights: z.array(z.string().min(1).trim()).optional(),
+    specifications: z.array(ProductSpecificationSchema).optional(),
     images: z.array(ProductImageSchema).optional(),
     variants: z.array(ProductVariantSchema).optional(),
     subCategoryIds: z.array(z.string()).optional(),
@@ -62,6 +71,7 @@ export const ImageMappingSchema = z.object({
     variantItemIds: z.array(z.string()), // Can be single items or combination
 });
 
+export type ProductSpecification = z.infer<typeof ProductSpecificationSchema>;
 export type ProductImage = z.infer<typeof ProductImageSchema>;
 export type ProductVariant = z.infer<typeof ProductVariantSchema>;
 export type VariantStock = z.infer<typeof VariantStockSchema>;

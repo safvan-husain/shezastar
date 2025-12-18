@@ -26,6 +26,11 @@ interface VariantItem {
     name: string;
 }
 
+interface ProductSpecification {
+    title: string;
+    items: string[];
+}
+
 interface ProductVariant {
     variantTypeId: string;
     variantTypeName: string;
@@ -44,8 +49,10 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [error, setError] = useState('');
 
     const [name, setName] = useState(initialData?.name || '');
+    const [subtitle, setSubtitle] = useState(initialData?.subtitle || '');
     const [description, setDescription] = useState(initialData?.description || '');
     const [highlights, setHighlights] = useState<string[]>(initialData?.highlights || []);
+    const [specifications, setSpecifications] = useState<ProductSpecification[]>(initialData?.specifications || []);
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
     const [offerPrice, setOfferPrice] = useState(initialData?.offerPrice || '');
     const [images, setImages] = useState<ImageFile[]>(
@@ -83,13 +90,21 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
             // Add basic product data
             formData.append('name', name);
+            formData.append('subtitle', subtitle);
             if (description) formData.append('description', description);
             formData.append('basePrice', basePrice);
             if (offerPrice) formData.append('offerPrice', offerPrice);
             const normalizedHighlights = highlights.map(h => h.trim()).filter(Boolean);
             formData.append('highlights', JSON.stringify(normalizedHighlights));
+
+            const normalizedSpecifications = specifications.map(spec => ({
+                title: spec.title.trim(),
+                items: spec.items.map(i => i.trim()).filter(Boolean)
+            })).filter(spec => spec.title);
+            formData.append('specifications', JSON.stringify(normalizedSpecifications));
+
             formData.append('variants', JSON.stringify(variants));
-            
+
             // Ensure products without variants have a default stock entry
             let finalVariantStock = [...variantStock];
             if (variants.length === 0) {
@@ -103,7 +118,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     });
                 }
             }
-            
+
             formData.append('variantStock', JSON.stringify(finalVariantStock));
             formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
 
@@ -231,7 +246,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const canProceed = () => {
         switch (step) {
             case 1:
-                return name.trim() && basePrice && parseFloat(basePrice) > 0;
+                return name.trim() && subtitle.trim() && basePrice && parseFloat(basePrice) > 0;
             case 2:
                 return images.length > 0;
             default:
@@ -258,15 +273,19 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 {step === 1 && (
                     <BasicInfoStep
                         name={name}
+                        subtitle={subtitle}
                         description={description}
                         basePrice={basePrice}
                         offerPrice={offerPrice}
                         highlights={highlights}
+                        specifications={specifications}
                         onNameChange={setName}
+                        onSubtitleChange={setSubtitle}
                         onDescriptionChange={setDescription}
                         onBasePriceChange={setBasePrice}
                         onOfferPriceChange={setOfferPrice}
                         onHighlightsChange={setHighlights}
+                        onSpecificationsChange={setSpecifications}
                     />
                 )}
 
@@ -324,10 +343,12 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 {step === 8 && (
                     <ReviewStep
                         name={name}
+                        subtitle={subtitle}
                         description={description}
                         basePrice={basePrice}
                         offerPrice={offerPrice}
                         highlights={highlights}
+                        specifications={specifications}
                         images={images}
                         variants={variants}
                         variantStock={variantStock}

@@ -1,10 +1,11 @@
 // lib/product/model/product.model.ts
 import { ObjectId } from 'mongodb';
-import { ProductImage, ProductVariant, InstallationService, VariantStock } from '../product.schema';
+import { ProductImage, ProductVariant, InstallationService, VariantStock, ProductSpecification } from '../product.schema';
 
 export interface ProductDocument {
     _id: ObjectId;
     name: string;
+    subtitle: string;
     description?: string;
     basePrice: number;
     offerPrice?: number;
@@ -14,6 +15,7 @@ export interface ProductDocument {
     installationService?: InstallationService;
     variantStock: VariantStock[];
     highlights?: string[];
+    specifications?: ProductSpecification[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -21,6 +23,7 @@ export interface ProductDocument {
 export interface Product {
     id: string;
     name: string;
+    subtitle: string;
     description?: string;
     basePrice: number;
     offerPrice?: number;
@@ -30,6 +33,7 @@ export interface Product {
     installationService?: InstallationService;
     variantStock: VariantStock[];
     highlights: string[];
+    specifications: ProductSpecification[];
     createdAt: string;
     updatedAt: string;
 }
@@ -38,6 +42,7 @@ export function toProduct(doc: ProductDocument): Product {
     return {
         id: doc._id.toString(),
         name: doc.name,
+        subtitle: doc.subtitle || '',
         description: doc.description,
         basePrice: doc.basePrice,
         offerPrice: doc.offerPrice,
@@ -47,6 +52,7 @@ export function toProduct(doc: ProductDocument): Product {
         installationService: doc.installationService,
         variantStock: doc.variantStock || [],
         highlights: doc.highlights ?? [],
+        specifications: doc.specifications ?? [],
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };

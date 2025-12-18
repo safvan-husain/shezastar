@@ -32,10 +32,12 @@ interface VariantStock {
 
 interface ReviewStepProps {
     name: string;
+    subtitle: string;
     description: string;
     basePrice: string;
     offerPrice: string;
     highlights: string[];
+    specifications: Array<{ title: string; items: string[] }>;
     images: ImageFile[];
     variants: ProductVariant[];
     variantStock: VariantStock[];
@@ -48,10 +50,12 @@ interface ReviewStepProps {
 
 export function ReviewStep({
     name,
+    subtitle,
     description,
     basePrice,
     offerPrice,
     highlights,
+    specifications,
     images,
     variants,
     variantStock,
@@ -312,6 +316,7 @@ export function ReviewStep({
                 <div className="space-y-6">
                     <div>
                         <h3 className="text-2xl font-bold text-[var(--foreground)] mb-1">{name}</h3>
+                        <p className="text-lg font-medium text-[var(--primary)] mb-3">{subtitle}</p>
                         {description && (
                             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                                 {description}
@@ -330,6 +335,25 @@ export function ReviewStep({
                                         </li>
                                     ))}
                                 </ul>
+                            </div>
+                        )}
+                        {specifications && specifications.length > 0 && (
+                            <div className="mt-4 space-y-3">
+                                <p className="text-xs font-semibold text-[var(--text-secondary)]">
+                                    Technical Specifications
+                                </p>
+                                <div className="space-y-3">
+                                    {specifications.map((spec, index) => (
+                                        <div key={`${spec.title}-${index}`} className="space-y-1">
+                                            <p className="text-xs font-bold text-[var(--foreground)]">{spec.title}</p>
+                                            <ul className="space-y-1 text-xs text-[var(--text-muted)] pl-2 border-l border-[var(--border)]">
+                                                {spec.items.map((item, iIndex) => (
+                                                    <li key={iIndex}>{item}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                         {categoryLabels.length > 0 && (

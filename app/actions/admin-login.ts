@@ -25,5 +25,5 @@ export async function adminLogin(_initialState: unknown, formData: FormData) {
     console.log('Admin logged in successfully.');
 
     await setAdminSessionCookie(admin._id.toString());
-    redirect('/products');
+    redirect('/manage');
 }
