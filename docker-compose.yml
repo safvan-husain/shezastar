@@ -26,6 +26,8 @@ services:
     container_name: shezastar-seed
     env_file:
       - .env
+    environment:
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
     depends_on:
       - mongodb
     networks:
@@ -45,6 +47,8 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
+      - DATABASE_URL=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
     depends_on:
       mongodb:
         condition: service_started
