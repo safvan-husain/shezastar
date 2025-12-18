@@ -55,13 +55,12 @@ services:
       seed:
         condition: service_completed_successfully
     volumes:
-      - shezastar-uploads:/app/public/uploads
+      - ./public/uploads:/app/public/uploads
     networks:
       - shezastar-network
 
 volumes:
   mongodb_data:
-  shezastar-uploads:
 
 networks:
   shezastar-network:
