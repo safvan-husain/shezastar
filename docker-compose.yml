@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # MongoDB service
+  mongodb:
+    image: mongo:7.0
+    container_name: shezastar-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: shezastar
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - shezastar-network
+
+  # Next.js application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shezastar-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
+      - DB_NAME=shezastar
+      - DATABASE_URL=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    depends_on:
+      - mongodb
+    networks:
+      - shezastar-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  shezastar-network:
+    driver: bridge
