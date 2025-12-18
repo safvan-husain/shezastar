@@ -164,7 +164,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         <div className="space-y-6">
 
           <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">{product.name}</h1>
-          <p className="text-lg font-medium text-[var(--storefront-primary)] -mt-4">{product.subtitle}</p>
 
           {/* Price */}
           <div className="flex items-baseline gap-3">
@@ -194,6 +193,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               </span>
             )}
           </div>
+
+          <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4">{product.subtitle}</p>
+
+
 
           {/* Variants */}
           {product.variants && product.variants.length > 0 && (
@@ -249,25 +252,25 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
           {/* Installation Service */}
           {product.installationService?.enabled && (
-            <div className="rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-bg-subtle)] p-4 space-y-2">
-              <h3 className="font-semibold text-[var(--storefront-text-primary)]">Installation Service Available</h3>
-              <div className="space-y-3">
+            <div className="border-t border-[var(--storefront-border)] pt-4 space-y-2">
+              <h3 className="font-semibold text-[var(--storefront-text-primary)]">Installation Service</h3>
+              <div className="space-y-1">
                 {[
                   { key: 'none' as InstallationOption, label: 'None', price: 0 },
                   {
                     key: 'store' as InstallationOption,
-                    label: 'At store',
+                    label: 'At Store',
                     price: product.installationService.inStorePrice ?? 0,
                   },
                   {
                     key: 'home' as InstallationOption,
-                    label: 'At home',
+                    label: 'At Home',
                     price: product.installationService.atHomePrice ?? 0,
                   },
                 ].map((option) => (
                   <label
                     key={option.key}
-                    className="flex items-center gap-3 px-3 py-2 rounded-md border border-[var(--storefront-border)] bg-[var(--storefront-bg)]"
+                    className="flex items-center gap-3 px-3 py-1"
                   >
                     <input
                       type="radio"
@@ -277,8 +280,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                       onChange={() => setInstallationOption(option.key)}
                       className="h-4 w-4"
                     />
-                    <div className="flex flex-col">
-                      <span className="text-[var(--storefront-text-primary)]">{option.label}</span>
+                    <div className="flex justify-between w-full">
+                      <span className="text-[var(--storefront-text-primary)] text-sm">{option.label}</span>
                       <span className="text-xs text-[var(--storefront-text-secondary)]">
                         {formatPrice(option.price)}
                       </span>
@@ -392,7 +395,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
       {/* Specifications */}
       {product.specifications && product.specifications.length > 0 && (
-        <div className="mt-12 border-t border-[var(--storefront-border)] pt-8">
+        <div className="mt-12 pt-8">
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {product.specifications.map((spec, index) => (
               <div key={index} className="space-y-3">
