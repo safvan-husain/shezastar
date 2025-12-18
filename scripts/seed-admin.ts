@@ -40,14 +40,18 @@ function loadDotenv() {
     }
 }
 
-async function seedAdmin() {
+export async function seedAdmin() {
     const password = process.env.ADMIN_PASSWORD;
     if (!password) {
         throw new Error('ADMIN_PASSWORD environment variable must be set before seeding the admin');
     }
 
     const collection = await getCollection('admins');
-    await collection.deleteMany({});
+    const existingAdmin = await collection.findOne({});
+    if (existingAdmin) {
+        console.log('Admin already exists. Skipping admin seeding.');
+        return;
+    }
 
     const salt = crypto.randomBytes(16).toString('hex');
     const passwordHash = hashAdminPassword(password, salt);

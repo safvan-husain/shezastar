@@ -103,8 +103,13 @@ export async function seedCategories() {
     }
 
     const collection = await getCollection<CategoryDocument>('categories');
-    const { deletedCount = 0 } = await collection.deleteMany({});
-    console.log(`Removed ${deletedCount} existing categories.`);
+    const existingCategory = await collection.findOne({});
+    if (existingCategory) {
+        console.log('Categories already exist. Skipping category seeding.');
+        return;
+    }
+
+    console.log(`Starting category seeding...`);
 
     for (const category of categories) {
         await createCategory(category);

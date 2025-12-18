@@ -18,23 +18,38 @@ services:
     networks:
       - shezastar-network
 
+  # Seeding service
+  seed:
+    build:
+      context: .
+      target: seeder
+    container_name: shezastar-seed
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+    networks:
+      - shezastar-network
+
   # Next.js application
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runner
     container_name: shezastar-app
     restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
-      - DB_NAME=shezastar
-      - DATABASE_URL=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
-      - NEXT_PUBLIC_API_URL=http://localhost:3000
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_started
+      seed:
+        condition: service_completed_successfully
     networks:
       - shezastar-network
 

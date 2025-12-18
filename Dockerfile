@@ -24,6 +24,13 @@ COPY . .
 
 RUN npm run build
 
+# Seeder image
+FROM base AS seeder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENTRYPOINT ["npm", "run", "seed"]
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
