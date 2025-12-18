@@ -11,14 +11,12 @@ interface BasicInfoStepProps {
     description: string;
     basePrice: string;
     offerPrice: string;
-    highlights: string[];
     specifications: Array<{ title: string; items: string[] }>;
     onNameChange: (value: string) => void;
     onSubtitleChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
     onBasePriceChange: (value: string) => void;
     onOfferPriceChange: (value: string) => void;
-    onHighlightsChange: (value: string[]) => void;
     onSpecificationsChange: (value: Array<{ title: string; items: string[] }>) => void;
 }
 
@@ -28,17 +26,14 @@ export function BasicInfoStep({
     description,
     basePrice,
     offerPrice,
-    highlights,
     specifications,
     onNameChange,
     onSubtitleChange,
     onDescriptionChange,
     onBasePriceChange,
     onOfferPriceChange,
-    onHighlightsChange,
     onSpecificationsChange,
 }: BasicInfoStepProps) {
-    const [newHighlight, setNewHighlight] = useState('');
     const [newSpecTitle, setNewSpecTitle] = useState('');
     return (
         <Card>

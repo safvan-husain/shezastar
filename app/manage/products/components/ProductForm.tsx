@@ -51,7 +51,6 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [name, setName] = useState(initialData?.name || '');
     const [subtitle, setSubtitle] = useState(initialData?.subtitle || '');
     const [description, setDescription] = useState(initialData?.description || '');
-    const [highlights, setHighlights] = useState<string[]>(initialData?.highlights || []);
     const [specifications, setSpecifications] = useState<ProductSpecification[]>(initialData?.specifications || []);
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
     const [offerPrice, setOfferPrice] = useState(initialData?.offerPrice || '');
@@ -94,8 +93,6 @@ export function ProductForm({ initialData }: ProductFormProps) {
             if (description) formData.append('description', description);
             formData.append('basePrice', basePrice);
             if (offerPrice) formData.append('offerPrice', offerPrice);
-            const normalizedHighlights = highlights.map(h => h.trim()).filter(Boolean);
-            formData.append('highlights', JSON.stringify(normalizedHighlights));
 
             const normalizedSpecifications = specifications.map(spec => ({
                 title: spec.title.trim(),
@@ -277,14 +274,12 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         description={description}
                         basePrice={basePrice}
                         offerPrice={offerPrice}
-                        highlights={highlights}
                         specifications={specifications}
                         onNameChange={setName}
                         onSubtitleChange={setSubtitle}
                         onDescriptionChange={setDescription}
                         onBasePriceChange={setBasePrice}
                         onOfferPriceChange={setOfferPrice}
-                        onHighlightsChange={setHighlights}
                         onSpecificationsChange={setSpecifications}
                     />
                 )}
@@ -347,7 +342,6 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         description={description}
                         basePrice={basePrice}
                         offerPrice={offerPrice}
-                        highlights={highlights}
                         specifications={specifications}
                         images={images}
                         variants={variants}

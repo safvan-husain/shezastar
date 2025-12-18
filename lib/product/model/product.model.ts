@@ -14,7 +14,6 @@ export interface ProductDocument {
     subCategoryIds: string[];
     installationService?: InstallationService;
     variantStock: VariantStock[];
-    highlights?: string[];
     specifications?: ProductSpecification[];
     createdAt: Date;
     updatedAt: Date;
@@ -32,7 +31,6 @@ export interface Product {
     subCategoryIds: string[];
     installationService?: InstallationService;
     variantStock: VariantStock[];
-    highlights: string[];
     specifications: ProductSpecification[];
     createdAt: string;
     updatedAt: string;
@@ -51,7 +49,6 @@ export function toProduct(doc: ProductDocument): Product {
         subCategoryIds: doc.subCategoryIds || [],
         installationService: doc.installationService,
         variantStock: doc.variantStock || [],
-        highlights: doc.highlights ?? [],
         specifications: doc.specifications ?? [],
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
