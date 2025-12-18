@@ -67,7 +67,7 @@ function CardItem({ card, layout }: CardItemProps) {
       {/* Content Section */}
       <div className="relative h-full flex flex-col justify-end p-6 text-white">
         {/* Offer Label */}
-        <span className="inline-block w-fit px-3 py-1 mb-3 text-xs font-semibold bg-yellow-400 text-black rounded">
+        <span className="inline-block w-fit px-3 py-1 mb-2 text-xs font-semibold text-yellow-400 bg-neutral-800 rounded-full">
           {card.offerLabel}
         </span>
 
