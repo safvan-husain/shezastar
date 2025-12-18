@@ -29,6 +29,7 @@ export async function createProduct(input: CreateProductInput) {
     const now = new Date();
     const doc: Omit<ProductDocument, '_id'> = {
         name: input.name,
+        subtitle: input.subtitle,
         description: input.description,
         basePrice: input.basePrice,
         offerPrice: input.offerPrice,
@@ -37,7 +38,6 @@ export async function createProduct(input: CreateProductInput) {
         subCategoryIds: input.subCategoryIds || [],
         installationService: input.installationService,
         variantStock: input.variantStock || [],
-        highlights: input.highlights ?? [],
         createdAt: now,
         updatedAt: now,
     };
@@ -131,7 +131,6 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     if (input.basePrice !== undefined) updateDoc.basePrice = input.basePrice;
     if (input.offerPrice !== undefined) updateDoc.offerPrice = input.offerPrice;
     if (input.variantStock !== undefined) updateDoc.variantStock = input.variantStock;
-    if (input.highlights !== undefined) updateDoc.highlights = input.highlights;
     if (input.images) {
         // Ensure all images have IDs
         updateDoc.images = input.images.map((img, index) => ({

@@ -18,9 +18,10 @@ async function seedProducts() {
 
         const payload = {
             name: seed.name,
+            subtitle: seed.description || seed.name, // Use description as subtitle, fallback to name
             description: seed.description,
             basePrice: seed.price,
-            highlights: [],
+            specifications: [], // Changed from highlights to specifications
             images: [
                 {
                     id: nanoid(),
