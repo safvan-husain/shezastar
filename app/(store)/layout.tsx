@@ -8,6 +8,8 @@ import { getCartForCurrentSession } from "@/lib/cart";
 import { StorefrontCartProvider } from "@/components/storefront/StorefrontCartProvider";
 import { StorefrontAuthSuggestionProvider } from "@/components/storefront/StorefrontAuthSuggestionProvider";
 
+export const dynamic = "force-dynamic";
+
 export default async function StorefrontLayout({
   children,
 }: {

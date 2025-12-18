@@ -3,6 +3,8 @@ import { requireAdminAuth } from '@/lib/auth/admin-auth';
 
 import AdminNavbar from './components/AdminNavbar';
 
+export const dynamic = "force-dynamic";
+
 export default async function ManageLayout({
     children,
 }: {
