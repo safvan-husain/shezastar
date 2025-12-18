@@ -89,5 +89,19 @@ export function filterImagesByVariants(
         .sort((a, b) => a.order - b.order);
 }
 
+/**
+ * Check if the product is in stock overall (across any variants)
+ */
+export function isProductInStock(product: Product): boolean {
+    if (!product.variantStock || product.variantStock.length === 0) {
+        // If no per-variant stock tracking, treat as in stock (mirroring current behavior)
+        return true;
+    }
+
+    // Check if any variant combination has stock > 0
+    return product.variantStock.some(stock => stock.stockCount > 0);
+}
+
+
 // Per-combination pricing is now handled via product.variantStock.priceDelta
 // and the getVariantCombinationKey helper in lib/product/product.utils.ts.

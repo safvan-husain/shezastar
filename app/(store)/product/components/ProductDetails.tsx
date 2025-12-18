@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Product } from '@/lib/product/model/product.model';
+import { Product, isProductInStock } from '@/lib/product/model/product.model';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 import { getVariantCombinationKey } from '@/lib/product/product.utils';
 import { useToast } from '@/components/ui/Toast';
 import { ProductImageGallery } from './ProductImageGallery';
 import { BuyNowButton } from './BuyNowButton';
+import { StockStatus } from '@/components/storefront/StockStatus';
 import type { InstallationOption } from '@/lib/cart/cart.schema';
 
 interface ProductDetailsProps {
@@ -154,6 +155,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     return null;
   }, [hasVariantStock, product.variantStock, stockByKey, selectedVariantItemIds]);
 
+  const displayInStock = useMemo(() => {
+    if (allVariantsSelected) {
+      if (currentStockLimit === null) return true;
+      return currentStockLimit > 0;
+    }
+    // If not all variants selected, show overall availability
+    return isProductInStock(product);
+  }, [allVariantsSelected, currentStockLimit, product]);
+
   return (
     <div className='flex flex-col'>
       <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
@@ -195,6 +205,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
 
           <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4">{product.subtitle}</p>
+
+          <StockStatus inStock={displayInStock} />
 
 
 
