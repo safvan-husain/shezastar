@@ -108,8 +108,9 @@ export function BasicInfoStep({
                                         className="text-sm font-bold bg-transparent border-none focus:outline-none focus:ring-0 text-[var(--foreground)] w-full"
                                         value={spec.title}
                                         onChange={(e) => {
-                                            const next = [...specifications];
-                                            next[sIndex].title = e.target.value;
+                                            const next = specifications.map((s, i) =>
+                                                i === sIndex ? { ...s, title: e.target.value } : s
+                                            );
                                             onSpecificationsChange(next);
                                         }}
                                         placeholder="Specification Title (e.g. Dimensions)"
@@ -135,20 +136,29 @@ export function BasicInfoStep({
                                                 value={item}
                                                 autoFocus={iIndex === spec.items.length - 1 && item === ''}
                                                 onChange={(e) => {
-                                                    const next = [...specifications];
-                                                    next[sIndex].items[iIndex] = e.target.value;
+                                                    const next = specifications.map((s, si) => {
+                                                        if (si !== sIndex) return s;
+                                                        const nextItems = [...s.items];
+                                                        nextItems[iIndex] = e.target.value;
+                                                        return { ...s, items: nextItems };
+                                                    });
                                                     onSpecificationsChange(next);
                                                 }}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
                                                         e.preventDefault();
-                                                        const next = [...specifications];
-                                                        next[sIndex].items.push('');
+                                                        const next = specifications.map((s, si) => {
+                                                            if (si !== sIndex) return s;
+                                                            return { ...s, items: [...s.items, ''] };
+                                                        });
                                                         onSpecificationsChange(next);
                                                     } else if (e.key === 'Backspace' && item === '' && spec.items.length > 1) {
                                                         e.preventDefault();
-                                                        const next = [...specifications];
-                                                        next[sIndex].items.splice(iIndex, 1);
+                                                        const next = specifications.map((s, si) => {
+                                                            if (si !== sIndex) return s;
+                                                            const nextItems = s.items.filter((_, ii) => ii !== iIndex);
+                                                            return { ...s, items: nextItems };
+                                                        });
                                                         onSpecificationsChange(next);
                                                     }
                                                 }}
@@ -158,8 +168,11 @@ export function BasicInfoStep({
                                                 type="button"
                                                 className="text-[10px] text-[var(--muted-foreground)] hover:text-[var(--danger)]"
                                                 onClick={() => {
-                                                    const next = [...specifications];
-                                                    next[sIndex].items.splice(iIndex, 1);
+                                                    const next = specifications.map((s, si) => {
+                                                        if (si !== sIndex) return s;
+                                                        const nextItems = s.items.filter((_, ii) => ii !== iIndex);
+                                                        return { ...s, items: nextItems };
+                                                    });
                                                     onSpecificationsChange(next);
                                                 }}
                                             >
@@ -171,8 +184,10 @@ export function BasicInfoStep({
                                         type="button"
                                         className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1"
                                         onClick={() => {
-                                            const next = [...specifications];
-                                            next[sIndex].items.push('');
+                                            const next = specifications.map((s, si) => {
+                                                if (si !== sIndex) return s;
+                                                return { ...s, items: [...s.items, ''] };
+                                            });
                                             onSpecificationsChange(next);
                                         }}
                                     >
@@ -199,8 +214,25 @@ export function BasicInfoStep({
                                         setNewSpecTitle('');
                                     }
                                 }}
-                                placeholder="Add new section title (e.g. Battery) and press Enter..."
+                                placeholder="Add new section title (e.g. Battery)..."
+                                className="flex-1"
                             />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (newSpecTitle.trim()) {
+                                        onSpecificationsChange([
+                                            ...specifications,
+                                            { title: newSpecTitle.trim(), items: [''] }
+                                        ]);
+                                        setNewSpecTitle('');
+                                    }
+                                }}
+                                className="px-4 py-2 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
+                                disabled={!newSpecTitle.trim()}
+                            >
+                                Add Section
+                            </button>
                         </div>
                     </div>
                 </div>

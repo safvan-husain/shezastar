@@ -63,7 +63,7 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
             <div className="mb-6">
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="px-6 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors font-medium"
+                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded-md hover:bg-[var(--secondary-hover)] transition-colors font-medium"
                 >
                     + Add Featured Product
                 </button>

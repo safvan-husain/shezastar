@@ -38,6 +38,7 @@ export async function createProduct(input: CreateProductInput) {
         subCategoryIds: input.subCategoryIds || [],
         installationService: input.installationService,
         variantStock: input.variantStock || [],
+        specifications: input.specifications || [],
         createdAt: now,
         updatedAt: now,
     };
@@ -127,10 +128,12 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     };
 
     if (input.name) updateDoc.name = input.name;
+    if (input.subtitle !== undefined) updateDoc.subtitle = input.subtitle;
     if (input.description !== undefined) updateDoc.description = input.description;
     if (input.basePrice !== undefined) updateDoc.basePrice = input.basePrice;
     if (input.offerPrice !== undefined) updateDoc.offerPrice = input.offerPrice;
     if (input.variantStock !== undefined) updateDoc.variantStock = input.variantStock;
+    if (input.specifications !== undefined) updateDoc.specifications = input.specifications;
     if (input.images) {
         // Ensure all images have IDs
         updateDoc.images = input.images.map((img, index) => ({
