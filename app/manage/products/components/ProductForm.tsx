@@ -12,7 +12,6 @@ import { VariantsStep } from './steps/VariantsStep';
 import { VariantStockStep } from './steps/VariantStockStep';
 import { InstallationServiceStep } from './steps/InstallationServiceStep';
 import { ImageMappingStep } from './steps/ImageMappingStep';
-import { ReviewStep } from './steps/ReviewStep';
 
 interface ImageFile {
     id: string;
@@ -44,7 +43,6 @@ interface ProductFormProps {
 export function ProductForm({ initialData }: ProductFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
-    const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -241,14 +239,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     };
 
     const canProceed = () => {
-        switch (step) {
-            case 1:
-                return name.trim() && basePrice && parseFloat(basePrice) > 0;
-            case 2:
-                return images.length > 0;
-            default:
-                return true;
-        }
+        return name.trim() && basePrice && parseFloat(basePrice) > 0 && images.length > 0;
     };
 
     return (
@@ -265,131 +256,83 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 </div>
             )}
 
-            {/* Grid layout: progress steps on left (hidden on mobile), form content on right */}
-            <div className="space-y-6">
-                {step === 1 && (
-                    <BasicInfoStep
-                        name={name}
-                        subtitle={subtitle}
-                        description={description}
-                        basePrice={basePrice}
-                        offerPrice={offerPrice}
-                        specifications={specifications}
-                        onNameChange={setName}
-                        onSubtitleChange={setSubtitle}
-                        onDescriptionChange={setDescription}
-                        onBasePriceChange={setBasePrice}
-                        onOfferPriceChange={setOfferPrice}
-                        onSpecificationsChange={setSpecifications}
-                    />
-                )}
+            {/* Stacked Layout: All sections visible as cards */}
+            <div className="space-y-8 pb-32">
+                <BasicInfoStep
+                    name={name}
+                    subtitle={subtitle}
+                    description={description}
+                    basePrice={basePrice}
+                    offerPrice={offerPrice}
+                    specifications={specifications}
+                    onNameChange={setName}
+                    onSubtitleChange={setSubtitle}
+                    onDescriptionChange={setDescription}
+                    onBasePriceChange={setBasePrice}
+                    onOfferPriceChange={setOfferPrice}
+                    onSpecificationsChange={setSpecifications}
+                />
 
-                {step === 2 && (
-                    <ImagesStep
-                        images={images}
-                        onImagesChange={setImages}
-                    />
-                )}
+                <ImagesStep
+                    images={images}
+                    onImagesChange={setImages}
+                />
 
-                {step === 3 && (
-                    <CategoryStep
-                        selectedSubCategoryIds={subCategoryIds}
-                        onSelectionChange={setSubCategoryIds}
-                    />
-                )}
+                <CategoryStep
+                    selectedSubCategoryIds={subCategoryIds}
+                    onSelectionChange={setSubCategoryIds}
+                />
 
-                {step === 4 && (
-                    <VariantsStep
-                        variants={variants}
-                        onVariantsChange={setVariants}
-                    />
-                )}
+                <VariantsStep
+                    variants={variants}
+                    onVariantsChange={setVariants}
+                />
 
-                {step === 5 && (
-                    <VariantStockStep
-                        variants={variants}
-                        variantStock={variantStock}
-                        basePrice={parseFloat(basePrice) || 0}
-                        offerPrice={offerPrice ? parseFloat(offerPrice) || 0 : null}
-                        onVariantStockChange={setVariantStock}
-                    />
-                )}
+                <VariantStockStep
+                    variants={variants}
+                    variantStock={variantStock}
+                    basePrice={parseFloat(basePrice) || 0}
+                    offerPrice={offerPrice ? parseFloat(offerPrice) || 0 : null}
+                    onVariantStockChange={setVariantStock}
+                />
 
-                {step === 6 && (
-                    <InstallationServiceStep
-                        enabled={installationEnabled}
-                        inStorePrice={inStorePrice}
-                        atHomePrice={atHomePrice}
-                        onEnabledChange={setInstallationEnabled}
-                        onInStorePriceChange={setInStorePrice}
-                        onAtHomePriceChange={setAtHomePrice}
-                    />
-                )}
+                <InstallationServiceStep
+                    enabled={installationEnabled}
+                    inStorePrice={inStorePrice}
+                    atHomePrice={atHomePrice}
+                    onEnabledChange={setInstallationEnabled}
+                    onInStorePriceChange={setInStorePrice}
+                    onAtHomePriceChange={setAtHomePrice}
+                />
 
-                {step === 7 && (
-                    <ImageMappingStep
-                        images={images}
-                        variants={variants}
-                        mappings={imageMappings}
-                        onMappingsChange={setImageMappings}
-                    />
-                )}
+                <ImageMappingStep
+                    images={images}
+                    variants={variants}
+                    mappings={imageMappings}
+                    onMappingsChange={setImageMappings}
+                />
 
-                {step === 8 && (
-                    <ReviewStep
-                        name={name}
-                        subtitle={subtitle}
-                        description={description}
-                        basePrice={basePrice}
-                        offerPrice={offerPrice}
-                        specifications={specifications}
-                        images={images}
-                        variants={variants}
-                        variantStock={variantStock}
-                        imageMappings={imageMappings}
-                        selectedSubCategoryIds={subCategoryIds}
-                        installationEnabled={installationEnabled}
-                        inStorePrice={inStorePrice}
-                        atHomePrice={atHomePrice}
-                    />
-                )}
-
-                <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4">
-                    <div className="flex flex-wrap gap-3">
-                        {step > 1 && (
-                            <Button variant="outline" size="lg" onClick={() => setStep(step - 1)} disabled={loading}>
+                <div className="fixed bottom-0 left-0 right-0 bg-[var(--bg-base)]/80 backdrop-blur-md border-t border-[var(--border)] p-4 z-50">
+                    <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between gap-4">
+                        <div className="flex flex-wrap gap-3">
+                            <Button variant="outline" size="lg" onClick={() => router.push('/manage/products')} disabled={loading}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                                Previous
+                                Cancel
                             </Button>
-                        )}
-                        <Button variant="outline" size="lg" onClick={() => router.push('/products')} disabled={loading}>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            Cancel
-                        </Button>
-                    </div>
+                        </div>
 
-                    <div className="flex flex-wrap gap-3">
-                        {initialData?.id && step === 1 && (
-                            <Button variant="danger" size="lg" onClick={handleDelete} disabled={loading}>
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1 1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                Delete Product
-                            </Button>
-                        )}
-                        {step < 8 ? (
-                            <Button size="lg" onClick={() => setStep(step + 1)} disabled={!canProceed() || loading}>
-                                Next
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </Button>
-                        ) : (
-                            <Button size="lg" onClick={handleSubmit} disabled={loading}>
+                        <div className="flex flex-wrap gap-3">
+                            {initialData?.id && (
+                                <Button variant="danger" size="lg" onClick={handleDelete} disabled={loading}>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1 1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete Product
+                                </Button>
+                            )}
+                            <Button size="lg" onClick={handleSubmit} disabled={!canProceed() || loading}>
                                 {loading ? (
                                     <>
                                         <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
@@ -407,7 +350,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                                     </>
                                 )}
                             </Button>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>

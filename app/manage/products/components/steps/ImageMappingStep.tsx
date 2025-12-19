@@ -1,6 +1,7 @@
 // app/(admin)/products/components/steps/ImageMappingStep.tsx
 'use client';
 
+import { Card } from '@/components/ui/Card';
 import { ImageVariantMapper } from '../ImageVariantMapper';
 
 interface ImageFile {
@@ -23,6 +24,9 @@ interface ProductVariant {
 }
 
 interface ImageMappingStepProps {
+}
+
+interface ImageMappingStepProps {
     images: ImageFile[];
     variants: ProductVariant[];
     mappings: Record<string, string[]>;
@@ -31,7 +35,7 @@ interface ImageMappingStepProps {
 
 export function ImageMappingStep({ images, variants, mappings, onMappingsChange }: ImageMappingStepProps) {
     return (
-        <div>
+        <Card>
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--ring)] flex items-center justify-center">
                     <svg className="w-5 h-5 text-[var(--text-inverted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,6 +53,6 @@ export function ImageMappingStep({ images, variants, mappings, onMappingsChange 
                 mappings={mappings}
                 onChange={onMappingsChange}
             />
-        </div>
+        </Card>
     );
 }
