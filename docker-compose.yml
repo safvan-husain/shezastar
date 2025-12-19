@@ -9,9 +9,9 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: shezastar
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-shezastar}
     volumes:
       - mongodb_data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
@@ -27,7 +27,8 @@ services:
     env_file:
       - .env
     environment:
-      - MONGODB_URI=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
+    environment:
+      - MONGODB_URI=mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/${MONGODB_DATABASE:-shezastar}?authSource=admin
     depends_on:
       - mongodb
     networks:
@@ -47,8 +48,11 @@ services:
       - .env
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
-      - DATABASE_URL=mongodb://admin:password@mongodb:27017/shezastar?authSource=admin
+      - MONGODB_USER=${MONGODB_USER:-admin}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD:-password}
+      - MONGODB_DATABASE=${MONGODB_DATABASE:-shezastar}
+      - MONGODB_URI=mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/${MONGODB_DATABASE:-shezastar}?authSource=admin
+      - DATABASE_URL=mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/${MONGODB_DATABASE:-shezastar}?authSource=admin
     depends_on:
       mongodb:
         condition: service_started
