@@ -1,8 +1,26 @@
 // lib/db/mongo-client.ts
 import { MongoClient, Db, Collection, ObjectId, Document } from 'mongodb';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
-const DB_NAME = process.env.DB_NAME || 'shazstar';
+const MONGODB_USER = process.env.MONGODB_USER;
+const MONGODB_PASSWORD = process.env.MONGODB_PASSWORD;
+const MONGODB_HOST = process.env.MONGODB_HOST || '127.0.0.1';
+const MONGODB_PORT = process.env.MONGODB_PORT || '27017';
+const DB_NAME = process.env.MONGODB_DATABASE || process.env.DB_NAME || 'shazstar';
+
+function getMongoUri() {
+  if (process.env.MONGODB_URI) return process.env.MONGODB_URI;
+
+  if (MONGODB_USER && MONGODB_PASSWORD) {
+    const encodedUser = encodeURIComponent(MONGODB_USER);
+    const encodedPass = encodeURIComponent(MONGODB_PASSWORD);
+    const authSource = process.env.MONGODB_AUTH_SOURCE || 'admin';
+    return `mongodb://${encodedUser}:${encodedPass}@${MONGODB_HOST}:${MONGODB_PORT}/${DB_NAME}?authSource=${authSource}`;
+  }
+
+  return `mongodb://${MONGODB_HOST}:${MONGODB_PORT}/${DB_NAME}`;
+}
+
+const MONGODB_URI = getMongoUri();
 
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
