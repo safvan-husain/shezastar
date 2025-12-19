@@ -235,56 +235,6 @@
           ]
         },
         {
-          "name": "–",
-          "url": "https://shezastar.com/product-category/car-multimedia/regular-screen/",
-          "children": [
-            {
-              "name": "MERCEDES BENZ",
-              "url": "https://shezastar.com/brand/mercedes-benz/"
-            },
-            {
-              "name": "MITSUBISHI",
-              "url": "https://shezastar.com/brand/mitsubishi/"
-            },
-            {
-              "name": "NISSAN",
-              "url": "https://shezastar.com/brand/nissan/"
-            },
-            {
-              "name": "PEUGEOT",
-              "url": "https://shezastar.com/brand/peugeot/"
-            },
-            {
-              "name": "PORSCHE",
-              "url": "https://shezastar.com/brand/porsche/"
-            },
-            {
-              "name": "RENAULT",
-              "url": "https://shezastar.com/brand/renault/"
-            },
-            {
-              "name": "SUBARU",
-              "url": "https://shezastar.com/brand/subaru/"
-            },
-            {
-              "name": "SUZUKI",
-              "url": "https://shezastar.com/brand/suzuki/"
-            },
-            {
-              "name": "TOYOTA",
-              "url": "https://shezastar.com/brand/toyota/"
-            },
-            {
-              "name": "VOLKSWAGEN",
-              "url": "https://shezastar.com/brand/volkswagen/"
-            },
-            {
-              "name": "UNIVERSAL SCREEN",
-              "url": "https://shezastar.com/brand/universal-screen/"
-            }
-          ]
-        },
-        {
           "name": "Special Display",
           "url": "https://shezastar.com/product-category/car-multimedia/special-display/",
           "children": [
