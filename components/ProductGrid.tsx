@@ -82,7 +82,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
             href={`/product/${product.id}`}
             className="group flex h-full flex-col"
           >
-            <div className="relative aspect-[4/3] overflow-hidden bg-[var(--storefront-bg-subtle)]">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-[var(--storefront-bg-subtle)] shadow-neutral-500/30 shadow-sm transition-shadow duration-300 group-hover:shadow-md">
               {primaryImage ? (
                 <Image
                   src={primaryImage.url}
@@ -90,7 +90,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                   fill
                   unoptimized
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
-                  className="h-full rounded-md w-full object-cover transition duration-300 group-hover:scale-105 shadow-red-500 shadow-xl hover:shadow-3xl"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-[var(--storefront-text-muted)]">
