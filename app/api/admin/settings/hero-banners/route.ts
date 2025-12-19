@@ -6,6 +6,7 @@ import { requireAdminAuth } from '@/lib/auth/admin-auth';
 
 export async function GET() {
     try {
+        //this is used by storefron tooo, so no auth required
         const { status, body } = await handleGetHeroBanners();
         return NextResponse.json(body, { status });
     } catch (error: any) {
