@@ -254,16 +254,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
           )}
 
-          {/* Description and Highlights - Show above action buttons when no variants */}
-          {(!product.variants || product.variants.length === 0) && (
-            <div className="space-y-2 text-black">
-              <h3>Description</h3>
-              {product.description && (
-                <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
-              )}
-            </div>
-          )}
-
           {/* Installation Service */}
           {product.installationService?.enabled && (
             <div className="border-t border-[var(--storefront-border)] pt-4 space-y-2">
@@ -461,6 +451,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
         </div>
       </div>
+
+      {(product.variants.length === 0) && (
+        <div className="space-y-2 text-black mt-4">
+          <h3 className='border-b border-[var(--storefront-border)] pb-2'>Description</h3>
+          {product.description && (
+            <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
+          )}
+        </div>
+      )}
 
       {/* Specifications */}
       {product.specifications && product.specifications.length > 0 && (
