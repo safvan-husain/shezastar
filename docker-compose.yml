@@ -27,7 +27,6 @@ services:
     env_file:
       - .env
     environment:
-    environment:
       - MONGODB_URI=mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/${MONGODB_DATABASE:-shezastar}?authSource=admin
     depends_on:
       - mongodb
