@@ -101,7 +101,7 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
             <div className="mb-6">
                 <button
                     onClick={() => setIsCreating(true)}
-                    className="px-6 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors font-medium"
+                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded-md hover:bg-[var(--secondary-hover)] transition-colors font-medium"
                 >
                     + Add New Banner
                 </button>
@@ -112,7 +112,7 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
                     <p className="text-[var(--text-secondary)] mb-4">No hero banners yet</p>
                     <button
                         onClick={() => setIsCreating(true)}
-                        className="px-6 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors font-medium"
+                        className="px-6 py-2 bg-[var(--secondary)] text-white rounded-md hover:bg-[var(--secondary-hover)] transition-colors font-medium"
                     >
                         Create your first banner
                     </button>
@@ -136,7 +136,7 @@ export default function HeroBannerList({ initialBanners }: HeroBannerListProps) 
                                         No Image
                                     </div>
                                 )}
-                                <div className="absolute top-2 right-2 bg-[var(--primary)] text-white px-2 py-1 rounded text-xs font-medium">
+                                <div className="absolute top-2 right-2 bg-[var(--secondary)] text-white px-2 py-1 rounded text-xs font-medium">
                                     {banner.offerLabel}
                                 </div>
                             </div>
