@@ -38,7 +38,7 @@ export const InstallationServiceSchema = z.object({
 
 export const CreateProductSchema = z.object({
     name: z.string().min(1, 'Product name is required'),
-    subtitle: z.string().min(1, 'Product subtitle is required'),
+    subtitle: z.string().optional(),
     description: z.string().optional(),
     basePrice: z.number().min(0, 'Base price must be positive'),
     offerPrice: z.number().min(0).optional(),
@@ -52,7 +52,7 @@ export const CreateProductSchema = z.object({
 
 export const UpdateProductSchema = z.object({
     name: z.string().min(1).optional(),
-    subtitle: z.string().min(1).optional(),
+    subtitle: z.string().optional(),
     description: z.string().optional(),
     basePrice: z.number().min(0).optional(),
     offerPrice: z.number().min(0).optional(),

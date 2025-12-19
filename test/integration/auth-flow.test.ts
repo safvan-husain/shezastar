@@ -42,12 +42,13 @@ describe('Auth Flow & Cart Merging', () => {
         resetCookies();
         const product = await createProduct({
             name: 'Test Product',
+            subtitle: 'Product Subtitle',
             basePrice: 100,
             images: [],
             variants: [],
             subCategoryIds: [],
             variantStock: [],
-            highlights: [],
+            specifications: [],
         });
         productId = product.id;
     });

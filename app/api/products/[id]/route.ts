@@ -31,11 +31,12 @@ export async function PUT(
 
             // Extract basic product data
             const name = formData.get('name') as string | null;
+            const subtitle = formData.get('subtitle') as string | null;
             const description = formData.get('description') as string | null;
             const basePrice = formData.get('basePrice') ? parseFloat(formData.get('basePrice') as string) : undefined;
             const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
-            const highlights = formData.get('highlights')
-                ? JSON.parse(formData.get('highlights') as string)
+            const specifications = formData.get('specifications')
+                ? JSON.parse(formData.get('specifications') as string)
                 : undefined;
             const variants = formData.get('variants') ? JSON.parse(formData.get('variants') as string) : undefined;
             const variantStock = formData.get('variantStock') ? JSON.parse(formData.get('variantStock') as string) : undefined;
@@ -69,10 +70,11 @@ export async function PUT(
 
             const productData: any = {};
             if (name) productData.name = name;
+            if (subtitle) productData.subtitle = subtitle;
             if (description !== null) productData.description = description;
             if (basePrice !== undefined) productData.basePrice = basePrice;
             if (offerPrice !== undefined) productData.offerPrice = offerPrice;
-            if (highlights !== undefined) productData.highlights = highlights;
+            if (specifications !== undefined) productData.specifications = specifications;
             if (variants !== undefined) productData.variants = variants;
             if (variantStock !== undefined) productData.variantStock = variantStock;
             if (subCategoryIds !== undefined) productData.subCategoryIds = subCategoryIds;

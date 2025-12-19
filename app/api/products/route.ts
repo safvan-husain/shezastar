@@ -27,11 +27,12 @@ export async function POST(req: Request) {
 
             // Extract basic product data
             const name = formData.get('name') as string;
+            const subtitle = formData.get('subtitle') as string;
             const description = formData.get('description') as string | null;
             const basePrice = parseFloat(formData.get('basePrice') as string);
             const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
-            const highlights = formData.get('highlights')
-                ? JSON.parse(formData.get('highlights') as string)
+            const specifications = formData.get('specifications')
+                ? JSON.parse(formData.get('specifications') as string)
                 : undefined;
             const variants = JSON.parse(formData.get('variants') as string || '[]');
             const variantStock = JSON.parse(formData.get('variantStock') as string || '[]');
@@ -66,10 +67,11 @@ export async function POST(req: Request) {
 
             const productData = {
                 name,
+                subtitle,
                 description,
                 basePrice,
                 offerPrice,
-                highlights,
+                specifications,
                 images: allImages,
                 variants,
                 variantStock,

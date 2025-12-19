@@ -204,7 +204,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             )}
           </div>
 
-          <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4">{product.subtitle}</p>
+          {product.subtitle && (
+            <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4">{product.subtitle}</p>
+          )}
 
           <StockStatus inStock={displayInStock} />
 

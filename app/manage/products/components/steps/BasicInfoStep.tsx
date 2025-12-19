@@ -54,11 +54,10 @@ export function BasicInfoStep({
                     required
                 />
                 <Input
-                    label="Subtitle *"
+                    label="Subtitle (optional)"
                     value={subtitle}
                     onChange={(e) => onSubtitleChange(e.target.value)}
                     placeholder="e.g., 4K Ultra HD Dual Camera with Night Vision"
-                    required
                 />
                 <div>
                     <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">

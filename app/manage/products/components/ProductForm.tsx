@@ -243,7 +243,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const canProceed = () => {
         switch (step) {
             case 1:
-                return name.trim() && subtitle.trim() && basePrice && parseFloat(basePrice) > 0;
+                return name.trim() && basePrice && parseFloat(basePrice) > 0;
             case 2:
                 return images.length > 0;
             default:

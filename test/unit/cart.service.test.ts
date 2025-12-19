@@ -47,7 +47,7 @@ describe('Cart service', () => {
                     priceDelta: 10,
                 },
             ],
-            highlights: [],
+            specifications: [],
         });
 
         productId = product.id;

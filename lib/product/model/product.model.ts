@@ -5,7 +5,7 @@ import { ProductImage, ProductVariant, InstallationService, VariantStock, Produc
 export interface ProductDocument {
     _id: ObjectId;
     name: string;
-    subtitle: string;
+    subtitle?: string;
     description?: string;
     basePrice: number;
     offerPrice?: number;
@@ -22,7 +22,7 @@ export interface ProductDocument {
 export interface Product {
     id: string;
     name: string;
-    subtitle: string;
+    subtitle?: string;
     description?: string;
     basePrice: number;
     offerPrice?: number;
@@ -40,7 +40,7 @@ export function toProduct(doc: ProductDocument): Product {
     return {
         id: doc._id.toString(),
         name: doc.name,
-        subtitle: doc.subtitle || '',
+        subtitle: doc.subtitle,
         description: doc.description,
         basePrice: doc.basePrice,
         offerPrice: doc.offerPrice,

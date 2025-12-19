@@ -43,11 +43,12 @@ describe('Cart API route handlers', () => {
 
         const product = await createProduct({
             name: 'Cart API Product',
+            subtitle: 'Product Subtitle',
             basePrice: 50,
             images: [],
             variants: [],
             subCategoryIds: [],
-            highlights: [],
+            specifications: [],
             variantStock: [],
         });
         productId = product.id;

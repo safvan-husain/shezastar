@@ -27,17 +27,18 @@ describe('Product Service Unit Tests', () => {
             name: 'Unit Test Product',
             description: 'Description',
             basePrice: 100,
-            highlights: ['Fast charging', 'Compact design'],
             images: [],
             variants: [],
-            subCategoryIds: []
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [{ title: 'Highlights', items: ['Fast charging', 'Compact design'] }],
         };
 
         const result = await createProduct(input);
         expect(result.name).toBe(input.name);
         expect(result.basePrice).toBe(input.basePrice);
         expect(result.id).toBeDefined();
-        expect(result.highlights).toEqual(input.highlights);
+        expect(result.specifications).toEqual(input.specifications);
         createdProductId = result.id;
     });
 
@@ -48,7 +49,9 @@ describe('Product Service Unit Tests', () => {
             offerPrice: 100,
             images: [],
             variants: [],
-            subCategoryIds: []
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
         };
 
         await expect(createProduct(input)).rejects.toThrow(AppError);
@@ -69,13 +72,13 @@ describe('Product Service Unit Tests', () => {
         const update = {
             name: 'Updated Name',
             basePrice: 200,
-            highlights: ['Updated highlight'],
+            specifications: [{ title: 'Highlights', items: ['Updated highlight'] }],
         };
 
         const result = await updateProduct(createdProductId, update);
         expect(result.name).toBe(update.name);
         expect(result.basePrice).toBe(update.basePrice);
-        expect(result.highlights).toEqual(update.highlights);
+        expect(result.specifications).toEqual(update.specifications);
     });
 
     it('should delete product', async () => {
@@ -117,6 +120,8 @@ describe('Product Service - Category filtering', () => {
             images: [],
             variants: [],
             subCategoryIds: [subCategoryId],
+            variantStock: [],
+            specifications: [],
         });
 
         await createProduct({
@@ -125,6 +130,8 @@ describe('Product Service - Category filtering', () => {
             images: [],
             variants: [],
             subCategoryIds: [subSubCategoryId],
+            variantStock: [],
+            specifications: [],
         });
 
         await createProduct({
@@ -133,6 +140,8 @@ describe('Product Service - Category filtering', () => {
             images: [],
             variants: [],
             subCategoryIds: ['other-category'],
+            variantStock: [],
+            specifications: [],
         });
     });
 

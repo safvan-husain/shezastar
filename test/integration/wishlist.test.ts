@@ -35,12 +35,13 @@ describe('Storefront wishlist route handlers', () => {
     it('adds an item via POST and returns it via GET', async () => {
         const product = await createProduct({
             name: 'Wishlist Product',
+            subtitle: 'Product Subtitle',
             basePrice: 100,
             images: [],
             variants: [],
             subCategoryIds: [],
             variantStock: [],
-            highlights: [],
+            specifications: [],
         });
 
         const postResponse = await POST(
@@ -75,12 +76,13 @@ describe('Storefront wishlist route handlers', () => {
     it('removes an item via DELETE with JSON body', async () => {
         const product = await createProduct({
             name: 'Wishlist Product',
+            subtitle: 'Product Subtitle',
             basePrice: 100,
             images: [],
             variants: [],
             subCategoryIds: [],
             variantStock: [],
-            highlights: [],
+            specifications: [],
         });
 
         await POST(
@@ -119,12 +121,13 @@ describe('Storefront wishlist route handlers', () => {
     it('clears wishlist via PATCH', async () => {
         const product = await createProduct({
             name: 'Wishlist Product',
+            subtitle: 'Product Subtitle',
             basePrice: 100,
             images: [],
             variants: [],
             subCategoryIds: [],
             variantStock: [],
-            highlights: [],
+            specifications: [],
         });
 
         await POST(

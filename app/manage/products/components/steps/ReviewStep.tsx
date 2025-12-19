@@ -314,7 +314,7 @@ export function ReviewStep({
                 <div className="space-y-6">
                     <div>
                         <h3 className="text-2xl font-bold text-[var(--foreground)] mb-1">{name}</h3>
-                        <p className="text-lg font-medium text-[var(--primary)] mb-3">{subtitle}</p>
+                        {subtitle && <p className="text-lg font-medium text-[var(--primary)] mb-3">{subtitle}</p>}
                         {description && (
                             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                                 {description}
