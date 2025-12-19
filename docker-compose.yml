@@ -10,6 +10,8 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-password}
       MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-shezastar}
+      MONGODB_APP_USER: ${MONGODB_APP_USER:-shezastar_user}
+      MONGODB_APP_PASSWORD: ${MONGODB_APP_PASSWORD:-password}
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s

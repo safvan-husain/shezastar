@@ -1,17 +1,19 @@
-// MongoDB initialization script
-// This script runs when the MongoDB container starts for the first time
+// Use environment variables or defaults
+const dbName = process.env.MONGO_INITDB_DATABASE || 'shezastar';
+const appUser = process.env.MONGODB_APP_USER || 'shezastar_user';
+const appPass = process.env.MONGODB_APP_PASSWORD || 'password';
 
-// Switch to the shezastar database
-db = db.getSiblingDB('shezastar');
+// Switch to the target database
+db = db.getSiblingDB(dbName);
 
 // Create a user for the application
 db.createUser({
-  user: 'shezastar_user',
-  pwd: 'shezastar_password',
+  user: appUser,
+  pwd: appPass,
   roles: [
     {
       role: 'readWrite',
-      db: 'shezastar'
+      db: dbName
     }
   ]
 });
