@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
+import { Card } from '@/components/ui/Card';
 import { SingleImageUploader } from '@/components/ui/SingleImageUploader';
 import {
     HeroBanner,
@@ -122,116 +123,141 @@ export default function HeroBannerForm({ mode, initialData, bannerId, onSuccess 
     return (
         <form
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-6 bg-[var(--bg-elevated)] p-6 rounded-lg shadow-md border border-[var(--border-subtle)]"
+            className="space-y-6 pb-24"
         >
-            <div className="mb-4">
-                <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-                    {mode === 'create' ? 'Create New Banner' : 'Edit Banner'}
-                </h2>
-            </div>
+            <Card className="mb-8">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--ring)] flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+                        {mode === 'create' ? 'Create New Banner' : 'Edit Banner'}
+                    </h2>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <SingleImageUploader
-                        label="Banner Image"
-                        value={imageFile ? URL.createObjectURL(imageFile) : currentImagePath}
-                        onChange={handleImageChange}
-                        error={errors.imagePath?.message}
-                    />
-                    {/* Hidden input to register imagePath for validation if needed, 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <SingleImageUploader
+                            label="Banner Image"
+                            value={imageFile ? URL.createObjectURL(imageFile) : currentImagePath}
+                            onChange={handleImageChange}
+                            error={errors.imagePath?.message}
+                        />
+                        {/* Hidden input to register imagePath for validation if needed, 
                         though SingleImageUploader handles visual feedback. 
                         We keep it registered via setValue but no visual input. */}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="title" className="block text-sm font-medium text-[var(--text-secondary)]">
+                            Title
+                        </label>
+                        <input
+                            id="title"
+                            type="text"
+                            {...register('title')}
+                            className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
+                            placeholder="Summer Collection"
+                        />
+                        {errors.title && (
+                            <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>
+                        )}
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 space-y-2">
+                        <label htmlFor="description" className="block text-sm font-medium text-[var(--text-secondary)]">
+                            Description
+                        </label>
+                        <textarea
+                            id="description"
+                            rows={3}
+                            {...register('description')}
+                            className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
+                            placeholder="Discover our latest arrivals..."
+                        />
+                        {errors.description && (
+                            <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="price" className="block text-sm font-medium text-[var(--text-secondary)]">
+                            Price
+                        </label>
+                        <input
+                            id="price"
+                            type="number"
+                            step="0.01"
+                            {...register('price', { valueAsNumber: true })}
+                            className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
+                        />
+                        {errors.price && (
+                            <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="offerPrice" className="block text-sm font-medium text-[var(--text-secondary)]">
+                            Offer Price
+                        </label>
+                        <input
+                            id="offerPrice"
+                            type="number"
+                            step="0.01"
+                            {...register('offerPrice', { valueAsNumber: true })}
+                            className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
+                        />
+                        {errors.offerPrice && (
+                            <p className="text-red-500 text-xs mt-1">{errors.offerPrice.message}</p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="offerLabel" className="block text-sm font-medium text-[var(--text-secondary)]">
+                            Offer Label
+                        </label>
+                        <input
+                            id="offerLabel"
+                            type="text"
+                            {...register('offerLabel')}
+                            className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
+                            placeholder="Limited Time Offer"
+                        />
+                        {errors.offerLabel && (
+                            <p className="text-red-500 text-xs mt-1">{errors.offerLabel.message}</p>
+                        )}
+                    </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label htmlFor="title" className="block text-sm font-medium text-[var(--text-secondary)]">
-                        Title
-                    </label>
-                    <input
-                        id="title"
-                        type="text"
-                        {...register('title')}
-                        className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
-                        placeholder="Summer Collection"
-                    />
-                    {errors.title && (
-                        <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>
-                    )}
-                </div>
+            </Card>
 
-                <div className="col-span-1 md:col-span-2 space-y-2">
-                    <label htmlFor="description" className="block text-sm font-medium text-[var(--text-secondary)]">
-                        Description
-                    </label>
-                    <textarea
-                        id="description"
-                        rows={3}
-                        {...register('description')}
-                        className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
-                        placeholder="Discover our latest arrivals..."
-                    />
-                    {errors.description && (
-                        <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>
-                    )}
+            <div className="fixed bottom-0 left-0 right-0 bg-[var(--bg-base)]/80 backdrop-blur-md border-t border-[var(--border)] p-4 z-50">
+                <div className="max-w-6xl mx-auto flex justify-end gap-3">
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="px-8 py-3 bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-hover)] transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg flex items-center gap-2"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                {mode === 'create' ? 'Create Banner' : 'Save Changes'}
+                            </>
+                        )}
+                    </button>
                 </div>
-
-                <div className="space-y-2">
-                    <label htmlFor="price" className="block text-sm font-medium text-[var(--text-secondary)]">
-                        Price
-                    </label>
-                    <input
-                        id="price"
-                        type="number"
-                        step="0.01"
-                        {...register('price', { valueAsNumber: true })}
-                        className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
-                    />
-                    {errors.price && (
-                        <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>
-                    )}
-                </div>
-
-                <div className="space-y-2">
-                    <label htmlFor="offerPrice" className="block text-sm font-medium text-[var(--text-secondary)]">
-                        Offer Price
-                    </label>
-                    <input
-                        id="offerPrice"
-                        type="number"
-                        step="0.01"
-                        {...register('offerPrice', { valueAsNumber: true })}
-                        className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
-                    />
-                    {errors.offerPrice && (
-                        <p className="text-red-500 text-xs mt-1">{errors.offerPrice.message}</p>
-                    )}
-                </div>
-
-                <div className="space-y-2">
-                    <label htmlFor="offerLabel" className="block text-sm font-medium text-[var(--text-secondary)]">
-                        Offer Label
-                    </label>
-                    <input
-                        id="offerLabel"
-                        type="text"
-                        {...register('offerLabel')}
-                        className="w-full px-4 py-2 rounded-md bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-colors text-[var(--text-primary)]"
-                        placeholder="Limited Time Offer"
-                    />
-                    {errors.offerLabel && (
-                        <p className="text-red-500 text-xs mt-1">{errors.offerLabel.message}</p>
-                    )}
-                </div>
-            </div>
-
-            <div className="flex justify-end pt-4">
-                <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-6 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                    {isSubmitting ? 'Saving...' : mode === 'create' ? 'Create Banner' : 'Save Changes'}
-                </button>
             </div>
         </form>
     );

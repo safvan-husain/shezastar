@@ -12,6 +12,7 @@ import { VariantsStep } from './steps/VariantsStep';
 import { VariantStockStep } from './steps/VariantStockStep';
 import { InstallationServiceStep } from './steps/InstallationServiceStep';
 import { ImageMappingStep } from './steps/ImageMappingStep';
+import { ReviewStep } from './steps/ReviewStep';
 
 interface ImageFile {
     id: string;
@@ -310,6 +311,23 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     variants={variants}
                     mappings={imageMappings}
                     onMappingsChange={setImageMappings}
+                />
+
+                <ReviewStep
+                    name={name}
+                    subtitle={subtitle}
+                    description={description}
+                    basePrice={basePrice}
+                    offerPrice={offerPrice}
+                    specifications={specifications}
+                    images={images}
+                    variants={variants}
+                    variantStock={variantStock}
+                    imageMappings={imageMappings}
+                    selectedSubCategoryIds={subCategoryIds}
+                    installationEnabled={installationEnabled}
+                    inStorePrice={inStorePrice}
+                    atHomePrice={atHomePrice}
                 />
 
                 <div className="fixed bottom-0 left-0 right-0 bg-[var(--bg-base)]/80 backdrop-blur-md border-t border-[var(--border)] p-4 z-50">
