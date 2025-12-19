@@ -6,7 +6,6 @@ import { requireAdminAuth } from '@/lib/auth/admin-auth';
 
 export async function GET() {
     try {
-        await requireAdminAuth();
         const { status, body } = await handleGetHeroBanners();
         return NextResponse.json(body, { status });
     } catch (error: any) {
