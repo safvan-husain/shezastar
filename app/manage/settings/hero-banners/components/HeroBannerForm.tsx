@@ -90,7 +90,17 @@ export default function HeroBannerForm({ mode, initialData, bannerId, onSuccess 
                 body: formData,
             });
 
-            const result = await response.json();
+            // Handle non-JSON or error responses gracefully
+            const contentType = response.headers.get('content-type');
+            let result;
+
+            if (contentType && contentType.includes('application/json')) {
+                result = await response.json();
+            } else {
+                const errorText = await response.text();
+                console.error('Non-JSON response received:', errorText);
+                throw new Error(`Server error (${response.status}). The image might be too large or the server encountered an issue.`);
+            }
 
             if (!response.ok) {
                 throw new Error(result.message || `Failed to ${mode} banner`);
@@ -102,6 +112,7 @@ export default function HeroBannerForm({ mode, initialData, bannerId, onSuccess 
             );
             onSuccess?.();
         } catch (error: any) {
+            console.error('Form submission error:', error);
             showToast(error.message || 'Something went wrong', 'error');
         } finally {
             setIsSubmitting(false);
