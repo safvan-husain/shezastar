@@ -59,3 +59,30 @@ export function generateAllVariantCombinations(variants: Array<{
     generateCombos(0, [], []);
     return combinations;
 }
+
+/**
+ * Get stock information for a product
+ */
+export type StockStatus = 'IN_STOCK' | 'OUT_OF_STOCK' | 'PARTIAL_STOCK_OUT';
+
+export function getProductStockInfo(product: {
+    variantStock: Array<{ stockCount: number }>;
+}): { totalStock: number; status: StockStatus } {
+    if (!product.variantStock || product.variantStock.length === 0) {
+        return { totalStock: 0, status: 'IN_STOCK' }; // Assuming infinite or untracked as In Stock
+    }
+
+    const totalStock = product.variantStock.reduce((acc, curr) => acc + curr.stockCount, 0);
+
+    if (totalStock === 0) {
+        return { totalStock, status: 'OUT_OF_STOCK' };
+    }
+
+    const hasOutOfStockVariant = product.variantStock.some(s => s.stockCount === 0);
+
+    if (hasOutOfStockVariant) {
+        return { totalStock, status: 'PARTIAL_STOCK_OUT' };
+    }
+
+    return { totalStock, status: 'IN_STOCK' };
+}
