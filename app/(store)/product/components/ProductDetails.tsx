@@ -372,7 +372,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   fill={inWishlist ? 'currentColor' : 'none'}
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  strokeWidth="1.8"
+                  strokeWidth="2"
                 >
                   <path
                     strokeLinecap="round"
@@ -398,9 +398,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4 pt-8 border-t border-[var(--storefront-border)]">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
-                  <svg className="w-8 h-8 text-[var(--storefront-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
+                  <div
+                    className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
+                    style={{
+                      maskImage: 'url(/icons/dollar-sign-svgrepo-com.svg)',
+                      WebkitMaskImage: 'url(/icons/dollar-sign-svgrepo-com.svg)',
+                      maskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      maskPosition: 'center'
+                    }}
+                  />
                 </div>
                 <div>
                   <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">Low Prices</h4>
@@ -410,9 +417,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
-                  <svg className="w-6 h-6 text-[var(--storefront-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <div
+                    className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
+                    style={{
+                      maskImage: 'url(/icons/done-round-svgrepo-com.svg)',
+                      WebkitMaskImage: 'url(/icons/done-round-svgrepo-com.svg)',
+                      maskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      maskPosition: 'center'
+                    }}
+                  />
                 </div>
                 <div>
                   <h4 className="font-bold text-[var(--storefront-text-primary)]  text-sm">Guaranteed Fitment.</h4>
@@ -422,13 +436,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
-                  <svg fill="#747474ff" className='w-7 h-7' version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="-29.55 -29.55 354.61 354.61" xmlSpace="preserve">
-                    <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
-                    <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier">
-                      <path d="M295.511,177.42c0-26.245-16.105-47.776-36.381-49.409c-0.427-0.554-0.872-1.093-1.336-1.615 c-0.18-29.195-11.613-58.598-31.441-80.775C205.198,21.96,177.285,8.929,147.755,8.929s-57.444,13.031-78.6,36.692 c-19.828,22.178-31.261,51.581-31.441,80.776c-0.463,0.522-0.908,1.06-1.334,1.614C16.106,129.642,0,151.174,0,177.42 c0,26.249,16.107,47.782,36.382,49.412c5.447,7.068,13.834,11.635,23.428,11.635c16.414,0,29.612-13.354,29.612-29.767v-62.56 c0-13.547-8.944-25.001-21.351-28.591c4.628-42.865,39.881-78.62,79.606-78.62c39.725,0,74.761,35.756,79.389,78.621 c-12.406,3.591-21.644,15.045-21.644,28.591v62.56c0,14.988,11.315,27.234,25.747,29.281c-5.93,9.906-16.351,14.601-31.795,14.601 h-3.055c-5.94,0-12.254-0.358-18.102-1.106c-3.588-9.893-13.08-16.894-24.197-16.894h-9.01c-14.188,0-25.729,11.812-25.729,26 s11.542,26,25.729,26h9.01c5.911,0,11.358-2.365,15.707-5.729c12.84,1.987,24.466,1.729,26.592,1.729h3.055 c21.055,0,38.435-6.493,50.26-19.126c9.19-9.818,14.761-22.559,16.658-38.149C283.071,219.83,295.511,200.489,295.511,177.42z"></path>
-                    </g>
-                  </svg>
+                  <div
+                    className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
+                    style={{
+                      maskImage: 'url(/icons/support-svgrepo-com.svg)',
+                      WebkitMaskImage: 'url(/icons/support-svgrepo-com.svg)',
+                      maskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      maskPosition: 'center'
+                    }}
+                  />
                 </div>
                 <div>
                   <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">In-House Experts.</h4>
@@ -438,9 +455,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
-                  <svg className="w-7 h-7 text-[var(--storefront-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 15l-3-3m0 0l3-3m-3 3h8" />
-                  </svg>
+                  <div
+                    className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
+                    style={{
+                      maskImage: 'url(/icons/return-svgrepo-com.svg)',
+                      WebkitMaskImage: 'url(/icons/return-svgrepo-com.svg)',
+                      maskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      maskPosition: 'center'
+                    }}
+                  />
                 </div>
                 <div>
                   <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">Easy Returns.</h4>
