@@ -50,7 +50,8 @@ function CardItem({ card, layout }: CardItemProps) {
       className={`
         group relative overflow-hidden rounded-lg block
         border border-[var(--storefront-border)] hover:shadow-lg transition-all
-        ${isHorizontal ? "min-h-[250px]" : "min-h-[400px]"}
+        w-full aspect-[16/9] sm:aspect-auto
+        ${isHorizontal ? "sm:min-h-[250px]" : "sm:min-h-[400px]"}
       `}
     >
       {/* Background Image */}
