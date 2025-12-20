@@ -82,11 +82,11 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
           {/* Title */}
           <PyramidText 
             text={currentBanner.title}
-            className="mx-auto max-w-6xl mb-6 text-4xl font-bold leading-tight text-white sm:text-5xl md:text-6xl lg:text-8xl"
+            className="mx-auto max-w-6xl mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-7xl"
           />
 
           {/* Description */}
-          <p className="mx-auto mb-8 max-w-2xl text-base text-[#f3f4f6b7] sm:text-lg md:text-xl">
+          <p className="mx-auto mb-8 max-w-2xl text-base text-[#f3f4f6b7] md:text-lg lg:text-xl">
             {currentBanner.description}
           </p>
 

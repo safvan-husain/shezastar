@@ -102,7 +102,7 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
   };
 
   return (
-    <nav className="bg-black text-white relative z-50 border-b border-white">
+    <nav className="bg-black text-white relative z-50">
       <div className="flex items-center justify-between max-w-7xl mx-auto px-4">
         <Link href={'/'}>
           <Image alt='shazstar logo' width={100} height={100} src={"/brand-icon.png"} />

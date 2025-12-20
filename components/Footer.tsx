@@ -129,12 +129,12 @@ export function Footer({ categories }: FooterProps) {
             <p className="text-gray-400 text-sm">
               Copyright © 2024 Shaza Star | Developed by{' '}
               <a
-                href="https://bilzmedia.com"
+                href="https://blizmedia.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-yellow-400 hover:text-yellow-500 transition-colors"
               >
-                BILZ MEDIA LLC
+                BLIZ MEDIA LLC
               </a>
             </p>
             <Image alt='payment' src={'/payment-methods.png'} height={50} width={250} />
