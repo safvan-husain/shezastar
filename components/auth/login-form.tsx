@@ -83,7 +83,7 @@ export default function LoginForm() {
             />
 
             {error && (
-                <div className="text-sm text-[var(--danger)] bg-red-50 p-2 rounded">
+                <div className="text-sm text-black bg-red-50 p-2 rounded">
                     {error}
                 </div>
             )}

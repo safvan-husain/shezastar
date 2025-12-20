@@ -148,7 +148,7 @@ export function BuyNowButton({
       {isDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/40" onClick={closeDialog} />
-          <div className="relative z-10 w-full max-w-xl rounded-2xl bg-[var(--storefront-bg)] p-6 shadow-lg space-y-4">
+          <div className="relative z-10 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[var(--storefront-bg)] p-4 sm:p-6 shadow-lg space-y-4 my-8">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-[var(--storefront-text-primary)]">Confirm building address</h3>
               <button
@@ -163,7 +163,7 @@ export function BuyNowButton({
 
             {!isEditingBilling && billingDetails ? (
               <div className="space-y-4">
-                <div className="rounded-lg border border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-4 text-sm text-[var(--storefront-text-secondary)]">
+                <div className="bg-[var(--storefront-bg-subtle)] border border-[var(--storefront-border-light)] rounded-lg p-3 sm:p-4 space-y-4 text-sm text-[var(--storefront-text-secondary)]">
                   <p className="font-medium text-[var(--storefront-text-primary)]">
                     {billingDetails.firstName} {billingDetails.lastName}
                   </p>

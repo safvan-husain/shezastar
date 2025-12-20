@@ -30,15 +30,15 @@ export function AuthSuggestionModal({ isOpen, onClose, trigger, footer }: AuthSu
         trigger === 'wishlist'
             ? 'We can keep this wishlist item on your timeline.'
             : trigger === 'cart'
-              ? 'We can keep this cart item on your timeline.'
-              : 'We can keep these items on your timeline.';
+                ? 'We can keep this cart item on your timeline.'
+                : 'We can keep these items on your timeline.';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-            <div className="relative w-full max-w-md rounded-xl border border-[var(--storefront-border)] bg-[var(--storefront-bg)] shadow-lg">
-                <div className="flex items-start justify-between gap-4 border-b border-[var(--storefront-border-light)] px-6 py-4">
+            <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl border border-[var(--storefront-border)] bg-[var(--storefront-bg)] shadow-lg my-8">
+                <div className="flex items-start justify-between gap-4 border-b border-[var(--storefront-border-light)] px-4 py-3 sm:px-6 sm:py-4">
                     <div className="space-y-1">
                         <h2 className="text-lg font-semibold text-[var(--storefront-text-primary)]">
                             Save your cart and wishlist across devices
@@ -57,7 +57,7 @@ export function AuthSuggestionModal({ isOpen, onClose, trigger, footer }: AuthSu
                     </button>
                 </div>
 
-                <div className="px-6 py-5 space-y-3">
+                <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-3">
                     <Link
                         href="/account"
                         onClick={onClose}
