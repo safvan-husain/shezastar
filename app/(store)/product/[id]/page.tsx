@@ -2,6 +2,7 @@ import { Product } from '@/lib/product/model/product.model';
 import { ProductErrorHandler, ProductPageError } from '../components/ProductErrorHandler';
 import { ProductDetails } from '../components/ProductDetails';
 import { RelatedProducts } from '../components/RelatedProducts';
+import { RecentlyViewed } from '@/components/storefront/RecentlyViewed';
 import { getBroaderCategoryContextIds } from '@/lib/category/category.service';
 
 interface ProductPageProps {
@@ -182,6 +183,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <ProductDetails product={product} />
 
       <RelatedProducts products={filteredRelatedProducts} />
+
+      <RecentlyViewed currentProductId={product.id} />
     </div>
   );
 }
