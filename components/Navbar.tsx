@@ -111,65 +111,85 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
         <div className="flex items-center gap-4">
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center h-12 pb-2">
-            {categories.map((category) => (
-              <div
-                key={category.id}
-                className="relative"
-                onMouseEnter={() => handleMouseEnter(category.id)}
-                onMouseLeave={handleMouseLeave}
-              >
-                <button className="px-4 py-3 text-xs font-medium uppercase tracking-wide hover:text-amber-400 transition-colors flex items-center">
-                  {category.name}
-                  <svg
-                    className="ml-1 h-4 w-4 fill-current"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M10 14l-6-6h12z" />
-                  </svg>
-                </button>
+            {categories.map((category) => {
+              const multiColumn = hasSubSubCategories(category);
+              const columnCount = Math.min(category.subCategories.length, 5);
 
-                {activeDropdown === category.id && category.subCategories.length > 0 && (
-                  <div className="absolute top-full left-0 bg-neutral-600 rounded-md shadow-lg min-w-max">
-                    {hasSubSubCategories(category) ? (
-                      // Multi-column layout for categories with sub-subcategories
-                      <div className="grid grid-cols-4 gap-4 p-6 w-[800px]">
-                        {category.subCategories.map((subCategory) => (
-                          <div key={subCategory.id} className="space-y-2">
-                            <h3 className="text-white px-2 font-medium text-sm uppercase tracking-wide border-b border-gray-700 pb-2">
-                              {subCategory.name}
-                            </h3>
-                            <div className="space-y-1">
-                              {subCategory.subSubCategories.map((subSubCategory) => (
-                                <Link
-                                  key={subSubCategory.id}
-                                  href={`/category/${subSubCategory.slug ?? subSubCategory.id}`}
-                                  className="block px-2 text-gray-300 hover:text-white hover:bg-gray-800 text-sm py-1 transition-colors"
-                                >
-                                  {subSubCategory.name}
-                                </Link>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      // Simple list for categories with only subcategories
-                      <div className="py-2 w-64">
-                        {category.subCategories.map((subCategory) => (
-                          <Link
-                            key={subCategory.id}
-                            href={`/category/${subCategory.slug ?? subCategory.id}`}
-                            className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+              return (
+                <div
+                  key={category.id}
+                  className="static" // Set to static so absolute child can fill screen width
+                  onMouseEnter={() => handleMouseEnter(category.id)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <button className="px-4 py-3 text-xs font-medium uppercase tracking-wide hover:text-amber-400 transition-colors flex items-center h-12">
+                    {category.name}
+                    <svg
+                      className="ml-1 h-4 w-4 fill-current"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M10 14l-6-6h12z" />
+                    </svg>
+                  </button>
+
+                  {activeDropdown === category.id && category.subCategories.length > 0 && (
+                    <div
+                      className={`absolute top-full left-0 w-screen bg-white shadow-2xl border-t border-gray-100 z-[60] overflow-y-auto max-h-[calc(100vh-4rem)]`}
+                      style={{ height: multiColumn ? 'auto' : 'auto', minHeight: multiColumn ? '300px' : '0' }}
+                    >
+                      <div className="max-w-7xl mx-auto px-8 py-10">
+                        {multiColumn ? (
+                          // Mega Menu Layout for multi-level categories
+                          <div
+                            className="grid gap-x-12 gap-y-10"
+                            style={{
+                              gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`
+                            }}
                           >
-                            {subCategory.name}
-                          </Link>
-                        ))}
+                            {category.subCategories.map((subCategory) => (
+                              <div key={subCategory.id} className="space-y-4">
+                                <Link
+                                  href={`/category/${subCategory.slug ?? subCategory.id}`}
+                                  className="block"
+                                >
+                                  <h3 className="text-black font-bold text-sm uppercase tracking-wider border-b border-gray-100 pb-3 hover:text-amber-600 transition-colors">
+                                    {subCategory.name}
+                                  </h3>
+                                </Link>
+                                <div className="flex flex-col space-y-2">
+                                  {subCategory.subSubCategories.map((subSubCategory) => (
+                                    <Link
+                                      key={subSubCategory.id}
+                                      href={`/category/${subSubCategory.slug ?? subSubCategory.id}`}
+                                      className="text-gray-500 hover:text-black text-sm transition-colors py-0.5"
+                                    >
+                                      {subSubCategory.name}
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          // Simple list dropdown (still using the white background bar logic)
+                          <div className="flex flex-wrap gap-8">
+                            {category.subCategories.map((subCategory) => (
+                              <Link
+                                key={subCategory.id}
+                                href={`/category/${subCategory.slug ?? subCategory.id}`}
+                                className="text-gray-600 hover:text-black text-sm font-medium transition-colors"
+                              >
+                                {subCategory.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
 
