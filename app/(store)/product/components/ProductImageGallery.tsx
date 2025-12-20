@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Product, filterImagesByVariants } from '@/lib/product/model/product.model';
 
@@ -9,9 +10,11 @@ interface ProductImageGalleryProps {
 }
 
 export function ProductImageGallery({ product, selectedVariantItemIds }: ProductImageGalleryProps) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
   // Organize images: variant-specific first, then general images
   const allImages = product.images || [];
-  
+
   const organizedImages = (() => {
     if (selectedVariantItemIds.length === 0) {
       // No variants selected, show all images in original order
@@ -20,16 +23,16 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
 
     // Get variant-specific images (matching selected variants)
     const variantImages = filterImagesByVariants(allImages, selectedVariantItemIds);
-    
+
     // Get general images (no variant mapping)
-    const generalImages = allImages.filter(image => 
+    const generalImages = allImages.filter(image =>
       !image.mappedVariants || image.mappedVariants.length === 0
     );
 
     // Get other variant images (mapped to different variants)
-    const otherVariantImages = allImages.filter(image => 
-      image.mappedVariants && 
-      image.mappedVariants.length > 0 && 
+    const otherVariantImages = allImages.filter(image =>
+      image.mappedVariants &&
+      image.mappedVariants.length > 0 &&
       !variantImages.some(vi => vi.id === image.id)
     );
 
@@ -41,7 +44,12 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
     ];
   })();
 
-  const primaryImage = organizedImages[0];
+  // Reset selected index when variants change to show the variant-specific image
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [selectedVariantItemIds]);
+
+  const primaryImage = organizedImages[selectedIndex] || organizedImages[0];
 
   return (
     <div className="space-y-4">
@@ -79,7 +87,11 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
           {organizedImages.slice(0, 4).map((image, index) => (
             <div
               key={image.id || index}
-              className="relative aspect-square overflow-hidden rounded-md bg-[var(--storefront-bg-subtle)] border border-[var(--storefront-border)] cursor-pointer hover:border-[var(--storefront-text-primary)] transition"
+              onClick={() => setSelectedIndex(index)}
+              className={`relative aspect-square overflow-hidden rounded-md bg-[var(--storefront-bg-subtle)] border transition cursor-pointer ${selectedIndex === index
+                  ? 'border-[var(--storefront-text-primary)] ring-1 ring-[var(--storefront-text-primary)]'
+                  : 'border-[var(--storefront-border)] hover:border-[var(--storefront-text-secondary)]'
+                }`}
             >
               <Image
                 src={image.url}
