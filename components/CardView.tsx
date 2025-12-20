@@ -58,6 +58,7 @@ function CardItem({ card, layout }: CardItemProps) {
         src={card.imagePath}
         alt={card.title}
         fill
+        unoptimized
         className="object-cover group-hover:scale-105 transition-transform duration-300"
       />
 
