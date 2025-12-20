@@ -171,17 +171,32 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
                             ))}
                           </div>
                         ) : (
-                          // Simple list dropdown (still using the white background bar logic)
-                          <div className="flex flex-wrap gap-8">
-                            {category.subCategories.map((subCategory) => (
-                              <Link
-                                key={subCategory.id}
-                                href={`/category/${subCategory.slug ?? subCategory.id}`}
-                                className="text-gray-600 hover:text-black text-sm font-medium transition-colors"
-                              >
-                                {subCategory.name}
-                              </Link>
-                            ))}
+                          // Columnar layout for 2-level categories with parent title
+                          <div className="space-y-5">
+                            <h2 className="text-xl font-bold text-gray-700">
+                              {category.name}
+                            </h2>
+                            <div
+                              className="grid gap-x-12 gap-y-4"
+                              style={{
+                                gridTemplateColumns: `repeat(${Math.ceil(category.subCategories.length / 5)}, minmax(200px, 1fr))`,
+                                maxWidth: 'fit-content'
+                              }}
+                            >
+                              {Array.from({ length: Math.ceil(category.subCategories.length / 5) }).map((_, colIndex) => (
+                                <div key={colIndex} className="flex flex-col space-y-4">
+                                  {category.subCategories.slice(colIndex * 5, (colIndex + 1) * 5).map((subCategory) => (
+                                    <Link
+                                      key={subCategory.id}
+                                      href={`/category/${subCategory.slug ?? subCategory.id}`}
+                                      className="text-gray-500 hover:text-black text-sm transition-colors whitespace-nowrap"
+                                    >
+                                      {subCategory.name}
+                                    </Link>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
