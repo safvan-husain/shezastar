@@ -92,7 +92,7 @@ export function SingleImageUploader({ value, onChange, label = 'Image', error }:
                         <p className="mt-2 text-sm text-[var(--text-secondary)]">
                             {isDragActive ? 'Drop image here' : 'Drag & drop image here, or click to select'}
                         </p>
-                        <p className="text-xs text-[var(--text-muted)] mt-1">PNG, JPG, JPEG, WEBP up to 5MB</p>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">PNG, JPG, JPEG, WEBP</p>
                     </>
                 )}
             </div>

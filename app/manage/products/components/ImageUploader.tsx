@@ -128,7 +128,7 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
                 <p className="mt-2 text-sm text-[var(--text-secondary)]">
                     {isDragActive ? 'Drop images here' : 'Drag & drop images here, or click to select'}
                 </p>
-                <p className="text-xs text-[var(--text-muted)] mt-1">PNG, JPG, JPEG, WEBP up to 5MB</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">PNG, JPG, JPEG, WEBP</p>
             </div>
 
             {images.length > 0 && (

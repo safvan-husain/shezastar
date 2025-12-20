@@ -6,8 +6,6 @@ import sharp from 'sharp';
 import { nanoid } from 'nanoid';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-
 export async function ensureUploadDir() {
     if (!existsSync(UPLOAD_DIR)) {
         await mkdir(UPLOAD_DIR, { recursive: true });
@@ -16,11 +14,6 @@ export async function ensureUploadDir() {
 
 export async function saveImage(file: File): Promise<string> {
     await ensureUploadDir();
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-        throw new Error('File size exceeds 5MB limit');
-    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
