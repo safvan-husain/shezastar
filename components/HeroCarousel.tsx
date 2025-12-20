@@ -86,7 +86,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
           />
 
           {/* Description */}
-          <p className="mx-auto mb-8 max-w-2xl text-base text-[ #f3f4f6b7] sm:text-lg md:text-xl">
+          <p className="mx-auto mb-8 max-w-2xl text-base text-[#f3f4f6b7] sm:text-lg md:text-xl">
             {currentBanner.description}
           </p>
 
