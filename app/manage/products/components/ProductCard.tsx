@@ -33,11 +33,6 @@ export default function ProductCard({ product }: ProductCardProps) {
                 ) : (
                     <ProductCardImage alt={product.name} />
                 )}
-                {product.offerPrice && (
-                    <div className="absolute top-3 right-3 bg-[var(--danger)] text-[var(--text-inverted)] px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                        SALE
-                    </div>
-                )}
                 
                 {/* Add to Featured Button - appears on double-tap or hover */}
                 <AddToFeaturedButton 

@@ -72,14 +72,6 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
             <p className="text-sm tracking-wide">No image available</p>
           </div>
         )}
-
-        {product.offerPrice && (
-          <div className="absolute top-4 left-4">
-            <span className="inline-flex items-center rounded-md bg-[var(--storefront-sale)] px-3 py-1.5 text-sm font-semibold text-white">
-              SALE
-            </span>
-          </div>
-        )}
       </div>
 
       {organizedImages && organizedImages.length > 1 && (

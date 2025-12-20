@@ -168,12 +168,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     <div className='flex flex-col'>
       <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
         {/* Image Gallery */}
-        {/* <ProductImageGallery product={product} selectedVariantItemIds={selectedVariantItemIds} /> */}
+        <ProductImageGallery product={product} selectedVariantItemIds={selectedVariantItemIds} />
 
         {/* Product Info */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
 
-          <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">{product.name}</h1>
+          <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)] break-words">{product.name}</h1>
 
           {/* Price */}
           <div className="flex items-baseline gap-3">
@@ -205,7 +205,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
 
           {product.subtitle && (
-            <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4">{product.subtitle}</p>
+            <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4 break-words">{product.subtitle}</p>
           )}
 
           <StockStatus inStock={displayInStock} />
@@ -486,7 +486,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       {product.description && (
         <div className="space-y-2 text-black mt-4">
           <h3 className='border-b border-[var(--storefront-border)] pb-2'>Description</h3>
-          <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
+          <p className="text-[var(--storefront-text-secondary)] leading-relaxed break-words">{product.description}</p>
         </div>
       )}
 
@@ -501,7 +501,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   {spec.items.map((item, iIndex) => (
                     <li key={iIndex} className="text-sm text-[var(--storefront-text-secondary)] flex gap-2">
                       <span className="text-[var(--storefront-text-muted)]">•</span>
-                      <span>{item}</span>
+                      <span className="break-words">{item}</span>
                     </li>
                   ))}
                 </ul>

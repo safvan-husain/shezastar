@@ -98,11 +98,6 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
                                         No Image
                                     </div>
                                 )}
-                                {product.offerPrice && (
-                                    <div className="absolute top-2 right-2 bg-[var(--danger)] text-white px-2 py-1 rounded text-xs font-medium">
-                                        SALE
-                                    </div>
-                                )}
                             </div>
                             <div className="p-4">
                                 <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)] line-clamp-1">
