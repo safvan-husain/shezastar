@@ -168,7 +168,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     <div className='flex flex-col'>
       <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
         {/* Image Gallery */}
-        <ProductImageGallery product={product} selectedVariantItemIds={selectedVariantItemIds} />
+        {/* <ProductImageGallery product={product} selectedVariantItemIds={selectedVariantItemIds} /> */}
 
         {/* Product Info */}
         <div className="space-y-6">
