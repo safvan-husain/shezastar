@@ -155,11 +155,8 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 )}
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-
-
+              <div className="flex gap-3 flex-row items-end justify-between">
                 <StockStatus inStock={isProductInStock(product)} />
-
                 <button
                   type="button"
                   className="flex h-9 w-9 items-center justify-center rounded-full text-white disabled:opacity-60 disabled:cursor-not-allowed"
