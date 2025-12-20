@@ -28,6 +28,14 @@ export default function LoginForm() {
         resolver: zodResolver(loginSchema),
     });
 
+    const ERROR_MESSAGES: Record<string, string> = {
+        'INVALID_CREDENTIALS': 'Invalid email or password. Please try again.',
+        'SESSION_EXPIRED': 'Your session has expired. Please log in again.',
+        'SESSION_REVOKED': 'Your session was revoked. Please log in again.',
+        'EMAIL_ALREADY_EXISTS': 'This email is already registered.',
+        'INTERNAL_SERVER_ERROR': 'Something went wrong on our end. Please try again later.',
+    };
+
     const onSubmit = async (data: LoginFormData) => {
         setIsLoading(true);
         setError(null);
@@ -39,16 +47,19 @@ export default function LoginForm() {
                 body: JSON.stringify(data),
             });
 
+            const body = await res.json().catch(() => ({}));
+
             if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                throw new Error(body.message || 'Login failed');
+                const errorCode = body.code || body.error;
+                const friendlyMessage = errorCode ? ERROR_MESSAGES[errorCode] : body.message;
+                throw new Error(friendlyMessage || 'Login failed. Please check your credentials.');
             }
 
             // Redirect to home or refresh
             router.refresh();
             router.push('/');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            setError(err instanceof Error ? err.message : 'An error occurred during sign in.');
         } finally {
             setIsLoading(false);
         }

@@ -19,6 +19,7 @@ export function catchError(err: unknown): { status: number; body: any } {
             body: {
                 code: err.code,
                 error: err.code,
+                message: err.message,
                 details: err.details,
             },
         };

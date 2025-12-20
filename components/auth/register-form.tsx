@@ -34,6 +34,13 @@ export default function RegisterForm() {
         resolver: zodResolver(registerSchema),
     });
 
+    const ERROR_MESSAGES: Record<string, string> = {
+        'EMAIL_ALREADY_EXISTS': 'This email is already registered. Please sign in instead.',
+        'WEAK_PASSWORD': 'Password is too weak. Please use a stronger password.',
+        'INVALID_EMAIL': 'Please enter a valid email address.',
+        'INTERNAL_SERVER_ERROR': 'Something went wrong on our end. Please try again later.',
+    };
+
     const onSubmit = async (data: RegisterFormData) => {
         setIsLoading(true);
         setError(null);
@@ -48,16 +55,19 @@ export default function RegisterForm() {
                 }),
             });
 
+            const body = await res.json().catch(() => ({}));
+
             if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                throw new Error(body.message || 'Registration failed');
+                const errorCode = body.code || body.error;
+                const friendlyMessage = errorCode ? ERROR_MESSAGES[errorCode] : body.message;
+                throw new Error(friendlyMessage || 'Registration failed. Please try again.');
             }
 
             // Redirect to home or refresh (auto-login assumed)
             router.refresh();
             router.push('/');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            setError(err instanceof Error ? err.message : 'An error occurred during registration.');
         } finally {
             setIsLoading(false);
         }
