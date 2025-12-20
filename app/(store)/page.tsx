@@ -157,13 +157,28 @@ export default async function Home() {
     };
   }
 
-  // Split featured products
-  const firstFeaturedProducts = featuredProducts.slice(0, 4);
-  const remainingFeaturedProducts = featuredProducts.slice(4);
-
   // Filter out featured products from all products
   const featuredIds = new Set(featuredProducts.map((p) => p.id));
   const nonFeaturedProducts = products.filter((p) => !featuredIds.has(p.id));
+
+  // Determine which products to show in the "highlight" sections (between cards)
+  let highlightedGroup: Product[] = [];
+  let mainCatalog: Product[] = [];
+  let isUsingGeneralCatalog = false;
+
+  if (featuredProducts.length > 0) {
+    highlightedGroup = featuredProducts;
+    mainCatalog = nonFeaturedProducts;
+  } else {
+    // If no featured products, borrow first 8 from catalog to prevent card congestion
+    highlightedGroup = nonFeaturedProducts.slice(0, 8);
+    mainCatalog = nonFeaturedProducts.slice(8);
+    isUsingGeneralCatalog = true;
+  }
+
+  // Split highlighted products for the two slots between cards
+  const firstHighlightBatch = highlightedGroup.slice(0, 4);
+  const secondHighlightBatch = highlightedGroup.slice(4);
 
   // Split cards into three views
   const twoItemCards = cards.slice(0, 2);
@@ -171,9 +186,8 @@ export default async function Home() {
   const oneItemCard = cards.slice(5, 6);
 
   // Determine if single card should appear before or after all products
-  // If 4 or fewer featured products, show single card at the end
-  const showSingleCardBeforeProducts = featuredProducts.length > 4;
-  const showSingleCardAfterProducts = featuredProducts.length <= 4;
+  const showSingleCardBeforeProducts = highlightedGroup.length > 4;
+  const showSingleCardAfterProducts = highlightedGroup.length <= 4;
 
   return (
     <div className="min-h-screen">
@@ -189,16 +203,18 @@ export default async function Home() {
       )}
       {customCardsError && <ErrorToastHandler error={customCardsError} />}
 
-      {/* First 4 Featured Products */}
-      {firstFeaturedProducts.length > 0 && (
+      {/* First Highlighted Products (Featured or Borrowed) */}
+      {firstHighlightBatch.length > 0 && (
         <section className="container mx-auto px-4 py-12 space-y-6">
           {featuredError && <ErrorToastHandler error={featuredError} />}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-black">Featured Products</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-black">
+                {isUsingGeneralCatalog ? "Our Recommendations" : "Featured Products"}
+              </h2>
             </div>
           </div>
-          <ProductGrid products={firstFeaturedProducts} emptyMessage="" />
+          <ProductGrid products={firstHighlightBatch} emptyMessage="" />
         </section>
       )}
 
@@ -209,43 +225,44 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Remaining Featured Products */}
-      {remainingFeaturedProducts.length > 0 && (
+      {/* Second Highlighted Products */}
+      {secondHighlightBatch.length > 0 && (
         <section className="container mx-auto px-4 py-12 space-y-6">
-          <ProductGrid products={remainingFeaturedProducts} emptyMessage="" />
+          <ProductGrid products={secondHighlightBatch} emptyMessage="" />
         </section>
       )}
 
-      {/* One-Item Card View - Before Products (if more than 4 featured) */}
+      {/* One-Item Card View - Before Products (if balanced) */}
       {oneItemCard.length > 0 && showSingleCardBeforeProducts && (
         <section className="container mx-auto px-4 py-8">
           <CardView cards={oneItemCard} />
         </section>
       )}
 
-      {/* All Non-Featured Products */}
-      {nonFeaturedProducts.length > 0 && (
+      {/* Main Catalog - Remaining Products */}
+      {mainCatalog.length > 0 && (
         <section id="catalog" className="container mx-auto px-4 py-12 space-y-6">
           {productsError && <ErrorToastHandler error={productsError} />}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <p className="text-xs sm:text-sm text-[var(--text-muted)] font-medium tracking-wide uppercase">All products</p>
+              <p className="text-xs sm:text-sm text-[var(--text-muted)] font-medium tracking-wide uppercase">
+                {isUsingGeneralCatalog ? "More to Explore" : "All products"}
+              </p>
             </div>
-            <div className="text-sm text-[var(--text-muted)]">{nonFeaturedProducts.length} items</div>
+            <div className="text-sm text-[var(--text-muted)]">{mainCatalog.length} items</div>
           </div>
 
           {productsError ? (
             <div className="rounded-xl border-2 border-[var(--storefront-border)] p-6 text-[var(--storefront-text-secondary)]">
               <p className="font-semibold text-[var(--storefront-text-primary)]">Unable to load products</p>
               <p className="text-sm mt-2">
-                We could not load the catalog right now. Please try again shortly and copy the toast details if you
-                need to report this issue.
+                We could not load the catalog right now. Please try again shortly.
               </p>
             </div>
           ) : (
             <ProductGrid
-              products={nonFeaturedProducts}
-              emptyMessage="No products yet. Add items in the admin panel to showcase them here."
+              products={mainCatalog}
+              emptyMessage="No more products to show."
             />
           )}
         </section>
