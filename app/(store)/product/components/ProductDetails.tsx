@@ -476,12 +476,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         </div>
       </div>
 
-      {(product.variants.length === 0) && (
+      {product.description && (
         <div className="space-y-2 text-black mt-4">
           <h3 className='border-b border-[var(--storefront-border)] pb-2'>Description</h3>
-          {product.description && (
-            <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
-          )}
+          <p className="text-[var(--storefront-text-secondary)] leading-relaxed">{product.description}</p>
         </div>
       )}
 

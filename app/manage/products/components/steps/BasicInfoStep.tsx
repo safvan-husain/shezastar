@@ -61,7 +61,7 @@ export function BasicInfoStep({
                 />
                 <div>
                     <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
-                        Description
+                        Description (optional)
                     </label>
                     <textarea
                         value={description}

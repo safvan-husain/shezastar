@@ -5,8 +5,8 @@ import { ProductImage, ProductVariant, InstallationService, VariantStock, Produc
 export interface ProductDocument {
     _id: ObjectId;
     name: string;
-    subtitle?: string;
-    description?: string;
+    subtitle?: string | null;
+    description?: string | null;
     basePrice: number;
     offerPrice?: number;
     images: ProductImage[];
@@ -22,8 +22,8 @@ export interface ProductDocument {
 export interface Product {
     id: string;
     name: string;
-    subtitle?: string;
-    description?: string;
+    subtitle?: string | null;
+    description?: string | null;
     basePrice: number;
     offerPrice?: number;
     images: ProductImage[];
