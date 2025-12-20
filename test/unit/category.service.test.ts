@@ -8,6 +8,7 @@ import {
     removeSubCategory,
     getCategory,
     getCategoryHierarchyIds,
+    getBroaderCategoryContextIds,
 } from '@/lib/category/category.service';
 import { AppError } from '@/lib/errors/app-error';
 import { clear } from '../test-db';
@@ -138,5 +139,11 @@ describe('getCategoryHierarchyIds', () => {
 
     it('throws when the category identifier does not exist', async () => {
         await expect(getCategoryHierarchyIds('missing-category')).rejects.toThrow(AppError);
+    });
+
+    it('returns broader context ids (ancestors + self)', async () => {
+        const ids = await getBroaderCategoryContextIds([subSubCategoryId]);
+        expect(ids).toEqual(expect.arrayContaining([subSubCategoryId, subCategoryId, categoryId]));
+        expect(ids.length).toBe(3);
     });
 });

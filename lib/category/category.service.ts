@@ -492,3 +492,48 @@ export async function getCategoryHierarchyIds(identifier: string): Promise<strin
         message: `Category with identifier "${identifier}" not found`,
     });
 }
+
+/**
+ * Returns a map of category ID to its full lineage (ancestors + self)
+ * Useful for relevancy scoring and finding broader contexts.
+ */
+export async function getCategoryLineageMap(): Promise<Map<string, string[]>> {
+    const collection = await getCollection<CategoryDocument>(COLLECTION);
+    const categories = await collection.find({}).toArray();
+    const map = new Map<string, string[]>();
+
+    for (const cat of categories) {
+        const catId = cat._id.toString();
+        map.set(catId, [catId]);
+
+        for (const sub of cat.subCategories) {
+            const subId = sub.id;
+            map.set(subId, [catId, subId]);
+
+            for (const subSub of sub.subSubCategories || []) {
+                const subSubId = subSub.id;
+                map.set(subSubId, [catId, subId, subSubId]);
+            }
+        }
+    }
+
+    return map;
+}
+
+/**
+ * Returns identifying IDs for the broader context of the given categories.
+ * Includes the categories themselves and all their ancestors.
+ */
+export async function getBroaderCategoryContextIds(ids: string[]): Promise<string[]> {
+    const lineageMap = await getCategoryLineageMap();
+    const broaderIds = new Set<string>();
+
+    for (const id of ids) {
+        const lineage = lineageMap.get(id);
+        if (lineage) {
+            lineage.forEach(lid => broaderIds.add(lid));
+        }
+    }
+
+    return Array.from(broaderIds);
+}

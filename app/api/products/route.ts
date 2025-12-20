@@ -11,9 +11,18 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const categoryId = searchParams.get('categoryId') || searchParams.get('subCategoryId') || undefined;
 
-    const { status, body } = await handleGetAllProducts(page, limit, categoryId);
+    // Support multiple categoryId parameters
+    const categoryIds = searchParams.getAll('categoryId');
+    const legacySubCategoryId = searchParams.get('subCategoryId');
+
+    const finalCategoryIds = categoryIds.length > 0
+        ? categoryIds
+        : (legacySubCategoryId ? [legacySubCategoryId] : undefined);
+
+    const originId = searchParams.get('originId') || undefined;
+
+    const { status, body } = await handleGetAllProducts(page, limit, finalCategoryIds, originId);
     return NextResponse.json(body, { status });
 }
 

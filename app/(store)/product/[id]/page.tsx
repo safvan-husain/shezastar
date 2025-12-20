@@ -2,6 +2,7 @@ import { Product } from '@/lib/product/model/product.model';
 import { ProductErrorHandler, ProductPageError } from '../components/ProductErrorHandler';
 import { ProductDetails } from '../components/ProductDetails';
 import { RelatedProducts } from '../components/RelatedProducts';
+import { getBroaderCategoryContextIds } from '@/lib/category/category.service';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -79,13 +80,19 @@ async function fetchProduct(id: string): Promise<{ product: Product | null; erro
   }
 }
 
-async function fetchRelatedProducts(categoryIds: string[]): Promise<{ products: Product[]; error: ProductPageError | null }> {
+async function fetchRelatedProducts(categoryIds: string[], originId?: string): Promise<{ products: Product[]; error: ProductPageError | null }> {
   if (categoryIds.length === 0) {
     return { products: [], error: null };
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  const url = `${baseUrl}/api/products?categoryId=${encodeURIComponent(categoryIds[0])}&limit=8`;
+
+  const params = new URLSearchParams();
+  categoryIds.forEach(id => params.append('categoryId', id));
+  if (originId) params.append('originId', originId);
+  params.append('limit', '8');
+
+  const url = `${baseUrl}/api/products?${params.toString()}`;
   const timeoutMs = Number(process.env.PRODUCT_FETCH_TIMEOUT_MS ?? 5000);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -164,15 +171,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
     );
   }
 
-  const { products: relatedProducts, error: relatedError } = await fetchRelatedProducts(product.subCategoryIds);
+  const broaderCategoryIds = await getBroaderCategoryContextIds(product.subCategoryIds);
+  const { products: relatedProducts, error: relatedError } = await fetchRelatedProducts(broaderCategoryIds, product.id);
   const filteredRelatedProducts = relatedProducts.filter(p => p.id !== product.id);
 
   return (
     <div className="container mx-auto px-4 py-12 space-y-12 mt-24 max-w-7xl">
       {relatedError && <ProductErrorHandler error={relatedError} />}
-      
+
       <ProductDetails product={product} />
-      
+
       <RelatedProducts products={filteredRelatedProducts} />
     </div>
   );

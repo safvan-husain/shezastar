@@ -172,4 +172,59 @@ describe('Product Service - Category filtering', () => {
         expect(names).not.toContain('Parent scoped product');
         expect(names).not.toContain('Outside category product');
     });
+
+    it('supports multiple category ids and relevancy sorting', async () => {
+        // Create another category branch
+        const otherCat = await createCategory({ name: 'Other Branch', subCategories: [] });
+        const withOtherSub = await addSubCategory(otherCat.id, { name: 'Other Child' });
+        const otherSubId = withOtherSub.subCategories[0].id;
+
+        const p1 = await createProduct({
+            name: 'Exact match product',
+            basePrice: 100,
+            images: [],
+            variants: [],
+            subCategoryIds: [subSubCategoryId],
+            variantStock: [],
+            specifications: [],
+        });
+
+        const p2 = await createProduct({
+            name: 'Sibling match product',
+            basePrice: 100,
+            images: [],
+            variants: [],
+            subCategoryIds: [subCategoryId], // Same L1 and L2, different L3 (itself)
+            variantStock: [],
+            specifications: [],
+        });
+
+        const p3 = await createProduct({
+            name: 'Other branch product',
+            basePrice: 100,
+            images: [],
+            variants: [],
+            subCategoryIds: [otherSubId],
+            variantStock: [],
+            specifications: [],
+        });
+
+        // Search with originId of p1
+        const result = await getAllProducts(1, 20, [subSubCategoryId, subCategoryId, categoryId, otherSubId], p1.id);
+
+        const products = result.products;
+
+        // p1 is excluded because it is the origin
+        expect(products.find(p => p.id === p1.id)).toBeUndefined();
+
+        const topProduct = products[0];
+        // 'Leaf scoped product' also matches subSubCategoryId exactly, so it should be first.
+        expect(topProduct.name).toBe('Leaf scoped product');
+
+        // Let's test with a different origin
+        const result2 = await getAllProducts(1, 20, [subSubCategoryId, subCategoryId, categoryId], p2.id);
+        // p2 is origin. 
+        // 'Exact match product' shares [L1, L2] of p2. Lineage of p1 is [L1, L2, L3]. Lineage of p2 is [L1, L2]. Overlap is [L1, L2] length 2.
+        expect(result2.products[0].name).toBe('Exact match product');
+    });
 });

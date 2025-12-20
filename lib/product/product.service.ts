@@ -5,7 +5,7 @@ import { ProductDocument, toProduct, toProducts } from './model/product.model';
 import { CreateProductInput, UpdateProductInput, ImageMappingInput, ProductImage } from './product.schema';
 import { nanoid } from 'nanoid';
 import { deleteImages } from '@/lib/utils/file-upload';
-import { getCategoryHierarchyIds } from '@/lib/category/category.service';
+import { getCategoryHierarchyIds, getCategoryLineageMap } from '@/lib/category/category.service';
 
 const COLLECTION = 'products';
 
@@ -71,24 +71,80 @@ export async function getProduct(id: string) {
     return toProduct(doc);
 }
 
-export async function getAllProducts(page = 1, limit = 20, categoryId?: string) {
+export async function getAllProducts(page = 1, limit = 20, categoryId?: string | string[], originId?: string) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
     const skip = (page - 1) * limit;
     let filter: Record<string, any> = {};
 
     if (categoryId) {
-        const categoryFilterIds = await getCategoryHierarchyIds(categoryId);
-        filter = { subCategoryIds: { $in: categoryFilterIds } };
+        const ids = Array.isArray(categoryId) ? categoryId : [categoryId];
+        const allHierarchyIds = await Promise.all(ids.map(id => getCategoryHierarchyIds(id)));
+        const flatHierarchyIds = Array.from(new Set(allHierarchyIds.flat()));
+        filter = { ...filter, subCategoryIds: { $in: flatHierarchyIds } };
     }
 
-    const [docs, total] = await Promise.all([
-        collection.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
-        collection.countDocuments(filter),
-    ]);
+    if (originId) {
+        try {
+            filter = { ...filter, _id: { $ne: new ObjectId(originId) } };
+        } catch {
+            // ignore invalid originId
+        }
+    }
+
+    let docs = await collection.find(filter).sort({ createdAt: -1 }).toArray();
+
+    // Relevancy Sorting if originId is provided
+    if (originId && docs.length > 0) {
+        try {
+            const originProduct = await getProduct(originId);
+            const lineageMap = await getCategoryLineageMap();
+
+            // Pre-calculate origin lineages
+            const originLineages = originProduct.subCategoryIds
+                .map(id => lineageMap.get(id))
+                .filter((l): l is string[] => !!l);
+
+            const scoredDocs = docs.map(doc => {
+                let maxScore = 0;
+                for (const cid of doc.subCategoryIds) {
+                    const lineage = lineageMap.get(cid);
+                    if (!lineage) continue;
+
+                    for (const oLineage of originLineages) {
+                        let overlap = 0;
+                        const minLen = Math.min(lineage.length, oLineage.length);
+                        for (let i = 0; i < minLen; i++) {
+                            if (lineage[i] === oLineage[i]) {
+                                overlap++;
+                            } else {
+                                break;
+                            }
+                        }
+                        if (overlap > maxScore) maxScore = overlap;
+                    }
+                }
+                return { doc, score: maxScore };
+            });
+
+            // Sort by score (DESC) and then by createdAt (DESC)
+            scoredDocs.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return b.doc.createdAt.getTime() - a.doc.createdAt.getTime();
+            });
+
+            docs = scoredDocs.map(s => s.doc);
+        } catch (e) {
+            console.error('Failed to apply relevancy sorting:', e);
+            // Fallback to default sort if sorting fails
+        }
+    }
+
+    const total = docs.length;
+    const paginatedDocs = docs.slice(skip, skip + limit);
 
     return {
-        products: toProducts(docs),
+        products: toProducts(paginatedDocs),
         pagination: {
             page,
             limit,
