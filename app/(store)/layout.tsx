@@ -23,11 +23,13 @@ export default async function StorefrontLayout({
       <StorefrontAuthSuggestionProvider>
         <StorefrontWishlistProvider initialWishlist={await ensureWishlist(session)}>
           <StorefrontCartProvider initialCart={cart}>
-            <div className="bg-white min-h-screen">
+            <div className="bg-white min-h-screen flex flex-col">
               <div className="fixed top-0 left-0 right-0 z-50">
                 <NavbarWrapper />
               </div>
-              <main>{children}</main>
+              <main className="flex-1">
+                {children}
+              </main>
               <FooterWrapper />
             </div>
           </StorefrontCartProvider>

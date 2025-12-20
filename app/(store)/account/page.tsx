@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export default function LoginPage() {
     return (
-        <div className="flex h-full min-h-[60vh] items-center justify-center px-4 py-12">
+        <div className="flex h-full min-h-[60vh] items-center justify-center px-4 py-12 mt-24">
             <div className="w-full max-w-md space-y-8">
                 <div className="text-center">
                     <h1 className="text-3xl font-bold tracking-tight text-black">
