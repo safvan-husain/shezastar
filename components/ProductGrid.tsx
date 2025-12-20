@@ -132,15 +132,20 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
             <div className="flex flex-1 flex-col gap-3 p-3 sm:p-4">
               <div className="space-y-1">
                 <h3 className="text-base font-medium text-[var(--storefront-text-primary)] line-clamp-2">{product.name}</h3>
+                {(product.subtitle || product.description) && (!product.offerPrice) && (
+                  <p className="text-xs text-[var(--storefront-text-muted)] line-clamp-1">
+                    {product.subtitle || product.description}
+                  </p>
+                )}
               </div>
-              <div className="flex flex-col items-baseline gap-2">
+              <div className="mt-auto flex flex-col-reverse gap-1">
                 {product.offerPrice ? (
                   <>
-                    <span className="text-xs text-[var(--storefront-text-muted)] line-through sm:text-sm">
-                      {formatPrice(product.basePrice)}
-                    </span>
                     <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
                       {formatPrice(product.offerPrice)}
+                    </span>
+                    <span className="text-xs text-[var(--storefront-text-muted)] line-through sm:text-sm">
+                      {formatPrice(product.basePrice)}
                     </span>
                   </>
                 ) : (
@@ -150,7 +155,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 )}
               </div>
 
-              <div className="mt-auto flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 
 
                 <StockStatus inStock={isProductInStock(product)} />
