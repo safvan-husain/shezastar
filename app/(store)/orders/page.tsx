@@ -83,6 +83,7 @@ export default async function OrdersPage() {
                                                                 src={item.productImage}
                                                                 alt={item.productName}
                                                                 fill
+                                                                unoptimized
                                                                 className="object-cover object-center"
                                                             />
                                                         </div>

@@ -38,6 +38,7 @@ export default function CustomCardItem({ cardKey, card, onEdit, onDelete, isDele
                                 src={card.imagePath}
                                 alt={card.title}
                                 fill
+                                unoptimized
                                 className="object-cover"
                             />
                         ) : (
