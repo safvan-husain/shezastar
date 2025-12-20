@@ -70,7 +70,7 @@ export async function PUT(
 
             const productData: any = {};
             if (name) productData.name = name;
-            if (subtitle) productData.subtitle = subtitle;
+            if (subtitle !== null) productData.subtitle = subtitle;
             if (description !== null) productData.description = description;
             if (basePrice !== undefined) productData.basePrice = basePrice;
             if (offerPrice !== undefined) productData.offerPrice = offerPrice;

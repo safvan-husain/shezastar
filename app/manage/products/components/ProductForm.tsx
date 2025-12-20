@@ -88,8 +88,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
             // Add basic product data
             formData.append('name', name);
-            formData.append('subtitle', subtitle);
-            if (description) formData.append('description', description);
+            formData.append('subtitle', subtitle || '');
+            formData.append('description', description || '');
             formData.append('basePrice', basePrice);
             if (offerPrice) formData.append('offerPrice', offerPrice);
 
