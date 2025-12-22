@@ -21,6 +21,7 @@ interface BuyNowButtonProps {
   quantity: number;
   selectedVariantItemIds: string[];
   installationOption: InstallationOption;
+  installationLocationId?: string;
   disabled?: boolean;
   maxAvailable: number | null;
 }
@@ -30,6 +31,7 @@ export function BuyNowButton({
   product,
   quantity,
   installationOption,
+  installationLocationId,
   selectedVariantItemIds,
   disabled,
   maxAvailable,
@@ -57,9 +59,10 @@ export function BuyNowButton({
         quantity,
         selectedVariantItemIds,
         installationOption,
+        installationLocationId,
       },
     ],
-    [product.id, quantity, selectedVariantItemIds, installationOption]
+    [product.id, quantity, selectedVariantItemIds, installationOption, installationLocationId]
   );
 
   const startCheckout = async () => {

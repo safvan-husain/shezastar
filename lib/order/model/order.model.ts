@@ -14,6 +14,9 @@ export interface OrderItemDocument {
     unitPrice: number;
     installationOption?: InstallationOption;
     installationAddOnPrice?: number;
+    installationLocationId?: string;
+    installationLocationName?: string;
+    installationLocationDelta?: number;
 }
 
 export interface OrderDocument {
@@ -39,6 +42,9 @@ export interface OrderItem {
     unitPrice: number;
     installationOption: InstallationOption;
     installationAddOnPrice: number;
+    installationLocationId?: string;
+    installationLocationName?: string;
+    installationLocationDelta?: number;
 }
 
 export interface Order {
@@ -69,6 +75,9 @@ export function toOrder(doc: OrderDocument): Order {
             unitPrice: item.unitPrice,
             installationOption: item.installationOption ?? 'none',
             installationAddOnPrice: item.installationAddOnPrice ?? 0,
+            installationLocationId: item.installationLocationId,
+            installationLocationName: item.installationLocationName,
+            installationLocationDelta: item.installationLocationDelta,
         })),
         totalAmount: doc.totalAmount,
         currency: doc.currency,

@@ -60,6 +60,8 @@ export async function POST(req: NextRequest) {
                 selectedVariantItemIds: string[];
                 quantity: number;
                 installationOption: InstallationOption;
+                installationLocationId?: string;
+                installationLocationDelta?: number;
                 installationAddOnPrice: number;
                 unitPrice: number;
             }> = [];
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest) {
                 const selectedVariantItemIds = Array.isArray(item.selectedVariantItemIds)
                     ? item.selectedVariantItemIds.filter((id: unknown): id is string => typeof id === 'string')
                     : [];
+                const installationLocationId = typeof item.installationLocationId === 'string' ? item.installationLocationId : undefined;
 
                 const requestedOption: InstallationOption =
                     item.installationOption === 'store'
@@ -86,13 +89,15 @@ export async function POST(req: NextRequest) {
                             ? 'home'
                             : 'none';
 
-                const pricing = await computeCartItemPricing(item.productId, selectedVariantItemIds, requestedOption);
+                const pricing = await computeCartItemPricing(item.productId, selectedVariantItemIds, requestedOption, installationLocationId);
 
                 processedBuyNowItems.push({
                     productId: item.productId,
                     selectedVariantItemIds,
                     quantity,
                     installationOption: pricing.installationOption,
+                    installationLocationId: pricing.installationLocationId,
+                    installationLocationDelta: pricing.installationLocationDelta,
                     installationAddOnPrice: pricing.installationAddOnPrice,
                     unitPrice: pricing.unitPrice,
                 });

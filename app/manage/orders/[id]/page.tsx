@@ -265,26 +265,31 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div>
                                                         <p className="text-sm font-medium text-[var(--text-primary)]">
-                                                    {item.productName}
-                                                </p>
-                                                {item.variantName && (
-                                                    <p className="text-xs text-[var(--text-secondary)]">
-                                                        {item.variantName}
-                                                    </p>
-                                                )}
-                                                {item.installationOption && item.installationOption !== 'none' && (
-                                                    <p className="text-xs text-[var(--text-secondary)]">
-                                                        Installation: {getInstallationOptionLabel(item.installationOption)} (
-                                                        +{item.installationAddOnPrice.toFixed(2)}{' '}
-                                                        {order.currency.toUpperCase()})
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="text-right text-sm text-[var(--text-secondary)]">
-                                                <p>
-                                                    Qty:{' '}
-                                                    <span className="font-semibold">
-                                                        {item.quantity}
+                                                            {item.productName}
+                                                        </p>
+                                                        {item.variantName && (
+                                                            <p className="text-xs text-[var(--text-secondary)]">
+                                                                {item.variantName}
+                                                            </p>
+                                                        )}
+                                                        {item.installationOption && item.installationOption !== 'none' && (
+                                                            <div className="text-xs text-[var(--text-secondary)]">
+                                                                <p>
+                                                                    Installation: {getInstallationOptionLabel(item.installationOption)}
+                                                                    {item.installationLocationName ? ` (${item.installationLocationName})` : ''}
+                                                                </p>
+                                                                <p>
+                                                                    Add-on: +{item.installationAddOnPrice.toFixed(2)} {order.currency.toUpperCase()}
+                                                                    {item.installationLocationDelta ? ` (includes +${item.installationLocationDelta.toFixed(2)} location fee)` : ''}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-right text-sm text-[var(--text-secondary)]">
+                                                        <p>
+                                                            Qty:{' '}
+                                                            <span className="font-semibold">
+                                                                {item.quantity}
                                                             </span>
                                                         </p>
                                                         <p>

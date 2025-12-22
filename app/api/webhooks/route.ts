@@ -101,50 +101,62 @@ export async function POST(req: NextRequest) {
                                 try {
                                     const product = await getProduct(item.productId);
 
-                                // Resolve Product Image
-                                let productImage = product.images.length > 0 ? product.images[0].url : undefined;
-                                if (item.selectedVariantItemIds && item.selectedVariantItemIds.length > 0) {
-                                    const matchedImages = filterImagesByVariants(product.images, item.selectedVariantItemIds);
-                                    if (matchedImages.length > 0) {
-                                        productImage = matchedImages[0].url;
+                                    // Resolve Product Image
+                                    let productImage = product.images.length > 0 ? product.images[0].url : undefined;
+                                    if (item.selectedVariantItemIds && item.selectedVariantItemIds.length > 0) {
+                                        const matchedImages = filterImagesByVariants(product.images, item.selectedVariantItemIds);
+                                        if (matchedImages.length > 0) {
+                                            productImage = matchedImages[0].url;
+                                        }
                                     }
-                                }
 
-                                // Resolve Variant Name
-                                let variantNames: string[] = [];
-                                if (item.selectedVariantItemIds && item.selectedVariantItemIds.length > 0) {
-                                    for (const variant of product.variants) {
-                                        for (const vItem of variant.selectedItems) {
-                                            if (item.selectedVariantItemIds.includes(vItem.id)) {
-                                                variantNames.push(`${variant.variantTypeName}: ${vItem.name}`);
+                                    // Resolve Variant Name
+                                    let variantNames: string[] = [];
+                                    if (item.selectedVariantItemIds && item.selectedVariantItemIds.length > 0) {
+                                        for (const variant of product.variants) {
+                                            for (const vItem of variant.selectedItems) {
+                                                if (item.selectedVariantItemIds.includes(vItem.id)) {
+                                                    variantNames.push(`${variant.variantTypeName}: ${vItem.name}`);
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
+                                    const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
 
-                                orderItems.push({
-                                    productId: item.productId,
-                                    productName: product.name,
-                                    productImage: productImage,
-                                    variantName: variantName,
-                                    selectedVariantItemIds: item.selectedVariantItemIds || [],
-                                    quantity: item.quantity,
-                                    unitPrice: item.unitPrice,
-                                    installationOption: item.installationOption ?? 'none',
-                                    installationAddOnPrice: item.installationAddOnPrice ?? 0,
-                                });
+                                    // Resolve Installation Location Name
+                                    let installationLocationName: string | undefined;
+                                    if (item.installationLocationId && product.installationService?.availableLocations) {
+                                        const loc = product.installationService.availableLocations.find(l => l.locationId === item.installationLocationId);
+                                        if (loc) {
+                                            installationLocationName = loc.name;
+                                        }
+                                    }
+
+                                    orderItems.push({
+                                        productId: item.productId,
+                                        productName: product.name,
+                                        productImage: productImage,
+                                        variantName: variantName,
+                                        selectedVariantItemIds: item.selectedVariantItemIds || [],
+                                        quantity: item.quantity,
+                                        unitPrice: item.unitPrice,
+                                        installationOption: item.installationOption ?? 'none',
+                                        installationAddOnPrice: item.installationAddOnPrice ?? 0,
+                                        installationLocationId: item.installationLocationId,
+                                        installationLocationName: installationLocationName,
+                                        installationLocationDelta: item.installationLocationDelta ?? 0,
+                                    });
                                 } catch (err) {
                                     console.error(`Failed to fetch product details for buy now product ${item.productId}`, err);
-                                orderItems.push({
-                                    productId: item.productId,
-                                    productName: 'Unknown Product',
-                                    selectedVariantItemIds: item.selectedVariantItemIds || [],
-                                    quantity: item.quantity,
-                                    unitPrice: item.unitPrice,
-                                    installationOption: item.installationOption ?? 'none',
-                                    installationAddOnPrice: item.installationAddOnPrice ?? 0,
-                                });
+                                    orderItems.push({
+                                        productId: item.productId,
+                                        productName: 'Unknown Product',
+                                        selectedVariantItemIds: item.selectedVariantItemIds || [],
+                                        quantity: item.quantity,
+                                        unitPrice: item.unitPrice,
+                                        installationOption: item.installationOption ?? 'none',
+                                        installationAddOnPrice: item.installationAddOnPrice ?? 0,
+                                    });
                                 }
                             }
                         }
@@ -182,6 +194,15 @@ export async function POST(req: NextRequest) {
                                 }
                                 const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
 
+                                // Resolve Installation Location Name
+                                let installationLocationName: string | undefined;
+                                if (cartItem.installationLocationId && product.installationService?.availableLocations) {
+                                    const loc = product.installationService.availableLocations.find(l => l.locationId === cartItem.installationLocationId);
+                                    if (loc) {
+                                        installationLocationName = loc.name;
+                                    }
+                                }
+
                                 orderItems.push({
                                     productId: cartItem.productId,
                                     productName: product.name,
@@ -192,6 +213,9 @@ export async function POST(req: NextRequest) {
                                     unitPrice: cartItem.unitPrice,
                                     installationOption: cartItem.installationOption ?? 'none',
                                     installationAddOnPrice: cartItem.installationAddOnPrice ?? 0,
+                                    installationLocationId: cartItem.installationLocationId,
+                                    installationLocationName: installationLocationName,
+                                    installationLocationDelta: cartItem.installationLocationDelta ?? 0,
                                 });
                             } catch (err) {
                                 console.error(`Failed to fetch product details for product ${cartItem.productId} in session ${storefrontSessionId}`, err);
@@ -218,15 +242,15 @@ export async function POST(req: NextRequest) {
                                     ? lineItem.description
                                     : lineItem.price?.product?.toString() ?? 'unknown';
                             const unitAmount = lineItem.price?.unit_amount ?? 0;
-                        orderItems.push({
-                            productId: productIdFromStripe,
-                            productName: productIdFromStripe,
-                            selectedVariantItemIds: [],
-                            quantity: lineItem.quantity ?? 1,
-                            unitPrice: unitAmount / 100,
-                            installationOption: 'none',
-                            installationAddOnPrice: 0,
-                        });
+                            orderItems.push({
+                                productId: productIdFromStripe,
+                                productName: productIdFromStripe,
+                                selectedVariantItemIds: [],
+                                quantity: lineItem.quantity ?? 1,
+                                unitPrice: unitAmount / 100,
+                                installationOption: 'none',
+                                installationAddOnPrice: 0,
+                            });
                         }
                     } catch (err) {
                         console.error('Failed to fetch Stripe line items for fallback', err);

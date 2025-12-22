@@ -11,6 +11,9 @@ export const OrderItemSchema = z.object({
     quantity: z.number().int().min(1),
     unitPrice: z.number(),
     installationOption: InstallationOptionSchema.default('none'),
+    installationLocationId: z.string().optional(),
+    installationLocationName: z.string().optional(),
+    installationLocationDelta: z.number().min(0).default(0),
     installationAddOnPrice: z.number().min(0).default(0),
 });
 

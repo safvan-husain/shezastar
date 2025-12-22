@@ -28,14 +28,22 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const { showToast } = useToast();
   const [quantity, setQuantity] = useState<number>(1);
   const [installationOption, setInstallationOption] = useState<InstallationOption>('none');
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [selectedVariantItems, setSelectedVariantItems] = useState<Record<string, string | null>>({});
 
-  const addOnPrice =
-    installationOption === 'none'
-      ? 0
-      : installationOption === 'store'
-        ? product.installationService?.inStorePrice ?? 0
-        : product.installationService?.atHomePrice ?? 0;
+  const installationService = product.installationService;
+  const availableLocations = installationService?.availableLocations?.filter(l => l.enabled) ?? [];
+
+  const addOnPrice = useMemo(() => {
+    if (installationOption === 'none') return 0;
+    if (installationOption === 'store') return installationService?.inStorePrice ?? 0;
+    if (installationOption === 'home') {
+      const baseAtHome = installationService?.atHomePrice ?? 0;
+      const location = availableLocations.find(l => l.locationId === selectedLocationId);
+      return baseAtHome + (location?.priceDelta ?? 0);
+    }
+    return 0;
+  }, [installationOption, installationService, availableLocations, selectedLocationId]);
 
   const selectedVariantItemIds = useMemo(
     () => Object.values(selectedVariantItems).filter((id): id is string => Boolean(id)),
@@ -44,6 +52,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const hasVariantStock = (product.variantStock?.length ?? 0) > 0;
 
+  // ... (stock logic remains the same)
   const stockByKey = useMemo(() => {
     const map = new Map<string, number>();
     for (const stockEntry of product.variantStock ?? []) {
@@ -54,15 +63,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const isCombinationAvailable = (combinationItemIds: string[]): boolean => {
     if (!hasVariantStock) {
-      // No per-variant stock tracking; treat as available
       return true;
     }
 
     const key = getVariantCombinationKey(combinationItemIds);
     const stock = stockByKey.get(key);
 
-    // If there is no explicit stock entry for this combination,
-    // mirror backend behavior and treat it as unlimited/available.
     if (stock === undefined) {
       return true;
     }
@@ -85,8 +91,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       const variant = variants[index];
       const selectedForVariant = selectedVariantItems[variant.variantTypeId] ?? null;
 
-      // For the variant we are evaluating, force the candidate item.
-      // For other variants, honor current selection if any; otherwise try all options.
       if (variant.variantTypeId === variantTypeId) {
         return search(index + 1, [...currentIds, itemId]);
       }
@@ -114,7 +118,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       const current = prev[variantTypeId];
       const next: Record<string, string | null> = { ...prev };
 
-      // Toggle selection: clicking again clears it
       next[variantTypeId] = current === itemId ? null : itemId;
       return next;
     });
@@ -133,7 +136,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const allVariantsSelected = useMemo(() => {
     if (!hasVariants || !product.variants) return true;
     return product.variants.every(variant => {
-      // Variant types without items don't require a choice
       if (!variant.selectedItems || variant.selectedItems.length === 0) {
         return true;
       }
@@ -141,17 +143,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     });
   }, [hasVariants, product.variants, selectedVariantItems]);
 
+  const isLocationValid = installationOption !== 'home' || (installationOption === 'home' && Boolean(selectedLocationId));
+
   const currentStockLimit = useMemo(() => {
-    // Prefer per-combination stock when configured
     if (hasVariantStock && product.variantStock && product.variantStock.length > 0) {
       const key = getVariantCombinationKey(selectedVariantItemIds);
       const stock = stockByKey.get(key);
-      // Undefined means "unlimited" per backend semantics
       if (typeof stock === 'number') {
         return stock;
       }
     }
-
     return null;
   }, [hasVariantStock, product.variantStock, stockByKey, selectedVariantItemIds]);
 
@@ -160,27 +161,28 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       if (currentStockLimit === null) return true;
       return currentStockLimit > 0;
     }
-    // If not all variants selected, show overall availability
     return isProductInStock(product);
   }, [allVariantsSelected, currentStockLimit, product]);
+
+  const finalPrice = useMemo(() => {
+    const base = product.offerPrice ?? product.basePrice;
+    return base + combinationPriceDelta + addOnPrice;
+  }, [product.offerPrice, product.basePrice, combinationPriceDelta, addOnPrice]);
 
   return (
     <div className='flex flex-col'>
       <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
-        {/* Image Gallery */}
         <ProductImageGallery product={product} selectedVariantItemIds={selectedVariantItemIds} />
 
-        {/* Product Info */}
         <div className="space-y-6 min-w-0">
 
           <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)] break-words">{product.name}</h1>
 
-          {/* Price */}
           <div className="flex items-baseline gap-3">
             {product.offerPrice != null ? (
               (() => {
-                const effectiveBase = product.basePrice + combinationPriceDelta;
-                const effectiveOffer = product.offerPrice + combinationPriceDelta;
+                const effectiveBase = product.basePrice + combinationPriceDelta + addOnPrice;
+                const effectiveOffer = product.offerPrice + combinationPriceDelta + addOnPrice;
                 return (
                   <>
                     <span className="text-4xl font-bold text-[var(--storefront-sale)]">
@@ -199,7 +201,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               })()
             ) : (
               <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">
-                {formatPrice(product.basePrice + combinationPriceDelta)}
+                {formatPrice(finalPrice)}
               </span>
             )}
           </div>
@@ -210,9 +212,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
           <StockStatus inStock={displayInStock} />
 
-
-
-          {/* Variants */}
           {product.variants && product.variants.length > 0 && (
             <div className="space-y-4">
               {product.variants.map((variant) => (
@@ -254,9 +253,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
           )}
 
-          {/* Installation Service */}
           {product.installationService?.enabled && (
-            <div className="border-t border-[var(--storefront-border)] pt-4 space-y-2">
+            <div className="border-t border-[var(--storefront-border)] pt-4 space-y-4">
               <h3 className="font-semibold text-[var(--storefront-text-primary)]">Installation Service</h3>
               <div className="space-y-1">
                 {[
@@ -274,35 +272,64 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 ].map((option) => (
                   <label
                     key={option.key}
-                    className="flex items-center gap-3 px-3 py-1"
+                    className="flex items-center gap-3 px-3 py-1 cursor-pointer"
                   >
                     <input
                       type="radio"
                       name="installation-option"
                       value={option.key}
                       checked={installationOption === option.key}
-                      onChange={() => setInstallationOption(option.key)}
-                      className="h-4 w-4"
+                      onChange={() => {
+                        setInstallationOption(option.key);
+                        if (option.key !== 'home') {
+                          setSelectedLocationId('');
+                        }
+                      }}
+                      className="h-4 w-4 text-[var(--storefront-brand)] border-gray-300 focus:ring-[var(--storefront-brand)]"
                     />
                     <div className="flex justify-between w-full">
                       <span className="text-[var(--storefront-text-primary)] text-sm">{option.label}</span>
                       <span className="text-xs text-[var(--storefront-text-secondary)]">
-                        {formatPrice(option.price)}
+                        {option.key === 'none' ? 'Free' : formatPrice(option.price)}
                       </span>
                     </div>
                   </label>
                 ))}
               </div>
+
+              {installationOption === 'home' && availableLocations.length > 0 && (
+                <div className="pl-7 space-y-2">
+                  <label className="text-sm font-medium text-[var(--storefront-text-primary)]">
+                    Select Installation Location
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <select
+                    value={selectedLocationId}
+                    onChange={(e) => setSelectedLocationId(e.target.value)}
+                    className="w-full p-2 border border-[var(--storefront-border)] rounded-md bg-[var(--storefront-bg)] text-[var(--storefront-text-primary)] text-sm"
+                  >
+                    <option value="" disabled>Select a location...</option>
+                    {availableLocations.map(loc => (
+                      <option key={loc.locationId} value={loc.locationId}>
+                        {loc.name} {loc.priceDelta > 0 ? `(+${formatPrice(loc.priceDelta)})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {!selectedLocationId && (
+                    <p className="text-xs text-red-500 animate-pulse">
+                      Please select a location to continue.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <p className="text-sm text-[var(--storefront-text-secondary)]">
                 Selected installation add-on: {formatPrice(addOnPrice)}
               </p>
             </div>
           )}
 
-          {/* Quantity Counter and Action Buttons */}
           <div className="space-y-4">
-
-            {/* Primary Action Buttons */}
             <div className="grid w-full grid-cols-[1fr_2fr] gap-4 sm:grid-cols-[1fr_2fr_2fr_1fr]">
 
               <div className="flex w-fit justify-start text-black items-center border border-[var(--storefront-border)] rounded-lg bg-white">
@@ -337,17 +364,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 </button>
               </div>
 
-              {/* Add to Cart Button */}
               <button
                 type="button"
                 className="w-full py-3 px-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={isLoading || !allVariantsSelected}
+                disabled={isLoading || !allVariantsSelected || !isLocationValid}
                 onClick={async () => {
                   if (currentStockLimit !== null && quantity > currentStockLimit) {
                     showToast('Lack of stock.', 'error');
                     return;
                   }
-                  await addToCart(product.id, selectedVariantItemIds, quantity, installationOption);
+                  await addToCart(product.id, selectedVariantItemIds, quantity, installationOption, selectedLocationId);
                 }}
                 aria-label={`Add ${product.name} to cart`}
               >
@@ -364,7 +390,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 Add to cart
               </button>
 
-              {/* Wishlist Icon Button */}
               <button
                 type="button"
                 className="sm:order-4 w-full py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] hover:bg-[var(--storefront-button-secondary-hover)] transition flex items-center justify-center"
@@ -389,13 +414,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 </svg>
               </button>
 
-              {/* Buy Now Button */}
               <BuyNowButton
                 product={product}
                 quantity={quantity}
                 selectedVariantItemIds={selectedVariantItemIds}
                 installationOption={installationOption}
-                disabled={!allVariantsSelected}
+                installationLocationId={selectedLocationId}
+                disabled={!allVariantsSelected || !isLocationValid}
                 maxAvailable={currentStockLimit}
               />
 

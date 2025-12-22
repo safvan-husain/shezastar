@@ -44,12 +44,20 @@ interface CartItemPricing {
     unitPrice: number;
     installationAddOnPrice: number;
     installationOption: InstallationOption;
+    installationLocationId?: string;
+    installationLocationDelta?: number;
 }
 
 function resolveInstallationChoice(
     product: Product,
-    requestedOption: InstallationOption
-): { installationOption: InstallationOption; installationAddOnPrice: number } {
+    requestedOption: InstallationOption,
+    locationId?: string
+): {
+    installationOption: InstallationOption;
+    installationAddOnPrice: number;
+    installationLocationId?: string;
+    installationLocationDelta?: number;
+} {
     const service = product.installationService;
     if (!service?.enabled) {
         return {
@@ -66,9 +74,22 @@ function resolveInstallationChoice(
     }
 
     if (requestedOption === 'home') {
+        let delta = 0;
+        let validLocationId: string | undefined = undefined;
+
+        if (locationId && service.availableLocations) {
+            const location = service.availableLocations.find(l => l.locationId === locationId && l.enabled);
+            if (location) {
+                delta = location.priceDelta;
+                validLocationId = location.locationId;
+            }
+        }
+
         return {
             installationOption: 'home',
-            installationAddOnPrice: service.atHomePrice ?? 0,
+            installationAddOnPrice: (service.atHomePrice ?? 0) + delta,
+            installationLocationId: validLocationId,
+            installationLocationDelta: delta,
         };
     }
 
@@ -81,7 +102,8 @@ function resolveInstallationChoice(
 export async function computeCartItemPricing(
     productId: string,
     normalizedVariantItemIds: string[],
-    requestedInstallationOption: InstallationOption = DEFAULT_INSTALLATION_OPTION
+    requestedInstallationOption: InstallationOption = DEFAULT_INSTALLATION_OPTION,
+    installationLocationId?: string
 ): Promise<CartItemPricing> {
     const product = await getProduct(productId);
     const base = product.offerPrice ?? product.basePrice;
@@ -95,15 +117,23 @@ export async function computeCartItemPricing(
         }
     }
 
-    const { installationOption, installationAddOnPrice } = resolveInstallationChoice(
+    const {
+        installationOption,
+        installationAddOnPrice,
+        installationLocationId: resolvedLocationId,
+        installationLocationDelta
+    } = resolveInstallationChoice(
         product,
-        requestedInstallationOption
+        requestedInstallationOption,
+        installationLocationId
     );
 
     return {
         unitPrice: base + priceDelta + installationAddOnPrice,
         installationAddOnPrice,
         installationOption,
+        installationLocationId: resolvedLocationId,
+        installationLocationDelta,
     };
 }
 
@@ -195,13 +225,22 @@ function cartItemsMatch(
     item: CartItemDocument,
     productId: string,
     normalizedVariantItemIds: string[],
-    installationOption: InstallationOption
+    installationOption: InstallationOption,
+    installationLocationId?: string
 ): boolean {
     const normalizedOption = installationOption ?? DEFAULT_INSTALLATION_OPTION;
     const itemOption = item.installationOption ?? DEFAULT_INSTALLATION_OPTION;
+
+    // Treat undefined and null as equivalent for locationId in comparison if needed, 
+    // but schema says optional string. 
+    // If item has no locationId (undefined) and we pass undefined, it matches.
+    // If item has locationId and we pass same, matches.
+    const locationMatch = item.installationLocationId === installationLocationId;
+
     return (
         item.productId === productId &&
         itemOption === normalizedOption &&
+        locationMatch &&
         item.selectedVariantItemIds.length === normalizedVariantItemIds.length &&
         item.selectedVariantItemIds.every((id, index) => id === normalizedVariantItemIds[index])
     );
@@ -211,10 +250,11 @@ function findItemIndex(
     cart: CartDocument,
     productId: string,
     normalizedVariantItemIds: string[],
-    installationOption: InstallationOption
+    installationOption: InstallationOption,
+    installationLocationId?: string
 ): number {
     return cart.items.findIndex(item =>
-        cartItemsMatch(item, productId, normalizedVariantItemIds, installationOption)
+        cartItemsMatch(item, productId, normalizedVariantItemIds, installationOption, installationLocationId)
     );
 }
 
@@ -246,6 +286,7 @@ interface AddItemParams {
     selectedVariantItemIds: string[];
     quantity: number;
     installationOption: InstallationOption;
+    installationLocationId?: string;
 }
 
 export async function addItemToCart(params: AddItemParams): Promise<Cart> {
@@ -255,6 +296,7 @@ export async function addItemToCart(params: AddItemParams): Promise<Cart> {
         selectedVariantItemIds,
         quantity,
         installationOption = DEFAULT_INSTALLATION_OPTION,
+        installationLocationId,
     } = params;
     if (quantity <= 0) {
         throw new AppError(400, 'INVALID_QUANTITY', { message: 'Quantity must be positive' });
@@ -284,12 +326,19 @@ export async function addItemToCart(params: AddItemParams): Promise<Cart> {
     const pricing = await computeCartItemPricing(
         productId,
         normalizedVariantItemIds,
-        installationOption
+        installationOption,
+        installationLocationId
     );
-    const { unitPrice, installationOption: resolvedInstallationOption, installationAddOnPrice } = pricing;
+    const {
+        unitPrice,
+        installationOption: resolvedInstallationOption,
+        installationAddOnPrice,
+        installationLocationId: resolvedLocationId,
+        installationLocationDelta
+    } = pricing;
 
     const now = new Date();
-    const index = findItemIndex(cart, productId, normalizedVariantItemIds, resolvedInstallationOption);
+    const index = findItemIndex(cart, productId, normalizedVariantItemIds, resolvedInstallationOption, resolvedLocationId);
 
     if (index === -1) {
         const newItem: CartItemDocument = {
@@ -299,6 +348,8 @@ export async function addItemToCart(params: AddItemParams): Promise<Cart> {
             unitPrice,
             installationOption: resolvedInstallationOption,
             installationAddOnPrice,
+            installationLocationId: resolvedLocationId,
+            installationLocationDelta: installationLocationDelta ?? 0,
             createdAt: now,
             updatedAt: now,
         };
@@ -311,6 +362,8 @@ export async function addItemToCart(params: AddItemParams): Promise<Cart> {
             unitPrice,
             installationOption: resolvedInstallationOption,
             installationAddOnPrice,
+            installationLocationId: resolvedLocationId,
+            installationLocationDelta: installationLocationDelta ?? 0,
             updatedAt: now,
         };
     }
@@ -324,6 +377,7 @@ interface UpdateItemParams {
     selectedVariantItemIds: string[];
     quantity: number;
     installationOption: InstallationOption;
+    installationLocationId?: string;
 }
 
 export async function updateCartItemQuantity(params: UpdateItemParams): Promise<Cart> {
@@ -333,10 +387,11 @@ export async function updateCartItemQuantity(params: UpdateItemParams): Promise<
         selectedVariantItemIds,
         quantity,
         installationOption = DEFAULT_INSTALLATION_OPTION,
+        installationLocationId,
     } = params;
     const cart = await findCartOrThrow(session);
     const normalizedVariantItemIds = normalizeVariantItemIds(selectedVariantItemIds);
-    const index = findItemIndex(cart, productId, normalizedVariantItemIds, installationOption);
+    const index = findItemIndex(cart, productId, normalizedVariantItemIds, installationOption, installationLocationId);
 
     if (index === -1) {
         throw new AppError(404, 'CART_ITEM_NOT_FOUND');
@@ -348,9 +403,17 @@ export async function updateCartItemQuantity(params: UpdateItemParams): Promise<
         const pricing = await computeCartItemPricing(
             productId,
             normalizedVariantItemIds,
-            installationOption
+            installationOption,
+            installationLocationId
         );
-        const { unitPrice, installationOption: resolvedInstallationOption, installationAddOnPrice } = pricing;
+        const {
+            unitPrice,
+            installationOption: resolvedInstallationOption,
+            installationAddOnPrice,
+            installationLocationId: resolvedLocationId,
+            installationLocationDelta
+        } = pricing;
+
         const now = new Date();
         cart.items[index] = {
             ...cart.items[index],
@@ -358,6 +421,8 @@ export async function updateCartItemQuantity(params: UpdateItemParams): Promise<
             unitPrice,
             installationOption: resolvedInstallationOption,
             installationAddOnPrice,
+            installationLocationId: resolvedLocationId,
+            installationLocationDelta: installationLocationDelta ?? 0,
             updatedAt: now,
         };
     }
@@ -370,6 +435,7 @@ interface RemoveItemParams {
     productId: string;
     selectedVariantItemIds: string[];
     installationOption: InstallationOption;
+    installationLocationId?: string;
 }
 
 export async function removeItemFromCart(params: RemoveItemParams): Promise<Cart> {
@@ -378,10 +444,11 @@ export async function removeItemFromCart(params: RemoveItemParams): Promise<Cart
         productId,
         selectedVariantItemIds,
         installationOption = DEFAULT_INSTALLATION_OPTION,
+        installationLocationId,
     } = params;
     const cart = await findCartOrThrow(session);
     const normalizedVariantItemIds = normalizeVariantItemIds(selectedVariantItemIds);
-    const index = findItemIndex(cart, productId, normalizedVariantItemIds, installationOption);
+    const index = findItemIndex(cart, productId, normalizedVariantItemIds, installationOption, installationLocationId);
 
     if (index !== -1) {
         cart.items.splice(index, 1);

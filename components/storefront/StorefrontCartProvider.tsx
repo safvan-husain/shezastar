@@ -18,18 +18,21 @@ interface StorefrontCartContextValue {
         productId: string,
         selectedVariantItemIds: string[],
         quantity?: number,
-        installationOption?: InstallationOption
+        installationOption?: InstallationOption,
+        installationLocationId?: string
     ) => Promise<Cart | void>;
     updateItem: (
         productId: string,
         selectedVariantItemIds: string[],
         quantity: number,
-        installationOption?: InstallationOption
+        installationOption?: InstallationOption,
+        installationLocationId?: string
     ) => Promise<Cart | void>;
     removeItem: (
         productId: string,
         selectedVariantItemIds: string[],
-        installationOption?: InstallationOption
+        installationOption?: InstallationOption,
+        installationLocationId?: string
     ) => Promise<Cart | void>;
     clearCart: () => Promise<Cart | void>;
     refreshCart: () => Promise<Cart | void>;
@@ -121,11 +124,12 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
             productId: string,
             selectedVariantItemIds: string[],
             quantity: number = 1,
-            installationOption?: InstallationOption
+            installationOption?: InstallationOption,
+            installationLocationId?: string
         ) => {
             const data = await mutateCart(
                 'POST',
-                { productId, selectedVariantItemIds, quantity, installationOption },
+                { productId, selectedVariantItemIds, quantity, installationOption, installationLocationId },
                 'Added to cart'
             );
             if (data) {
@@ -141,21 +145,27 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
             productId: string,
             selectedVariantItemIds: string[],
             quantity: number,
-            installationOption?: InstallationOption
+            installationOption?: InstallationOption,
+            installationLocationId?: string
         ) =>
             mutateCart(
                 'PATCH',
-                { productId, selectedVariantItemIds, quantity, installationOption },
+                { productId, selectedVariantItemIds, quantity, installationOption, installationLocationId },
                 'Cart updated'
             ),
         [mutateCart]
     );
 
     const removeItem = useCallback(
-        async (productId: string, selectedVariantItemIds: string[], installationOption?: InstallationOption) =>
+        async (
+            productId: string,
+            selectedVariantItemIds: string[],
+            installationOption?: InstallationOption,
+            installationLocationId?: string
+        ) =>
             mutateCart(
                 'DELETE',
-                { productId, selectedVariantItemIds, installationOption },
+                { productId, selectedVariantItemIds, installationOption, installationLocationId },
                 'Item removed from cart'
             ),
         [mutateCart]
