@@ -2,7 +2,6 @@
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
-import sharp from 'sharp';
 import { nanoid } from 'nanoid';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
@@ -27,16 +26,10 @@ export async function saveImage(file: File): Promise<string> {
     const filepath = path.join(UPLOAD_DIR, filename);
 
     try {
-        // Process and optimize image
-        await sharp(buffer)
-            .resize(1200, 1200, {
-                fit: 'inside',
-                withoutEnlargement: true,
-            })
-            .jpeg({ quality: 85 })
-            .toFile(filepath);
+        // Save original image without processing
+        await writeFile(filepath, buffer);
     } catch (error) {
-        throw new Error(`Failed to process image: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to save image: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     return `/uploads/${filename}`;
