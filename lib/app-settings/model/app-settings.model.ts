@@ -1,11 +1,12 @@
 import { ObjectId } from 'mongodb';
-import { HeroBannerWithId, CustomCards } from '../app-settings.schema';
+import { HeroBannerWithId, CustomCards, InstallationLocation } from '../app-settings.schema';
 
 export interface AppSettingsDocument {
     _id: ObjectId;
     homeHeroBanners: HeroBannerWithId[];
     customCards: CustomCards;
     featuredProductIds: string[];
+    installationLocations?: InstallationLocation[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -15,6 +16,7 @@ export interface AppSettings {
     homeHeroBanners: HeroBannerWithId[];
     customCards: CustomCards;
     featuredProductIds: string[];
+    installationLocations: InstallationLocation[];
     createdAt: string;
     updatedAt: string;
 }
@@ -36,6 +38,7 @@ export function toAppSettings(doc: AppSettingsDocument): AppSettings {
         homeHeroBanners: doc.homeHeroBanners || [],
         customCards: mergedCards,
         featuredProductIds: doc.featuredProductIds || [],
+        installationLocations: doc.installationLocations || [],
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
@@ -53,5 +56,6 @@ export function getDefaultSettings(): Omit<AppSettings, 'id' | 'createdAt' | 'up
             card6: null,
         },
         featuredProductIds: [],
+        installationLocations: [],
     };
 }

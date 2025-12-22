@@ -13,6 +13,8 @@ import { VariantStockStep } from './steps/VariantStockStep';
 import { InstallationServiceStep } from './steps/InstallationServiceStep';
 import { ImageMappingStep } from './steps/ImageMappingStep';
 import { ReviewStep } from './steps/ReviewStep';
+import { InstallationLocation } from '@/lib/app-settings/app-settings.schema';
+import { ProductInstallationLocation } from '@/lib/product/product.schema';
 
 interface ImageFile {
     id: string;
@@ -39,9 +41,10 @@ interface ProductVariant {
 
 interface ProductFormProps {
     initialData?: any;
+    globalInstallationLocations?: InstallationLocation[];
 }
 
-export function ProductForm({ initialData }: ProductFormProps) {
+export function ProductForm({ initialData, globalInstallationLocations = [] }: ProductFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
@@ -68,6 +71,10 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [installationEnabled, setInstallationEnabled] = useState(initialData?.installationService?.enabled || false);
     const [inStorePrice, setInStorePrice] = useState(initialData?.installationService?.inStorePrice?.toString() || '');
     const [atHomePrice, setAtHomePrice] = useState(initialData?.installationService?.atHomePrice?.toString() || '');
+    const [availableLocations, setAvailableLocations] = useState<ProductInstallationLocation[]>(
+        initialData?.installationService?.availableLocations || []
+    );
+
     const [imageMappings, setImageMappings] = useState<Record<string, string[]>>(
         initialData?.images?.reduce((acc: any, img: any) => {
             if (img.mappedVariants && img.mappedVariants.length > 0) {
@@ -123,6 +130,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 enabled: installationEnabled,
                 inStorePrice: installationEnabled && inStorePrice ? parseFloat(inStorePrice) : undefined,
                 atHomePrice: installationEnabled && atHomePrice ? parseFloat(atHomePrice) : undefined,
+                availableLocations: installationEnabled ? availableLocations : [],
             };
             formData.append('installationService', JSON.stringify(installationService));
 
@@ -301,9 +309,12 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     enabled={installationEnabled}
                     inStorePrice={inStorePrice}
                     atHomePrice={atHomePrice}
+                    globalLocations={globalInstallationLocations}
+                    availableLocations={availableLocations}
                     onEnabledChange={setInstallationEnabled}
                     onInStorePriceChange={setInStorePrice}
                     onAtHomePriceChange={setAtHomePrice}
+                    onAvailableLocationsChange={setAvailableLocations}
                 />
 
                 <ImageMappingStep

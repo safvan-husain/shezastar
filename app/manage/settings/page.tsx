@@ -5,13 +5,13 @@ export default function SettingsPage() {
         <div className="container mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold mb-8">Settings</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 <Link
+                <Link
                     href="/manage/settings/hero-banner"
                     className="block p-6 bg-[var(--bg-elevated)] rounded-lg shadow-md hover:shadow-lg transition-shadow border border-[var(--border-subtle)]"
                 >
                     <h2 className="text-xl font-semibold mb-2">Hero Banners</h2>
                     <p className="text-[var(--text-secondary)]">
-                       Manage the main hero banner on the home page.
+                        Manage the main hero banner on the home page.
                     </p>
                 </Link>
                 <Link
@@ -30,6 +30,15 @@ export default function SettingsPage() {
                     <h2 className="text-xl font-semibold mb-2">Featured Products</h2>
                     <p className="text-[var(--text-secondary)]">
                         Manage the featured products displayed on the home page.
+                    </p>
+                </Link>
+                <Link
+                    href="/manage/settings/installation-locations"
+                    className="block p-6 bg-[var(--bg-elevated)] rounded-lg shadow-md hover:shadow-lg transition-shadow border border-[var(--border-subtle)]"
+                >
+                    <h2 className="text-xl font-semibold mb-2">Installation Locations</h2>
+                    <p className="text-[var(--text-secondary)]">
+                        Configure locations and price deltas for installation services.
                     </p>
                 </Link>
             </div>

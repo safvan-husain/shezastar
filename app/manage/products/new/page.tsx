@@ -1,8 +1,11 @@
 // app/(admin)/products/new/page.tsx
 import Link from 'next/link';
 import { ProductForm } from '../components/ProductForm';
+import { getInstallationLocations } from '@/lib/app-settings/app-settings.service';
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+    const globalInstallationLocations = await getInstallationLocations();
+
     return (
         <div className="min-h-screen bg-[var(--background)]">
             <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -38,7 +41,7 @@ export default function NewProductPage() {
                 </div>
 
                 {/* Form */}
-                <ProductForm />
+                <ProductForm globalInstallationLocations={globalInstallationLocations} />
             </div>
         </div>
     );

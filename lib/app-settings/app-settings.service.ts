@@ -1,7 +1,7 @@
 import { getCollection } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { AppSettingsDocument, toAppSettings, getDefaultSettings } from './model/app-settings.model';
-import { CreateHeroBannerInput, UpdateHeroBannerInput, CreateCustomCardInput, UpdateCustomCardInput, CustomCard } from './app-settings.schema';
+import { CreateHeroBannerInput, UpdateHeroBannerInput, CreateCustomCardInput, UpdateCustomCardInput, CustomCard, InstallationLocation } from './app-settings.schema';
 import { nanoid } from 'nanoid';
 import { getProduct } from '@/lib/product/product.service';
 import { Product } from '@/lib/product/model/product.model';
@@ -408,3 +408,109 @@ export async function removeFeaturedProduct(productId: string) {
     return toAppSettings(updatedDoc);
 }
 
+
+// Installation Locations Service Methods
+
+export async function getInstallationLocations() {
+    const settings = await getAppSettings();
+    return settings.installationLocations || [];
+}
+
+export async function addInstallationLocation(input: Omit<InstallationLocation, 'id'>) {
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+    const newLocation = {
+        ...input,
+        id: nanoid(),
+    };
+
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $push: {
+                installationLocations: newLocation,
+            },
+            $set: {
+                updatedAt: now,
+            },
+            $setOnInsert: {
+                createdAt: now,
+                homeHeroBanners: [],
+                customCards: getDefaultSettings().customCards,
+                featuredProductIds: [],
+            },
+        },
+        {
+            upsert: true,
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        throw new AppError(500, 'FAILED_TO_ADD_LOCATION');
+    }
+
+    return toAppSettings(updatedDoc);
+}
+
+export async function updateInstallationLocation(id: string, input: Omit<InstallationLocation, 'id'>) {
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+
+    const result = await collection.findOneAndUpdate(
+        { 'installationLocations.id': id },
+        {
+            $set: {
+                'installationLocations.$[loc]': {
+                    ...input,
+                    id,
+                },
+                updatedAt: now,
+            },
+        },
+        {
+            arrayFilters: [{ 'loc.id': id }],
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        throw new AppError(404, 'LOCATION_NOT_FOUND', {
+            message: 'Installation location not found',
+        });
+    }
+
+    return toAppSettings(updatedDoc);
+}
+
+export async function removeInstallationLocation(id: string) {
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $pull: {
+                installationLocations: { id },
+            },
+            $set: {
+                updatedAt: now,
+            },
+        },
+        {
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        return getAppSettings();
+    }
+
+    return toAppSettings(updatedDoc);
+}

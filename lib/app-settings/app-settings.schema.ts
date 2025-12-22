@@ -56,3 +56,13 @@ export const AddFeaturedProductSchema = z.object({
 });
 
 export type AddFeaturedProductInput = z.infer<typeof AddFeaturedProductSchema>;
+
+// Installation Locations Schema
+export const InstallationLocationSchema = z.object({
+    id: z.string().min(1),
+    name: z.string().min(1, 'Location name is required'),
+    priceDelta: z.number().min(0).default(0),
+});
+
+export const InstallationLocationsSchema = z.array(InstallationLocationSchema);
+export type InstallationLocation = z.infer<typeof InstallationLocationSchema>;

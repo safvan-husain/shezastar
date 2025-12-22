@@ -30,10 +30,18 @@ export const VariantStockSchema = z.object({
     priceDelta: z.number().optional(),
 });
 
+export const ProductInstallationLocationSchema = z.object({
+    locationId: z.string(),
+    name: z.string(),
+    priceDelta: z.number().min(0),
+    enabled: z.boolean().default(true),
+});
+
 export const InstallationServiceSchema = z.object({
     enabled: z.boolean().default(false),
     inStorePrice: z.number().min(0).optional(),
     atHomePrice: z.number().min(0).optional(),
+    availableLocations: z.array(ProductInstallationLocationSchema).default([]),
 });
 
 export const CreateProductSchema = z.object({
@@ -74,6 +82,7 @@ export type ProductImage = z.infer<typeof ProductImageSchema>;
 export type ProductVariant = z.infer<typeof ProductVariantSchema>;
 export type VariantStock = z.infer<typeof VariantStockSchema>;
 export type InstallationService = z.infer<typeof InstallationServiceSchema>;
+export type ProductInstallationLocation = z.infer<typeof ProductInstallationLocationSchema>;
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 export type ImageMappingInput = z.infer<typeof ImageMappingSchema>;
