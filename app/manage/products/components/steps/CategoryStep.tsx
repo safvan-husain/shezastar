@@ -84,23 +84,33 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
         const map = new Map<string, CategoryOption>();
 
         categories.forEach(category => {
+            // Add top-level category
+            const categoryOption: CategoryOption = {
+                id: category.id,
+                path: [category.name],
+            };
+            options.push(categoryOption);
+            map.set(categoryOption.id, categoryOption);
+
             category.subCategories.forEach(sub => {
+                // Add sub-category
+                const subOption: CategoryOption = {
+                    id: sub.id,
+                    path: [category.name, sub.name],
+                };
+                options.push(subOption);
+                map.set(subOption.id, subOption);
+
                 if (sub.subSubCategories && sub.subSubCategories.length > 0) {
                     sub.subSubCategories.forEach(subSub => {
-                        const option: CategoryOption = {
+                        // Add sub-sub-category
+                        const subSubOption: CategoryOption = {
                             id: subSub.id,
                             path: [category.name, sub.name, subSub.name],
                         };
-                        options.push(option);
-                        map.set(option.id, option);
+                        options.push(subSubOption);
+                        map.set(subSubOption.id, subSubOption);
                     });
-                } else {
-                    const option: CategoryOption = {
-                        id: sub.id,
-                        path: [category.name, sub.name],
-                    };
-                    options.push(option);
-                    map.set(option.id, option);
                 }
             });
         });
@@ -203,7 +213,7 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
                     <div>
                         <h2 className="text-xl font-semibold mb-2">Select Categories</h2>
                         <p className="text-sm text-[var(--muted-foreground)]">
-                            Choose one or more categories (including level 3) for this product
+                            Choose one or more categories for this product
                         </p>
                     </div>
 
@@ -283,11 +293,10 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
                                             <button
                                                 type="button"
                                                 onClick={() => handleSelect(option.id)}
-                                                className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${
-                                                    isActive
+                                                className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${isActive
                                                         ? 'bg-[var(--muted)]'
                                                         : 'hover:bg-[var(--muted)]'
-                                                }`}
+                                                    }`}
                                             >
                                                 <span className="truncate">{label}</span>
                                             </button>
