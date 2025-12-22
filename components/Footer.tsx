@@ -127,7 +127,7 @@ export function Footer({ categories }: FooterProps) {
         <div className="mt-12 pt-8 border-t border-gray-800 text-center md:text-left">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
-              Copyright © 2024 Sheza Star | Developed by{' '}
+              Copyright © 2026 Sheza Star | Developed by{' '}
               <a
                 href="https://blizmedia.com"
                 target="_blank"
