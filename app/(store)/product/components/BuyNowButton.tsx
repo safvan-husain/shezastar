@@ -22,7 +22,9 @@ interface BuyNowButtonProps {
   selectedVariantItemIds: string[];
   installationOption: InstallationOption;
   disabled?: boolean;
+  maxAvailable: number | null;
 }
+
 
 export function BuyNowButton({
   product,
@@ -30,7 +32,9 @@ export function BuyNowButton({
   installationOption,
   selectedVariantItemIds,
   disabled,
+  maxAvailable,
 }: BuyNowButtonProps) {
+
   const { showToast } = useToast();
   const { billingDetails, saveBillingDetails } = useStorefrontCart();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -123,6 +127,10 @@ export function BuyNowButton({
 
   const handleBuyNow = () => {
     if (disabled) return;
+    if (maxAvailable !== null && quantity > maxAvailable) {
+      showToast('Lack of stock.', 'error');
+      return;
+    }
     setBillingForm(mapBillingDetailsToFormValue(billingDetails));
     setBillingErrors({});
     setIsEditingBilling(!billingDetails);

@@ -396,7 +396,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 selectedVariantItemIds={selectedVariantItemIds}
                 installationOption={installationOption}
                 disabled={!allVariantsSelected}
+                maxAvailable={currentStockLimit}
               />
+
 
 
             </div>
