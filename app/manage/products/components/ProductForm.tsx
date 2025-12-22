@@ -234,7 +234,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
             }
 
             showToast('Product deleted successfully', 'success');
-            router.push('/products');
+            router.push('/manage/products');
             router.refresh();
         } catch (err: any) {
             setError(err.message);

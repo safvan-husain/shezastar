@@ -114,7 +114,7 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
                 'success'
             );
 
-            router.push('/variant-types');
+            router.push('/manage/variant-types');
             router.refresh();
         } catch (err: any) {
             const errorMessage = err.message || 'An unexpected error occurred';
@@ -163,7 +163,7 @@ export function VariantTypeForm({ initialData }: VariantTypeFormProps) {
 
             showToast('Variant type deleted successfully', 'success');
 
-            router.push('/variant-types');
+            router.push('/manage/variant-types');
             router.refresh();
         } catch (err: any) {
             const errorMessage = err.message || 'An unexpected error occurred';

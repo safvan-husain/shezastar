@@ -74,12 +74,12 @@ export function CategoryForm({ initialData }: CategoryFormProps) {
             prev.map(sub =>
                 sub.id === subCategoryId
                     ? {
-                          ...sub,
-                          subSubCategories: [
-                              ...sub.subSubCategories,
-                              { id: nanoid(), name: nameToAdd },
-                          ],
-                      }
+                        ...sub,
+                        subSubCategories: [
+                            ...sub.subSubCategories,
+                            { id: nanoid(), name: nameToAdd },
+                        ],
+                    }
                     : sub
             )
         );
@@ -96,13 +96,13 @@ export function CategoryForm({ initialData }: CategoryFormProps) {
             prev.map(sub =>
                 sub.id === subCategoryId
                     ? {
-                          ...sub,
-                          subSubCategories: sub.subSubCategories.map(subSub =>
-                              subSub.id === subSubCategoryId
-                                  ? { ...subSub, name: value }
-                                  : subSub
-                          ),
-                      }
+                        ...sub,
+                        subSubCategories: sub.subSubCategories.map(subSub =>
+                            subSub.id === subSubCategoryId
+                                ? { ...subSub, name: value }
+                                : subSub
+                        ),
+                    }
                     : sub
             )
         );
@@ -113,11 +113,11 @@ export function CategoryForm({ initialData }: CategoryFormProps) {
             prev.map(sub =>
                 sub.id === subCategoryId
                     ? {
-                          ...sub,
-                          subSubCategories: sub.subSubCategories.filter(
-                              subSub => subSub.id !== subSubCategoryId
-                          ),
-                      }
+                        ...sub,
+                        subSubCategories: sub.subSubCategories.filter(
+                            subSub => subSub.id !== subSubCategoryId
+                        ),
+                    }
                     : sub
             )
         );
@@ -167,7 +167,7 @@ export function CategoryForm({ initialData }: CategoryFormProps) {
                 'success'
             );
 
-            router.push('/categories');
+            router.push('/manage/categories');
             router.refresh();
         } catch (err: any) {
             const message = err.message || 'An unexpected error occurred';
@@ -356,7 +356,7 @@ export function CategoryForm({ initialData }: CategoryFormProps) {
                 <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/categories')}
+                    onClick={() => router.push('/manage/categories')}
                     disabled={loading}
                 >
                     Cancel

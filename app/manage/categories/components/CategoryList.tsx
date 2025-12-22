@@ -360,9 +360,8 @@ export function CategoryList() {
                                 className="p-1 hover:bg-[var(--muted)] rounded transition-colors"
                             >
                                 <svg
-                                    className={`w-5 h-5 transition-transform ${
-                                        expandedCategories.has(category.id) ? 'rotate-90' : ''
-                                    }`}
+                                    className={`w-5 h-5 transition-transform ${expandedCategories.has(category.id) ? 'rotate-90' : ''
+                                        }`}
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -378,7 +377,7 @@ export function CategoryList() {
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <Link href={`/categories/${category.id}/edit`}>
+                            <Link href={`/manage/categories/${category.id}/edit`}>
                                 <Button variant="outline" size="sm">
                                     Edit
                                 </Button>
@@ -446,9 +445,8 @@ export function CategoryList() {
                                                             className="p-1 hover:bg-[var(--muted)] rounded transition-colors"
                                                         >
                                                             <svg
-                                                                className={`w-4 h-4 transition-transform ${
-                                                                    isExpanded ? 'rotate-90' : ''
-                                                                }`}
+                                                                className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''
+                                                                    }`}
                                                                 fill="none"
                                                                 stroke="currentColor"
                                                                 viewBox="0 0 24 24"

@@ -6,7 +6,7 @@ export default function SettingsPage() {
             <h1 className="text-3xl font-bold mb-8">Settings</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Link
-                    href="/manage/settings/hero-banner"
+                    href="/manage/settings/hero-banners"
                     className="block p-6 bg-[var(--bg-elevated)] rounded-lg shadow-md hover:shadow-lg transition-shadow border border-[var(--border-subtle)]"
                 >
                     <h2 className="text-xl font-semibold mb-2">Hero Banners</h2>
