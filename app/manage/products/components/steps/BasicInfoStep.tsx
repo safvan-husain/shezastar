@@ -35,6 +35,36 @@ export function BasicInfoStep({
     onSpecificationsChange,
 }: BasicInfoStepProps) {
     const [newSpecTitle, setNewSpecTitle] = useState('');
+    const [mode, setMode] = useState<'text' | 'html'>('text');
+
+    // Initialize mode based on content
+    useState(() => {
+        if (description && /<[a-z][\s\S]*>/i.test(description)) {
+            setMode('html');
+        }
+    });
+
+    const handleTextChange = (text: string) => {
+        // Convert text to HTML paragraphs
+        const html = text.split('\n')
+            .filter(line => line.trim() !== '')
+            .map(line => `<p>${line}</p>`)
+            .join('');
+        onDescriptionChange(html);
+    };
+
+    const getTextFromHtml = (html: string) => {
+        if (!html) return '';
+        if (!/<[a-z][\s\S]*>/i.test(html)) return html;
+
+        // Replace </p><p> with newline
+        let text = html.replace(/<\/p>\s*<p>/gi, '\n');
+        // Remove start/end tags
+        text = text.replace(/<\/?p>/gi, '');
+        // Remove br
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+        return text;
+    };
     return (
         <Card>
             <div className="flex items-center gap-3 mb-6">
@@ -60,16 +90,51 @@ export function BasicInfoStep({
                     placeholder="e.g., 4K Ultra HD Dual Camera with Night Vision"
                 />
                 <div>
-                    <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
-                        Description (optional)
-                    </label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-semibold text-[var(--foreground)]">
+                            Description (optional)
+                        </label>
+                        <div className="flex bg-[var(--bg-subtle)] rounded-lg p-1 border border-[var(--border)]">
+                            <button
+                                type="button"
+                                onClick={() => setMode('text')}
+                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${mode === 'text'
+                                    ? 'bg-[var(--card)] text-[var(--foreground)] shadow-sm'
+                                    : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+                                    }`}
+                            >
+                                Text
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setMode('html')}
+                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${mode === 'html'
+                                    ? 'bg-[var(--card)] text-[var(--foreground)] shadow-sm'
+                                    : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+                                    }`}
+                            >
+                                HTML
+                            </button>
+                        </div>
+                    </div>
                     <textarea
-                        value={description}
-                        onChange={(e) => onDescriptionChange(e.target.value)}
-                        placeholder="Describe your product features and benefits..."
-                        className="w-full px-4 py-3 border-2 border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] transition-all duration-200 resize-none"
-                        rows={5}
+                        value={mode === 'text' ? getTextFromHtml(description) : description}
+                        onChange={(e) => {
+                            if (mode === 'text') {
+                                handleTextChange(e.target.value);
+                            } else {
+                                onDescriptionChange(e.target.value);
+                            }
+                        }}
+                        placeholder={mode === 'text' ? "Describe your product features and benefits..." : "<p>Product description HTML</p>"}
+                        className="w-full px-4 py-3 border-2 border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] transition-all duration-200 resize-none font-mono text-sm"
+                        rows={8}
                     />
+                    {mode === 'text' && (
+                        <p className="text-xs text-[var(--muted-foreground)] mt-2">
+                            Text will be automatically formatted as HTML paragraphs.
+                        </p>
+                    )}
                 </div>
                 <div className="grid md:grid-cols-2 gap-5">
                     <Input

@@ -59,7 +59,7 @@ services:
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
       - MONGODB_AUTH_SOURCE=admin
-    entrypoint: npx tsx scripts/migrate-variant-prices.ts
+    entrypoint: npx tsx scripts/run-migrations.ts
     depends_on:
       mongodb:
         condition: service_healthy

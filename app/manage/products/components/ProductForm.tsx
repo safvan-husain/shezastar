@@ -100,7 +100,13 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
             // Add basic product data
             formData.append('name', name);
             formData.append('subtitle', subtitle || '');
-            formData.append('description', description || '');
+            // Ensure description is HTML
+            const ensureHtml = (str: string) => {
+                if (!str) return '';
+                if (/<[a-z][\s\S]*>/i.test(str)) return str;
+                return str.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
+            };
+            formData.append('description', ensureHtml(description || ''));
             formData.append('basePrice', basePrice);
             if (offerPercentage) {
                 formData.append('offerPercentage', offerPercentage);
