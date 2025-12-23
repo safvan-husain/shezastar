@@ -4,7 +4,8 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/Button';
 
@@ -53,6 +54,7 @@ function SortableImage({ image, onRemove }: { image: ImageFile; onRemove: () => 
                     e.stopPropagation();
                     onRemove();
                 }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="absolute top-2 right-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-subtle)] p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,6 +67,17 @@ function SortableImage({ image, onRemove }: { image: ImageFile; onRemove: () => 
 
 export function ImageUploader({ images, onChange }: ImageUploaderProps) {
     const [uploading, setUploading] = useState(false);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         const newImages: ImageFile[] = acceptedFiles.map(file => ({
@@ -136,7 +149,11 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
                     <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">
                         {images.length} {images.length === 1 ? 'image' : 'images'} (drag to reorder)
                     </p>
-                    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
                         <SortableContext items={images.map(img => img.id)} strategy={verticalListSortingStrategy}>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {images.map((image) => (

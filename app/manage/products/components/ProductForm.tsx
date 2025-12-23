@@ -58,7 +58,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
     const [offerPercentage, setOfferPercentage] = useState(initialData?.offerPercentage || '');
     const [images, setImages] = useState<ImageFile[]>(
         initialData?.images?.map((img: any) => ({
-            id: img.id,
+            id: String(img.id),
             url: img.url,
             preview: img.url,
         })) || []
