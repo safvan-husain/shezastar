@@ -102,7 +102,7 @@ export default function InstallationLocationFormModal({
                         required
                         className="w-full px-3 py-2 border border-[var(--border-subtle)] rounded-md bg-[var(--bg-base)] text-[var(--text-primary)]"
                         value={formData.priceDelta}
-                        onChange={(e) => setFormData({ ...formData, priceDelta: parseFloat(e.target.value) })}
+                        onChange={(e) => setFormData({ ...formData, priceDelta: parseFloat(e.target.value) || 0 })}
                     />
                     <p className="text-xs text-[var(--text-secondary)] mt-1">
                         Extra cost added to the base &quot;At Home&quot; price for this location.

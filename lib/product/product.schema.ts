@@ -25,16 +25,14 @@ export const ProductVariantSchema = z.object({
 export const VariantStockSchema = z.object({
     variantCombinationKey: z.string(), // e.g., "color-red+size-large" or "default" for no variants
     stockCount: z.number().int().min(0, 'Stock count must be non-negative'),
-    // @deprecated - Use 'price' instead (Price Delta logic removed)
-    priceDelta: z.number().optional(),
-    // Full price for this variant combination. PREFERRED over priceDelta.
-    price: z.number().optional(),
+    // Full price for this variant combination.
+    price: z.number().min(0, 'Price must be non-negative').optional(),
 });
 
 export const ProductInstallationLocationSchema = z.object({
     locationId: z.string(),
     name: z.string(),
-    priceDelta: z.number().min(0),
+    priceDelta: z.number().min(0).default(0),
     enabled: z.boolean().default(true),
 });
 

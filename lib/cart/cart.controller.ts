@@ -54,6 +54,7 @@ export async function handleAddToCart(input: unknown) {
             selectedVariantItemIds: parsed.selectedVariantItemIds,
             quantity: parsed.quantity,
             installationOption: parsed.installationOption,
+            installationLocationId: parsed.installationLocationId,
         });
 
         return { status: 200, body: CartSchema.parse(cart) };
@@ -83,6 +84,7 @@ export async function handleUpdateCartItem(input: unknown) {
             selectedVariantItemIds: parsed.selectedVariantItemIds,
             quantity: parsed.quantity,
             installationOption: parsed.installationOption,
+            installationLocationId: parsed.installationLocationId,
         });
 
         return { status: 200, body: CartSchema.parse(cart) };
@@ -111,6 +113,7 @@ export async function handleRemoveCartItem(input: unknown) {
             productId: parsed.productId,
             selectedVariantItemIds: parsed.selectedVariantItemIds,
             installationOption: parsed.installationOption,
+            installationLocationId: parsed.installationLocationId,
         });
 
         return { status: 200, body: CartSchema.parse(cart) };

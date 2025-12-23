@@ -10,6 +10,12 @@ vi.mock('@/lib/utils/file-upload', () => ({
     deleteImage: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('@/lib/auth/admin-auth', () => ({
+    requireAdminAuth: vi.fn().mockResolvedValue({ _id: { toString: () => 'mock-admin-id' } }),
+    getAdminDocument: vi.fn().mockResolvedValue({ _id: { toString: () => 'mock-admin-id' } }),
+    parseAdminSessionToken: vi.fn().mockReturnValue({ adminId: 'mock-admin-id' }),
+}));
+
 describe('App Settings API Integration', () => {
     let createdBannerId: string;
 
@@ -107,7 +113,7 @@ describe('App Settings API Integration', () => {
         formData.append('title', 'Bad Sale');
         formData.append('description', 'Invalid pricing');
         formData.append('price', '100');
-        formData.append('offerPrice', '150'); // Invalid: offer > price
+        formData.append('offerPrice', '-10'); // Invalid: must be positive
         formData.append('offerLabel', 'INVALID');
 
         const req = new Request('http://localhost/api/admin/settings/hero-banners', {
@@ -125,7 +131,7 @@ describe('App Settings API Integration', () => {
         formData.append('title', 'Bad Sale');
         formData.append('description', 'Invalid pricing');
         formData.append('price', '100');
-        formData.append('offerPrice', '150'); // Invalid
+        formData.append('offerPrice', '-10'); // Invalid
         formData.append('offerLabel', 'INVALID');
 
         const req = new Request(`http://localhost/api/admin/settings/hero-banners/${createdBannerId}`, {

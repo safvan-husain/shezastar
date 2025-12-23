@@ -189,8 +189,7 @@ describe('Products API Integration - Stock Count', () => {
             variantStock: [
                 {
                     variantCombinationKey: 'default',
-                    stockCount: 100,
-                    priceDelta: 0
+                    stockCount: 100
                 }
             ]
         };
@@ -248,8 +247,7 @@ describe('Products API Integration - Stock Count', () => {
             variantStock: [
                 {
                     variantCombinationKey: 'default',
-                    stockCount: 50,
-                    priceDelta: 0
+                    stockCount: 50
                 }
             ]
         };
@@ -272,8 +270,7 @@ describe('Products API Integration - Stock Count', () => {
             variantStock: [
                 {
                     variantCombinationKey: 'default',
-                    stockCount: 0,
-                    priceDelta: 0
+                    stockCount: 0
                 }
             ]
         };
@@ -300,8 +297,7 @@ describe('Products API Integration - Stock Count', () => {
             variantStock: [
                 {
                     variantCombinationKey: 'default',
-                    stockCount: -10,
-                    priceDelta: 0
+                    stockCount: -10
                 }
             ]
         };
@@ -325,8 +321,7 @@ describe('Products API Integration - Stock Count', () => {
             variantStock: [
                 {
                     variantCombinationKey: 'default',
-                    stockCount: 10.5,
-                    priceDelta: 0
+                    stockCount: 10.5
                 }
             ]
         };

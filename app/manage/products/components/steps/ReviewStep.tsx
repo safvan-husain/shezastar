@@ -27,7 +27,6 @@ interface ProductVariant {
 interface VariantStock {
     variantCombinationKey: string;
     stockCount: number;
-    priceDelta?: number;
     price?: number;
 }
 
@@ -224,11 +223,10 @@ export function ReviewStep({
         const entry = variantStock.find(vs => vs.variantCombinationKey === key);
         return {
             price: entry?.price ?? null,
-            priceDelta: entry?.priceDelta ?? 0
         };
     }, [variantStock, selectedVariantItemIdsForPricing]);
 
-    const { price: vPrice, priceDelta: vDelta } = combinationPriceInfo;
+    const { price: vPrice } = combinationPriceInfo;
 
     const combinationStockCount = useMemo(() => {
         if (!variantStock || variantStock.length === 0) {
@@ -239,8 +237,8 @@ export function ReviewStep({
         return entry?.stockCount ?? null;
     }, [variantStock, selectedVariantItemIdsForPricing]);
 
-    // Priority: 1. Specific Variant Price, 2. Base + Delta
-    const effectiveBase = vPrice ?? (parsedBasePrice + vDelta);
+    // Priority: 1. Specific Variant Price, 2. Base Price
+    const effectiveBase = vPrice ?? parsedBasePrice;
     // Apply discount to the TOTAL variant price (Base + Delta)
     const effectiveOffer = parsedOfferPercentage > 0
         ? effectiveBase * (1 - parsedOfferPercentage / 100)
@@ -385,12 +383,7 @@ export function ReviewStep({
                                 </span>
                             )}
                         </div>
-                        {vPrice === null && vDelta !== 0 && (
-                            <p className="text-xs text-[var(--text-muted)]">
-                                Includes variant adjustment of {vDelta > 0 ? '+' : ''}
-                                ${vDelta.toFixed(2)} from original price
-                            </p>
-                        )}
+
                         {combinationStockCount !== null && (
                             <div className="flex items-center gap-2 text-sm">
                                 {combinationStockCount > 0 ? (

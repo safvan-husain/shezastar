@@ -63,6 +63,8 @@ function resolveInstallationChoice(
         return {
             installationOption: 'none',
             installationAddOnPrice: 0,
+            installationLocationId: undefined,
+            installationLocationDelta: 0,
         };
     }
 
@@ -70,6 +72,8 @@ function resolveInstallationChoice(
         return {
             installationOption: 'store',
             installationAddOnPrice: service.inStorePrice ?? 0,
+            installationLocationId: undefined,
+            installationLocationDelta: 0,
         };
     }
 
@@ -96,6 +100,8 @@ function resolveInstallationChoice(
     return {
         installationOption: 'none',
         installationAddOnPrice: 0,
+        installationLocationId: undefined,
+        installationLocationDelta: 0,
     };
 }
 
@@ -115,11 +121,9 @@ export async function computeCartItemPricing(
         const entry = product.variantStock.find(vs => vs.variantCombinationKey === key);
 
         if (entry) {
-            // Prefer 'price' (full price), fallback to priceDelta (legacy) + basePrice
+            // Use full price for the variant
             if (entry.price != null) {
                 productPrice = entry.price;
-            } else if (entry.priceDelta != null) {
-                productPrice = product.basePrice + entry.priceDelta;
             }
         }
     }

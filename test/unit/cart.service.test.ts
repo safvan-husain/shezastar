@@ -44,7 +44,7 @@ describe('Cart service', () => {
                 {
                     variantCombinationKey: variantItemId,
                     stockCount: 100,
-                    priceDelta: 10,
+                    price: 110,
                 },
             ],
             specifications: [],
