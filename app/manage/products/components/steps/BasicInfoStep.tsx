@@ -135,6 +135,17 @@ export function BasicInfoStep({
                             Text will be automatically formatted as HTML paragraphs.
                         </p>
                     )}
+                    {mode === 'html' && (
+                        <div className="mt-4 border rounded-lg p-4 bg-[var(--bg-subtle)]/30">
+                            <label className="block text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-3">
+                                Preview (Storefront View)
+                            </label>
+                            <div
+                                className="text-[var(--foreground)] leading-relaxed break-words [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:mb-4 [&_h2]:mb-3 [&_h3]:mb-2"
+                                dangerouslySetInnerHTML={{ __html: description || '' }}
+                            />
+                        </div>
+                    )}
                 </div>
                 <div className="grid md:grid-cols-2 gap-5">
                     <Input
