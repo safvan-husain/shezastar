@@ -40,6 +40,7 @@ export async function POST(req: Request) {
             const description = formData.get('description') as string | null;
             const basePrice = parseFloat(formData.get('basePrice') as string);
             const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
+            const offerPercentage = formData.get('offerPercentage') ? parseFloat(formData.get('offerPercentage') as string) : undefined;
             const specifications = formData.get('specifications')
                 ? JSON.parse(formData.get('specifications') as string)
                 : undefined;
@@ -80,6 +81,7 @@ export async function POST(req: Request) {
                 description,
                 basePrice,
                 offerPrice,
+                offerPercentage,
                 specifications,
                 images: allImages,
                 variants,

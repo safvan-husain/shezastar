@@ -381,7 +381,7 @@ export function ReviewStep({
                         {combinationPriceDelta !== 0 && (
                             <p className="text-xs text-[var(--text-muted)]">
                                 Includes variant adjustment of {combinationPriceDelta > 0 ? '+' : ''}
-                                ${combinationPriceDelta.toFixed(2)} from base price
+                                ${combinationPriceDelta.toFixed(2)} from original price
                             </p>
                         )}
                         {combinationStockCount !== null && (
@@ -466,7 +466,7 @@ export function ReviewStep({
                                         Installation options
                                     </p>
                                     <p className="text-xs text-[var(--text-muted)]">
-                                        Preview how installation pricing compares to the base product price.
+                                        Preview how installation pricing compares to the product price.
                                     </p>
                                 </div>
 

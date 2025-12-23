@@ -90,20 +90,45 @@ export default function ProductCard({ product }: ProductCardProps) {
 
                     {/* Pricing */}
                     <div className="flex items-baseline gap-2 mb-4">
-                        {product.offerPrice ? (
-                            <>
-                                <span className="text-2xl font-bold text-[var(--success)]">
-                                    ${product.offerPrice}
-                                </span>
-                                <span className="text-sm text-[var(--muted-foreground)] line-through">
+                        {(() => {
+                            const discountPct = product.offerPercentage ?? 0;
+                            const hasDiscount = discountPct > 0;
+
+                            if (hasDiscount) {
+                                return (
+                                    <>
+                                        <span className="text-2xl font-bold text-[var(--success)]">
+                                            ${(product.basePrice * (1 - discountPct / 100)).toFixed(2)}
+                                        </span>
+                                        <span className="text-sm text-[var(--muted-foreground)] line-through">
+                                            ${product.basePrice}
+                                        </span>
+                                        <span className="text-[10px] bg-red-100 text-red-600 px-1 py-0.5 rounded font-bold">
+                                            {Math.round(discountPct)}%
+                                        </span>
+                                    </>
+                                );
+                            }
+
+                            if (product.offerPrice && product.offerPrice < product.basePrice) {
+                                return (
+                                    <>
+                                        <span className="text-2xl font-bold text-[var(--success)]">
+                                            ${product.offerPrice}
+                                        </span>
+                                        <span className="text-sm text-[var(--muted-foreground)] line-through">
+                                            ${product.basePrice}
+                                        </span>
+                                    </>
+                                );
+                            }
+
+                            return (
+                                <span className="text-2xl font-bold text-[var(--foreground)]">
                                     ${product.basePrice}
                                 </span>
-                            </>
-                        ) : (
-                            <span className="text-2xl font-bold text-[var(--foreground)]">
-                                ${product.basePrice}
-                            </span>
-                        )}
+                            );
+                        })()}
                     </div>
 
                     {/* Meta Info */}

@@ -139,20 +139,42 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 )}
               </div>
               <div className="mt-auto flex flex-col-reverse gap-1">
-                {product.offerPrice ? (
-                  <>
+                {(() => {
+                  const discountPct = product.offerPercentage ?? 0;
+                  const hasDiscount = discountPct > 0;
+
+                  if (hasDiscount) {
+                    return (
+                      <>
+                        <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
+                          {formatPrice(product.basePrice * (1 - discountPct / 100))}
+                        </span>
+                        <span className="text-xs text-[var(--storefront-text-muted)] line-through sm:text-sm">
+                          {formatPrice(product.basePrice)}
+                        </span>
+                      </>
+                    );
+                  }
+
+                  if (product.offerPrice && product.offerPrice < product.basePrice) {
+                    return (
+                      <>
+                        <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
+                          {formatPrice(product.offerPrice)}
+                        </span>
+                        <span className="text-xs text-[var(--storefront-text-muted)] line-through sm:text-sm">
+                          {formatPrice(product.basePrice)}
+                        </span>
+                      </>
+                    );
+                  }
+
+                  return (
                     <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
-                      {formatPrice(product.offerPrice)}
-                    </span>
-                    <span className="text-xs text-[var(--storefront-text-muted)] line-through sm:text-sm">
                       {formatPrice(product.basePrice)}
                     </span>
-                  </>
-                ) : (
-                  <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
-                    {formatPrice(product.basePrice)}
-                  </span>
-                )}
+                  );
+                })()}
               </div>
 
               <div className="flex gap-3 flex-row items-end justify-between">

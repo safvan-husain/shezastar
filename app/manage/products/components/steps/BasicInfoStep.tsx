@@ -150,7 +150,7 @@ export function BasicInfoStep({
                 <div className="grid md:grid-cols-2 gap-5">
                     <Input
                         type="number"
-                        label="Base Price *"
+                        label="Price *"
                         value={basePrice}
                         onChange={(e) => onBasePriceChange(e.target.value)}
                         placeholder="0.00"
