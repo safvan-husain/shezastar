@@ -28,6 +28,7 @@ interface VariantStock {
     variantCombinationKey: string;
     stockCount: number;
     priceDelta?: number;
+    price?: number;
 }
 
 interface ReviewStepProps {
@@ -215,14 +216,19 @@ export function ReviewStep({
         [selectedItemIds]
     );
 
-    const combinationPriceDelta = useMemo(() => {
+    const combinationPriceInfo = useMemo(() => {
         if (!variantStock || variantStock.length === 0 || selectedVariantItemIdsForPricing.length === 0) {
-            return 0;
+            return { price: null, priceDelta: 0 };
         }
         const key = getVariantCombinationKey(selectedVariantItemIdsForPricing);
         const entry = variantStock.find(vs => vs.variantCombinationKey === key);
-        return entry?.priceDelta ?? 0;
+        return {
+            price: entry?.price ?? null,
+            priceDelta: entry?.priceDelta ?? 0
+        };
     }, [variantStock, selectedVariantItemIdsForPricing]);
+
+    const { price: vPrice, priceDelta: vDelta } = combinationPriceInfo;
 
     const combinationStockCount = useMemo(() => {
         if (!variantStock || variantStock.length === 0) {
@@ -233,7 +239,8 @@ export function ReviewStep({
         return entry?.stockCount ?? null;
     }, [variantStock, selectedVariantItemIdsForPricing]);
 
-    const effectiveBase = parsedBasePrice + combinationPriceDelta;
+    // Priority: 1. Specific Variant Price, 2. Base + Delta
+    const effectiveBase = vPrice ?? (parsedBasePrice + vDelta);
     // Apply discount to the TOTAL variant price (Base + Delta)
     const effectiveOffer = parsedOfferPercentage > 0
         ? effectiveBase * (1 - parsedOfferPercentage / 100)
@@ -378,10 +385,10 @@ export function ReviewStep({
                                 </span>
                             )}
                         </div>
-                        {combinationPriceDelta !== 0 && (
+                        {vPrice === null && vDelta !== 0 && (
                             <p className="text-xs text-[var(--text-muted)]">
-                                Includes variant adjustment of {combinationPriceDelta > 0 ? '+' : ''}
-                                ${combinationPriceDelta.toFixed(2)} from original price
+                                Includes variant adjustment of {vDelta > 0 ? '+' : ''}
+                                ${vDelta.toFixed(2)} from original price
                             </p>
                         )}
                         {combinationStockCount !== null && (

@@ -64,7 +64,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
         })) || []
     );
     const [variants, setVariants] = useState<ProductVariant[]>(initialData?.variants || []);
-    const [variantStock, setVariantStock] = useState<Array<{ variantCombinationKey: string; stockCount: number; priceDelta?: number }>>(
+    const [variantStock, setVariantStock] = useState<Array<{ variantCombinationKey: string; stockCount: number; priceDelta?: number; price?: number }>>(
         initialData?.variantStock || []
     );
     const [subCategoryIds, setSubCategoryIds] = useState<string[]>(initialData?.subCategoryIds || []);
@@ -125,7 +125,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
                     finalVariantStock.push({
                         variantCombinationKey: 'default',
                         stockCount: 0,
-                        priceDelta: 0,
+                        price: parseFloat(basePrice) || 0,
                     });
                 }
             }

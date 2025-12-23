@@ -107,20 +107,29 @@ export async function computeCartItemPricing(
 ): Promise<CartItemPricing> {
     const product = await getProduct(productId);
 
-    let base = product.basePrice;
-    if (product.offerPercentage && product.offerPercentage > 0) {
-        base = product.basePrice * (1 - product.offerPercentage / 100);
-    }
+    // 1. Resolve product price (Variant price OR Base price)
+    let productPrice = product.basePrice;
 
-    let priceDelta = 0;
     if (product.variantStock && product.variantStock.length > 0) {
         const key = getVariantCombinationKey(normalizedVariantItemIds);
         const entry = product.variantStock.find(vs => vs.variantCombinationKey === key);
-        if (entry && entry.priceDelta != null) {
-            priceDelta = entry.priceDelta;
+
+        if (entry) {
+            // Prefer 'price' (full price), fallback to priceDelta (legacy) + basePrice
+            if (entry.price != null) {
+                productPrice = entry.price;
+            } else if (entry.priceDelta != null) {
+                productPrice = product.basePrice + entry.priceDelta;
+            }
         }
     }
 
+    // 2. Apply offer percentage to the product price
+    if (product.offerPercentage && product.offerPercentage > 0) {
+        productPrice = productPrice * (1 - product.offerPercentage / 100);
+    }
+
+    // 3. Resolve installation add-on
     const {
         installationOption,
         installationAddOnPrice,
@@ -133,7 +142,7 @@ export async function computeCartItemPricing(
     );
 
     return {
-        unitPrice: base + priceDelta + installationAddOnPrice,
+        unitPrice: productPrice + installationAddOnPrice,
         installationAddOnPrice,
         installationOption,
         installationLocationId: resolvedLocationId,
