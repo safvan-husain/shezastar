@@ -25,9 +25,10 @@ export const ProductVariantSchema = z.object({
 export const VariantStockSchema = z.object({
     variantCombinationKey: z.string(), // e.g., "color-red+size-large" or "default" for no variants
     stockCount: z.number().int().min(0, 'Stock count must be non-negative'),
-    // Optional price delta for this exact combination (peer to stockCount).
-    // Effective unit price = (offerPrice ?? basePrice) + (priceDelta ?? 0).
+    // @deprecated - Use 'price' instead (Price Delta logic removed)
     priceDelta: z.number().optional(),
+    // Full price for this variant combination. PREFERRED over priceDelta.
+    price: z.number().optional(),
 });
 
 export const ProductInstallationLocationSchema = z.object({

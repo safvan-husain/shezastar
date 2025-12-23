@@ -123,13 +123,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     });
   };
 
-  const combinationPriceDelta = useMemo(() => {
+  const selectedVariantPrice = useMemo(() => {
     if (!product.variantStock || product.variantStock.length === 0 || selectedVariantItemIds.length === 0) {
-      return 0;
+      return null;
     }
     const key = getVariantCombinationKey(selectedVariantItemIds);
     const entry = product.variantStock.find(vs => vs.variantCombinationKey === key);
-    return entry?.priceDelta ?? 0;
+
+    return entry?.price ?? null;
   }, [product.variantStock, selectedVariantItemIds]);
 
   const hasVariants = Boolean(product.variants && product.variants.length > 0);
@@ -166,8 +167,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const finalPrice = useMemo(() => {
     const base = product.offerPrice ?? product.basePrice;
-    return base + combinationPriceDelta + addOnPrice;
-  }, [product.offerPrice, product.basePrice, combinationPriceDelta, addOnPrice]);
+    const effectiveProductPrice = selectedVariantPrice ?? base;
+    return effectiveProductPrice + addOnPrice;
+  }, [product.offerPrice, product.basePrice, selectedVariantPrice, addOnPrice]);
 
   return (
     <div className='flex flex-col'>
@@ -181,19 +183,40 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           <div className="flex items-baseline gap-3">
             {product.offerPrice != null ? (
               (() => {
-                const effectiveBase = product.basePrice + combinationPriceDelta + addOnPrice;
-                const effectiveOffer = product.offerPrice + combinationPriceDelta + addOnPrice;
+                const effectiveBase = selectedVariantPrice ?? product.basePrice;
+                const effectiveOffer = selectedVariantPrice ?? product.offerPrice;
+                // If variant price is set, it overrides both base and offer to be the same single price usually,
+                // unless we want to track separate base/offer for variants. 
+                // Currently schema only has one 'price'. So if variant is selected, we might lose "Sale" view 
+                // unless we assume variant price is the 'offer' price and we don't have a 'base' variant price.
+                // However, the client requirement is simple: show the variant price.
+
+                // If a variant is selected and has a price override, we show that as the main price.
+                // If it doesn't have an override, we show base/offer logic.
+
+                if (selectedVariantPrice !== null) {
+                  return (
+                    <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">
+                      {formatPrice(selectedVariantPrice + addOnPrice)}
+                    </span>
+                  );
+                }
+
+                // Default product behavior (no variant selected or no override)
+                const baseWithAddon = product.basePrice + addOnPrice;
+                const offerWithAddon = product.offerPrice + addOnPrice;
+
                 return (
                   <>
                     <span className="text-4xl font-bold text-[var(--storefront-sale)]">
-                      {formatPrice(effectiveOffer)}
+                      {formatPrice(offerWithAddon)}
                     </span>
                     <span className="text-xl text-[var(--storefront-text-muted)] line-through">
-                      {formatPrice(effectiveBase)}
+                      {formatPrice(baseWithAddon)}
                     </span>
-                    {effectiveBase > effectiveOffer && (
+                    {baseWithAddon > offerWithAddon && (
                       <span className="text-sm font-semibold text-[var(--storefront-sale)]">
-                        Save {formatPrice(effectiveBase - effectiveOffer)}
+                        Save {formatPrice(baseWithAddon - offerWithAddon)}
                       </span>
                     )}
                   </>
