@@ -80,7 +80,7 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
           </div>
 
           {/* Title */}
-          <PyramidText 
+          <PyramidText
             text={currentBanner.title}
             className="mx-auto max-w-6xl mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-7xl"
           />

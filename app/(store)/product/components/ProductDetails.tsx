@@ -173,13 +173,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     let effectiveProductPrice = effectiveBase;
     if (product.offerPercentage && product.offerPercentage > 0) {
       effectiveProductPrice = effectiveBase * (1 - product.offerPercentage / 100);
-    } else if (typeof product.offerPrice === 'number' && selectedVariantPrice === null) {
-      // Fallback to offerPrice only if no variant overrides it (assuming offerPrice is for base)
-      effectiveProductPrice = product.offerPrice;
     }
 
     return effectiveProductPrice + addOnPrice;
-  }, [product.offerPrice, product.basePrice, product.offerPercentage, selectedVariantPrice, addOnPrice]);
+  }, [product.basePrice, product.offerPercentage, selectedVariantPrice, addOnPrice]);
 
   return (
     <div className='flex flex-col'>
@@ -218,20 +215,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 );
               }
 
-              // Fallback Legacy Check: offerPrice
-              if (product.offerPrice != null && selectedVariantPrice === null && product.offerPrice < product.basePrice) {
-                const offerWithAddon = product.offerPrice + addOnPrice;
-                return (
-                  <>
-                    <span className="text-4xl font-bold text-[var(--storefront-sale)]">
-                      {formatPrice(offerWithAddon)}
-                    </span>
-                    <span className="text-xl text-[var(--storefront-text-muted)] line-through">
-                      {formatPrice(baseWithAddon)}
-                    </span>
-                  </>
-                );
-              }
+
 
               return (
                 <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">

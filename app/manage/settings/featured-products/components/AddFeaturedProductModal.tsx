@@ -52,7 +52,7 @@ export default function AddFeaturedProductModal({
     const fetchProducts = async () => {
         try {
             const response = await fetch('/api/products');
-            
+
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -161,18 +161,18 @@ export default function AddFeaturedProductModal({
                                             {product.name}
                                         </h3>
                                         <div className="flex items-center gap-2 mb-3">
-                                            {product.offerPrice ? (
+                                            {product.offerPercentage && product.offerPercentage > 0 ? (
                                                 <>
                                                     <span className="text-sm font-bold text-[var(--success)]">
-                                                        ${product.offerPrice}
+                                                        AED {(product.basePrice * (1 - product.offerPercentage / 100)).toFixed(2)}
                                                     </span>
                                                     <span className="text-xs text-[var(--text-secondary)] line-through">
-                                                        ${product.basePrice}
+                                                        AED {product.basePrice}
                                                     </span>
                                                 </>
                                             ) : (
                                                 <span className="text-sm font-bold text-[var(--text-primary)]">
-                                                    ${product.basePrice}
+                                                    AED {product.basePrice}
                                                 </span>
                                             )}
                                         </div>

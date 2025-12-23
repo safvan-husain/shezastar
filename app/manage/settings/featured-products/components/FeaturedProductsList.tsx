@@ -109,18 +109,18 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
                                     </p>
                                 )}
                                 <div className="flex items-center gap-2 pb-3 border-b border-[var(--border)]">
-                                    {product.offerPrice ? (
+                                    {product.offerPercentage && product.offerPercentage > 0 ? (
                                         <>
                                             <span className="text-lg font-bold text-[var(--success)]">
-                                                ${product.offerPrice}
+                                                AED {(product.basePrice * (1 - product.offerPercentage / 100)).toFixed(2)}
                                             </span>
                                             <span className="text-sm text-[var(--text-secondary)] line-through">
-                                                ${product.basePrice}
+                                                AED {product.basePrice}
                                             </span>
                                         </>
                                     ) : (
                                         <span className="text-lg font-bold text-[var(--text-primary)]">
-                                            ${product.basePrice}
+                                            AED {product.basePrice}
                                         </span>
                                     )}
                                 </div>

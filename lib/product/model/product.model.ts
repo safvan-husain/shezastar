@@ -8,7 +8,6 @@ export interface ProductDocument {
     subtitle?: string | null;
     description?: string | null;
     basePrice: number;
-    offerPrice?: number;
     offerPercentage?: number;
     images: ProductImage[];
     variants: ProductVariant[];
@@ -26,7 +25,6 @@ export interface Product {
     subtitle?: string | null;
     description?: string | null;
     basePrice: number;
-    offerPrice?: number;
     offerPercentage?: number;
     images: ProductImage[];
     variants: ProductVariant[];
@@ -45,7 +43,6 @@ export function toProduct(doc: ProductDocument): Product {
         subtitle: doc.subtitle,
         description: doc.description,
         basePrice: doc.basePrice,
-        offerPrice: doc.offerPrice,
         offerPercentage: doc.offerPercentage,
         images: doc.images,
         variants: doc.variants,

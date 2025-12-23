@@ -98,10 +98,10 @@ export default function ProductCard({ product }: ProductCardProps) {
                                 return (
                                     <>
                                         <span className="text-2xl font-bold text-[var(--success)]">
-                                            ${(product.basePrice * (1 - discountPct / 100)).toFixed(2)}
+                                            AED {(product.basePrice * (1 - discountPct / 100)).toFixed(2)}
                                         </span>
                                         <span className="text-sm text-[var(--muted-foreground)] line-through">
-                                            ${product.basePrice}
+                                            AED {product.basePrice}
                                         </span>
                                         <span className="text-[10px] bg-red-100 text-red-600 px-1 py-0.5 rounded font-bold">
                                             {Math.round(discountPct)}%
@@ -110,22 +110,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                                 );
                             }
 
-                            if (product.offerPrice && product.offerPrice < product.basePrice) {
-                                return (
-                                    <>
-                                        <span className="text-2xl font-bold text-[var(--success)]">
-                                            ${product.offerPrice}
-                                        </span>
-                                        <span className="text-sm text-[var(--muted-foreground)] line-through">
-                                            ${product.basePrice}
-                                        </span>
-                                    </>
-                                );
-                            }
-
                             return (
                                 <span className="text-2xl font-bold text-[var(--foreground)]">
-                                    ${product.basePrice}
+                                    AED {product.basePrice}
                                 </span>
                             );
                         })()}

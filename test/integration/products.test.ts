@@ -17,7 +17,7 @@ describe('Products API Integration', () => {
             name: 'Integration Test Product',
             description: 'A product created during integration tests',
             basePrice: 99.99,
-            offerPrice: 89.99,
+            offerPercentage: 10,
             images: [],
             variants: []
         };
@@ -130,6 +130,8 @@ describe('Products API Integration - Category filtering', () => {
             images: [],
             variants: [],
             subCategoryIds: [subCategory.id],
+            variantStock: [],
+            specifications: [],
         });
 
         await createProductService({
@@ -138,6 +140,8 @@ describe('Products API Integration - Category filtering', () => {
             images: [],
             variants: [],
             subCategoryIds: [refreshedSub.subSubCategories[0].id],
+            variantStock: [],
+            specifications: [],
         });
     });
 

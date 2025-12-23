@@ -26,10 +26,12 @@ describe('Featured Products API Integration', () => {
             name: 'Featured Product 1',
             description: 'First featured product',
             basePrice: 100,
-            offerPrice: 80,
+            offerPercentage: 20,
             images: [],
             variants: [],
             subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
         });
         productId1 = product1.id;
 
@@ -40,6 +42,8 @@ describe('Featured Products API Integration', () => {
             images: [],
             variants: [],
             subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
         });
         productId2 = product2.id;
 
@@ -47,10 +51,12 @@ describe('Featured Products API Integration', () => {
             name: 'Featured Product 3',
             description: 'Third featured product',
             basePrice: 300,
-            offerPrice: 250,
+            offerPercentage: 16.67,
             images: [],
             variants: [],
             subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
         });
         productId3 = product3.id;
     });
@@ -143,7 +149,7 @@ describe('Featured Products API Integration', () => {
         expect(product1).toBeDefined();
         expect(product1.name).toBe('Featured Product 1');
         expect(product1.basePrice).toBe(100);
-        expect(product1.offerPrice).toBe(80);
+        expect(product1.offerPercentage).toBe(20);
 
         expect(product2).toBeDefined();
         expect(product2.name).toBe('Featured Product 2');

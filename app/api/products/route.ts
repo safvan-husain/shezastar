@@ -39,7 +39,6 @@ export async function POST(req: Request) {
             const subtitle = formData.get('subtitle') as string;
             const description = formData.get('description') as string | null;
             const basePrice = parseFloat(formData.get('basePrice') as string);
-            const offerPrice = formData.get('offerPrice') ? parseFloat(formData.get('offerPrice') as string) : undefined;
             const offerPercentage = formData.get('offerPercentage') ? parseFloat(formData.get('offerPercentage') as string) : undefined;
             const specifications = formData.get('specifications')
                 ? JSON.parse(formData.get('specifications') as string)
@@ -80,7 +79,6 @@ export async function POST(req: Request) {
                 subtitle,
                 description,
                 basePrice,
-                offerPrice,
                 offerPercentage,
                 specifications,
                 images: allImages,

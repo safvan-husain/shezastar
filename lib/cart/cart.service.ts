@@ -106,7 +106,11 @@ export async function computeCartItemPricing(
     installationLocationId?: string
 ): Promise<CartItemPricing> {
     const product = await getProduct(productId);
-    const base = product.offerPrice ?? product.basePrice;
+
+    let base = product.basePrice;
+    if (product.offerPercentage && product.offerPercentage > 0) {
+        base = product.basePrice * (1 - product.offerPercentage / 100);
+    }
 
     let priceDelta = 0;
     if (product.variantStock && product.variantStock.length > 0) {
@@ -235,7 +239,9 @@ function cartItemsMatch(
     // but schema says optional string. 
     // If item has no locationId (undefined) and we pass undefined, it matches.
     // If item has locationId and we pass same, matches.
-    const locationMatch = item.installationLocationId === installationLocationId;
+    const normalizedPassedLoc = installationLocationId || undefined;
+    const normalizedItemLoc = item.installationLocationId || undefined;
+    const locationMatch = normalizedItemLoc === normalizedPassedLoc;
 
     return (
         item.productId === productId &&

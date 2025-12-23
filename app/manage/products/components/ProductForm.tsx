@@ -55,11 +55,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
     const [description, setDescription] = useState(initialData?.description || '');
     const [specifications, setSpecifications] = useState<ProductSpecification[]>(initialData?.specifications || []);
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
-    const [offerPercentage, setOfferPercentage] = useState(initialData?.offerPercentage || (
-        (initialData?.offerPrice && initialData?.basePrice)
-            ? Math.round(((initialData.basePrice - initialData.offerPrice) / initialData.basePrice) * 100).toString()
-            : ''
-    ));
+    const [offerPercentage, setOfferPercentage] = useState(initialData?.offerPercentage || '');
     const [images, setImages] = useState<ImageFile[]>(
         initialData?.images?.map((img: any) => ({
             id: img.id,
@@ -110,11 +106,6 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
             formData.append('basePrice', basePrice);
             if (offerPercentage) {
                 formData.append('offerPercentage', offerPercentage);
-                // Also append offerPrice for legacy compatibility if basePrice exists
-                if (basePrice) {
-                    const price = parseFloat(basePrice) * (1 - parseFloat(offerPercentage) / 100);
-                    formData.append('offerPrice', price.toFixed(2));
-                }
             }
 
             const normalizedSpecifications = specifications.map(spec => ({
@@ -318,7 +309,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
                     variants={variants}
                     variantStock={variantStock}
                     basePrice={parseFloat(basePrice) || 0}
-                    offerPrice={null} // Variants use basePrice for initialization, offer applies via percentage
+                    offerPercentage={parseFloat(offerPercentage) || 0}
                     onVariantStockChange={setVariantStock}
                 />
 

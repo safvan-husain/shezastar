@@ -132,7 +132,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
             <div className="flex flex-1 flex-col gap-3 p-3 sm:p-4">
               <div className="space-y-1">
                 <h3 className="text-base font-medium text-[var(--storefront-text-primary)] line-clamp-2">{product.name}</h3>
-                {(product.subtitle || product.description) && (!product.offerPrice) && (
+                {(product.subtitle || product.description) && (
                   <p className="text-xs text-[var(--storefront-text-muted)] line-clamp-1">
                     {product.subtitle || product.description}
                   </p>
@@ -148,19 +148,6 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                       <>
                         <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
                           {formatPrice(product.basePrice * (1 - discountPct / 100))}
-                        </span>
-                        <span className="text-xs text-[var(--storefront-text-muted)] line-through sm:text-sm">
-                          {formatPrice(product.basePrice)}
-                        </span>
-                      </>
-                    );
-                  }
-
-                  if (product.offerPrice && product.offerPrice < product.basePrice) {
-                    return (
-                      <>
-                        <span className="text-xl font-semibold text-[var(--storefront-sale)] sm:text-2xl">
-                          {formatPrice(product.offerPrice)}
                         </span>
                         <span className="text-xs text-[var(--storefront-text-muted)] line-through sm:text-sm">
                           {formatPrice(product.basePrice)}

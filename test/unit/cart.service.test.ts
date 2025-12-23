@@ -71,6 +71,7 @@ describe('Cart service', () => {
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 1,
+            installationOption: 'none',
         });
 
         expect(first.items).toHaveLength(1);
@@ -84,6 +85,7 @@ describe('Cart service', () => {
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 2,
+            installationOption: 'none',
         });
 
         expect(second.items).toHaveLength(1);
@@ -98,6 +100,7 @@ describe('Cart service', () => {
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 2,
+            installationOption: 'none',
         });
 
         expect(created.items[0].quantity).toBe(2);
@@ -107,6 +110,7 @@ describe('Cart service', () => {
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 5,
+            installationOption: 'none',
         });
 
         expect(updated.items[0].quantity).toBe(5);
@@ -117,6 +121,7 @@ describe('Cart service', () => {
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 0,
+            installationOption: 'none',
         });
 
         expect(clearedLine.items).toHaveLength(0);
@@ -131,6 +136,7 @@ describe('Cart service', () => {
             session,
             productId: 'non-existent-product',
             selectedVariantItemIds: [],
+            installationOption: 'none',
         });
 
         expect(afterRemoveMissing.items).toHaveLength(0);
@@ -140,6 +146,7 @@ describe('Cart service', () => {
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 1,
+            installationOption: 'none',
         });
         expect(withItem.items).toHaveLength(1);
 
@@ -147,6 +154,7 @@ describe('Cart service', () => {
             session,
             productId,
             selectedVariantItemIds: [variantItemId],
+            installationOption: 'none',
         });
         expect(afterRemoveExisting.items).toHaveLength(0);
     });
@@ -157,12 +165,38 @@ describe('Cart service', () => {
             productId,
             selectedVariantItemIds: [variantItemId],
             quantity: 2,
+            installationOption: 'none',
         });
 
         const cleared = await clearCart(session);
         expect(cleared.items).toHaveLength(0);
         expect(cleared.totalItems).toBe(0);
         expect(cleared.subtotal).toBe(0);
+    });
+
+    it('calculates the discounted price correctly with offerPercentage', async () => {
+        // Create a product with discount
+        const discountedProduct = await createProduct({
+            name: 'Discounted Product',
+            basePrice: 200,
+            offerPercentage: 25, // should be 150
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
+        });
+
+        const cart = await addItemToCart({
+            session,
+            productId: discountedProduct.id,
+            selectedVariantItemIds: [],
+            quantity: 2,
+            installationOption: 'none',
+        });
+
+        expect(cart.items[0].unitPrice).toBe(150);
+        expect(cart.subtotal).toBe(300);
     });
 
     it('throws when adding an item for a non-existent product', async () => {
@@ -172,6 +206,7 @@ describe('Cart service', () => {
                 productId: '000000000000000000000000',
                 selectedVariantItemIds: [],
                 quantity: 1,
+                installationOption: 'none',
             })
         ).rejects.toThrow(AppError);
     });

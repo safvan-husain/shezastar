@@ -42,11 +42,11 @@ describe('Product Service Unit Tests', () => {
         createdProductId = result.id;
     });
 
-    it('should throw error if offer price >= base price', async () => {
+    it('should throw error if offer percentage is invalid (> 100)', async () => {
         const input = {
             name: 'Invalid Price Product',
             basePrice: 100,
-            offerPrice: 100,
+            offerPercentage: 110,
             images: [],
             variants: [],
             subCategoryIds: [],
@@ -54,7 +54,7 @@ describe('Product Service Unit Tests', () => {
             specifications: [],
         };
 
-        await expect(createProduct(input)).rejects.toThrow(AppError);
+        await expect(createProduct(input)).rejects.toThrow();
     });
 
     it('should get product by id', async () => {

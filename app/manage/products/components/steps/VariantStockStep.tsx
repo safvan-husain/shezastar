@@ -27,11 +27,11 @@ interface VariantStockStepProps {
     variants: ProductVariant[];
     variantStock: VariantStock[];
     basePrice: number;
-    offerPrice: number | null;
+    offerPercentage: number;
     onVariantStockChange: (variantStock: VariantStock[]) => void;
 }
 
-export function VariantStockStep({ variants, variantStock, basePrice, offerPrice, onVariantStockChange }: VariantStockStepProps) {
+export function VariantStockStep({ variants, variantStock, basePrice, offerPercentage, onVariantStockChange }: VariantStockStepProps) {
     const [combinations, setCombinations] = useState<Array<{ key: string; label: string; itemIds: string[] }>>([]);
     const [stockValues, setStockValues] = useState<Record<string, number>>({});
     const [priceValues, setPriceValues] = useState<Record<string, number>>({});
@@ -44,7 +44,7 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPrice
         // Initialize stock and price values from existing variantStock or default to base/offer price
         const initialStockValues: Record<string, number> = {};
         const initialPriceValues: Record<string, number> = {};
-        const defaultPrice = (offerPrice ?? basePrice) || 0;
+        const defaultPrice = basePrice || 0;
 
         allCombinations.forEach(combo => {
             const existing = variantStock.find(vs => vs.variantCombinationKey === combo.key);
@@ -59,7 +59,7 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPrice
         });
         setStockValues(initialStockValues);
         setPriceValues(initialPriceValues);
-    }, [variants, variantStock, basePrice, offerPrice]);
+    }, [variants, variantStock, basePrice]);
 
     const rebuildVariantStock = (stocks: Record<string, number>, prices: Record<string, number>) => {
         const newVariantStock: VariantStock[] = Object.entries(stocks).map(([key, stockCount]) => ({
@@ -164,10 +164,10 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPrice
                                         <span className="text-sm text-[var(--muted-foreground)]">units</span>
                                     </div>
 
-                                    <div className="flex flex-col items-end gap-1 min-w-[10rem]">
+                                    <div className="flex flex-col items-end gap-1 min-w-[12rem]">
                                         <div className="flex items-center gap-2">
-                                            <label htmlFor={`price-${combo.key}`} className="text-sm text-[var(--muted-foreground)]">
-                                                Price:
+                                            <label htmlFor={`price-${combo.key}`} className="text-sm text-[var(--muted-foreground)] whitespace-nowrap">
+                                                Final Price:
                                             </label>
                                             <input
                                                 id={`price-${combo.key}`}
@@ -178,6 +178,11 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPrice
                                                 className="w-28 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                                             />
                                         </div>
+                                        {offerPercentage > 0 && (
+                                            <div className="text-[10px] text-[var(--success)] font-medium">
+                                                Calculated Offer: AED {(price * (1 - offerPercentage / 100)).toFixed(2)} ({offerPercentage}% off)
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

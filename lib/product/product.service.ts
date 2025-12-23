@@ -12,12 +12,14 @@ const COLLECTION = 'products';
 export async function createProduct(input: CreateProductInput) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
-    // Validate offer price is less than base price if provided
-    if (input.offerPrice && input.offerPrice >= input.basePrice) {
-        throw new AppError(400, 'INVALID_OFFER_PRICE', {
-            message: 'Offer price must be less than base price',
+    // Validate input
+    if (input.offerPercentage !== undefined && (input.offerPercentage < 0 || input.offerPercentage > 100)) {
+        throw new AppError(400, 'INVALID_OFFER_PERCENTAGE', {
+            message: 'Offer percentage must be between 0 and 100',
         });
     }
+
+
 
     // Ensure all images have IDs
     const images = input.images.map((img, index) => ({
@@ -32,7 +34,7 @@ export async function createProduct(input: CreateProductInput) {
         subtitle: input.subtitle,
         description: input.description,
         basePrice: input.basePrice,
-        offerPrice: input.offerPrice,
+        offerPercentage: input.offerPercentage,
         images,
         variants: input.variants,
         subCategoryIds: input.subCategoryIds || [],
@@ -157,6 +159,13 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
 export async function updateProduct(id: string, input: UpdateProductInput) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
+    // Validate input
+    if (input.offerPercentage !== undefined && (input.offerPercentage < 0 || input.offerPercentage > 100)) {
+        throw new AppError(400, 'INVALID_OFFER_PERCENTAGE', {
+            message: 'Offer percentage must be between 0 and 100',
+        });
+    }
+
     let objectId: ObjectId;
     try {
         objectId = new ObjectId(id);
@@ -170,14 +179,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
         throw new AppError(404, 'PRODUCT_NOT_FOUND');
     }
 
-    // Validate offer price
-    const basePrice = input.basePrice ?? existing.basePrice;
-    const offerPrice = input.offerPrice ?? existing.offerPrice;
-    if (offerPrice && offerPrice >= basePrice) {
-        throw new AppError(400, 'INVALID_OFFER_PRICE', {
-            message: 'Offer price must be less than base price',
-        });
-    }
+
 
     const updateDoc: any = {
         updatedAt: new Date(),
@@ -187,7 +189,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     if (input.subtitle !== undefined) updateDoc.subtitle = input.subtitle;
     if (input.description !== undefined) updateDoc.description = input.description;
     if (input.basePrice !== undefined) updateDoc.basePrice = input.basePrice;
-    if (input.offerPrice !== undefined) updateDoc.offerPrice = input.offerPrice;
+    if (input.offerPercentage !== undefined) updateDoc.offerPercentage = input.offerPercentage;
     if (input.variantStock !== undefined) updateDoc.variantStock = input.variantStock;
     if (input.specifications !== undefined) updateDoc.specifications = input.specifications;
     if (input.images) {
