@@ -10,13 +10,13 @@ interface BasicInfoStepProps {
     subtitle: string;
     description: string;
     basePrice: string;
-    offerPrice: string;
+    offerPercentage: string;
     specifications: Array<{ title: string; items: string[] }>;
     onNameChange: (value: string) => void;
     onSubtitleChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
     onBasePriceChange: (value: string) => void;
-    onOfferPriceChange: (value: string) => void;
+    onOfferPercentageChange: (value: string) => void;
     onSpecificationsChange: (value: Array<{ title: string; items: string[] }>) => void;
 }
 
@@ -25,13 +25,13 @@ export function BasicInfoStep({
     subtitle,
     description,
     basePrice,
-    offerPrice,
+    offerPercentage,
     specifications,
     onNameChange,
     onSubtitleChange,
     onDescriptionChange,
     onBasePriceChange,
-    onOfferPriceChange,
+    onOfferPercentageChange,
     onSpecificationsChange,
 }: BasicInfoStepProps) {
     const [newSpecTitle, setNewSpecTitle] = useState('');
@@ -84,12 +84,12 @@ export function BasicInfoStep({
                     />
                     <Input
                         type="number"
-                        label="Offer Price (optional)"
-                        value={offerPrice}
-                        onChange={(e) => onOfferPriceChange(e.target.value)}
-                        placeholder="0.00"
-                        step="0.01"
+                        label="Offer Percentage (0-100)"
+                        value={offerPercentage}
+                        onChange={(e) => onOfferPercentageChange(e.target.value)}
+                        placeholder="0"
                         min="0"
+                        max="100"
                     />
                 </div>
                 <div>
@@ -236,13 +236,13 @@ export function BasicInfoStep({
                         </div>
                     </div>
                 </div>
-                {offerPrice && parseFloat(offerPrice) < parseFloat(basePrice) && (
+                {offerPercentage && parseFloat(offerPercentage) > 0 && basePrice && (
                     <div className="bg-[var(--success)]/10 border border-[var(--success)] text-[var(--success)] px-4 py-3 rounded-lg flex items-center gap-2">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span className="font-medium">
-                            {Math.round(((parseFloat(basePrice) - parseFloat(offerPrice)) / parseFloat(basePrice)) * 100)}% discount applied
+                            Discounted Price: ${(parseFloat(basePrice) * (1 - parseFloat(offerPercentage) / 100)).toFixed(2)}
                         </span>
                     </div>
                 )}

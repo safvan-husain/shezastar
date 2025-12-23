@@ -15,49 +15,67 @@ async function migrate() {
     let modified = 0;
 
     try {
-        // Find products that have non-empty variantStock
-        const cursor = productsCollection.find({
-            variantStock: { $not: { $size: 0 } }
-        });
+        // Find all products to check for variants OR offer percentage update
+        const cursor = productsCollection.find({});
 
         while (await cursor.hasNext()) {
             const product = await cursor.next();
-            if (!product || !product.variantStock) continue;
+            if (!product) continue;
             processed++;
 
             let hasChanges = false;
-            // Iterate over variantStock to migrate priceDelta -> price
-            const updatedStock = product.variantStock.map((entry: any) => {
-                // Case 1: Price is already set (Migration likely run previously or data is new)
-                if (typeof entry.price === 'number') {
-                    // Cleanup: If priceDelta still exists, remove it.
+            const updateSet: any = {};
+
+            // 1. Migrate Variant Prices (priceDelta -> price)
+            if (product.variantStock && product.variantStock.length > 0) {
+                let stockModified = false;
+                const updatedStock = product.variantStock.map((entry: any) => {
+                    if (typeof entry.price === 'number') {
+                        if (entry.priceDelta !== undefined) {
+                            const { priceDelta, ...rest } = entry;
+                            stockModified = true;
+                            return rest;
+                        }
+                        return entry;
+                    }
+
                     if (entry.priceDelta !== undefined) {
+                        stockModified = true;
                         const { priceDelta, ...rest } = entry;
-                        hasChanges = true;
-                        return rest;
+                        return { ...rest, price: priceDelta };
                     }
                     return entry;
-                }
+                });
 
-                // Case 2: Price is NOT set, but priceDelta exists (Legacy/Bad Data)
-                // As per user, priceDelta currently holds the "Full Price" for these records.
-                if (entry.priceDelta !== undefined) {
+                if (stockModified) {
+                    updateSet.variantStock = updatedStock;
                     hasChanges = true;
-                    // Move delta value to price field, remove delta field.
-                    const { priceDelta, ...rest } = entry;
-                    return {
-                        ...rest,
-                        price: priceDelta
-                    };
                 }
+            }
 
-                return entry;
-            });
+            // 2. Migrate Offer Price -> Offer Percentage
+            if (typeof product.basePrice === 'number' && product.basePrice > 0 && typeof product.offerPrice === 'number') {
+                // Only calculate if offerPercentage is MISSING
+                if (product.offerPercentage === undefined) {
+                    const priceDiff = product.basePrice - product.offerPrice;
+                    if (priceDiff > 0) {
+                        const pct = Math.round((priceDiff / product.basePrice) * 100);
+                        updateSet.offerPercentage = pct;
+                        hasChanges = true;
+                    } else {
+                        // If offerPrice >= basePrice, percentage is 0.
+                        if (priceDiff === 0) {
+                            updateSet.offerPercentage = 0;
+                            hasChanges = true;
+                        }
+                    }
+                }
+            }
 
             if (hasChanges) {
                 await productsCollection.updateOne(
                     { _id: product._id },
-                    { $set: { variantStock: updatedStock } }
+                    { $set: updateSet }
                 );
                 modified++;
             }

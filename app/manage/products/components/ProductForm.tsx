@@ -55,7 +55,11 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
     const [description, setDescription] = useState(initialData?.description || '');
     const [specifications, setSpecifications] = useState<ProductSpecification[]>(initialData?.specifications || []);
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
-    const [offerPrice, setOfferPrice] = useState(initialData?.offerPrice || '');
+    const [offerPercentage, setOfferPercentage] = useState(initialData?.offerPercentage || (
+        (initialData?.offerPrice && initialData?.basePrice)
+            ? Math.round(((initialData.basePrice - initialData.offerPrice) / initialData.basePrice) * 100).toString()
+            : ''
+    ));
     const [images, setImages] = useState<ImageFile[]>(
         initialData?.images?.map((img: any) => ({
             id: img.id,
@@ -98,7 +102,14 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
             formData.append('subtitle', subtitle || '');
             formData.append('description', description || '');
             formData.append('basePrice', basePrice);
-            if (offerPrice) formData.append('offerPrice', offerPrice);
+            if (offerPercentage) {
+                formData.append('offerPercentage', offerPercentage);
+                // Also append offerPrice for legacy compatibility if basePrice exists
+                if (basePrice) {
+                    const price = parseFloat(basePrice) * (1 - parseFloat(offerPercentage) / 100);
+                    formData.append('offerPrice', price.toFixed(2));
+                }
+            }
 
             const normalizedSpecifications = specifications.map(spec => ({
                 title: spec.title.trim(),
@@ -272,13 +283,13 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
                     subtitle={subtitle}
                     description={description}
                     basePrice={basePrice}
-                    offerPrice={offerPrice}
+                    offerPercentage={offerPercentage}
                     specifications={specifications}
                     onNameChange={setName}
                     onSubtitleChange={setSubtitle}
                     onDescriptionChange={setDescription}
                     onBasePriceChange={setBasePrice}
-                    onOfferPriceChange={setOfferPrice}
+                    onOfferPercentageChange={setOfferPercentage}
                     onSpecificationsChange={setSpecifications}
                 />
 
@@ -301,7 +312,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
                     variants={variants}
                     variantStock={variantStock}
                     basePrice={parseFloat(basePrice) || 0}
-                    offerPrice={offerPrice ? parseFloat(offerPrice) || 0 : null}
+                    offerPrice={null} // Variants use basePrice for initialization, offer applies via percentage
                     onVariantStockChange={setVariantStock}
                 />
 
@@ -329,7 +340,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
                     subtitle={subtitle}
                     description={description}
                     basePrice={basePrice}
-                    offerPrice={offerPrice}
+                    offerPercentage={offerPercentage}
                     specifications={specifications}
                     images={images}
                     variants={variants}

@@ -166,10 +166,20 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   }, [allVariantsSelected, currentStockLimit, product]);
 
   const finalPrice = useMemo(() => {
-    const base = product.offerPrice ?? product.basePrice;
-    const effectiveProductPrice = selectedVariantPrice ?? base;
+    // Determine the base product price (without add-ons) to show in the cart
+    const effectiveBase = selectedVariantPrice ?? product.basePrice;
+
+    // Apply offer percentage if present
+    let effectiveProductPrice = effectiveBase;
+    if (product.offerPercentage && product.offerPercentage > 0) {
+      effectiveProductPrice = effectiveBase * (1 - product.offerPercentage / 100);
+    } else if (typeof product.offerPrice === 'number' && selectedVariantPrice === null) {
+      // Fallback to offerPrice only if no variant overrides it (assuming offerPrice is for base)
+      effectiveProductPrice = product.offerPrice;
+    }
+
     return effectiveProductPrice + addOnPrice;
-  }, [product.offerPrice, product.basePrice, selectedVariantPrice, addOnPrice]);
+  }, [product.offerPrice, product.basePrice, product.offerPercentage, selectedVariantPrice, addOnPrice]);
 
   return (
     <div className='flex flex-col'>
@@ -181,31 +191,36 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)] break-words">{product.name}</h1>
 
           <div className="flex items-baseline gap-3">
-            {product.offerPrice != null ? (
-              (() => {
-                const effectiveBase = selectedVariantPrice ?? product.basePrice;
-                const effectiveOffer = selectedVariantPrice ?? product.offerPrice;
-                // If variant price is set, it overrides both base and offer to be the same single price usually,
-                // unless we want to track separate base/offer for variants. 
-                // Currently schema only has one 'price'. So if variant is selected, we might lose "Sale" view 
-                // unless we assume variant price is the 'offer' price and we don't have a 'base' variant price.
-                // However, the client requirement is simple: show the variant price.
+            {(() => {
+              const discountPct = product.offerPercentage ?? 0;
+              const hasDiscount = discountPct > 0;
 
-                // If a variant is selected and has a price override, we show that as the main price.
-                // If it doesn't have an override, we show base/offer logic.
+              // Base price (variant override OR product base)
+              const rawBase = selectedVariantPrice ?? product.basePrice;
+              const baseWithAddon = rawBase + addOnPrice;
 
-                if (selectedVariantPrice !== null) {
-                  return (
-                    <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">
-                      {formatPrice(selectedVariantPrice + addOnPrice)}
+              if (hasDiscount) {
+                const discountedPrice = rawBase * (1 - discountPct / 100);
+                const discountedWithAddon = discountedPrice + addOnPrice;
+
+                return (
+                  <>
+                    <span className="text-4xl font-bold text-[var(--storefront-sale)]">
+                      {formatPrice(discountedWithAddon)}
                     </span>
-                  );
-                }
+                    <span className="text-xl text-[var(--storefront-text-muted)] line-through">
+                      {formatPrice(baseWithAddon)}
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--storefront-sale)]">
+                      Save {Math.round(discountPct)}%
+                    </span>
+                  </>
+                );
+              }
 
-                // Default product behavior (no variant selected or no override)
-                const baseWithAddon = product.basePrice + addOnPrice;
+              // Fallback Legacy Check: offerPrice
+              if (product.offerPrice != null && selectedVariantPrice === null && product.offerPrice < product.basePrice) {
                 const offerWithAddon = product.offerPrice + addOnPrice;
-
                 return (
                   <>
                     <span className="text-4xl font-bold text-[var(--storefront-sale)]">
@@ -214,19 +229,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     <span className="text-xl text-[var(--storefront-text-muted)] line-through">
                       {formatPrice(baseWithAddon)}
                     </span>
-                    {baseWithAddon > offerWithAddon && (
-                      <span className="text-sm font-semibold text-[var(--storefront-sale)]">
-                        Save {formatPrice(baseWithAddon - offerWithAddon)}
-                      </span>
-                    )}
                   </>
                 );
-              })()
-            ) : (
-              <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">
-                {formatPrice(finalPrice)}
-              </span>
-            )}
+              }
+
+              return (
+                <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">
+                  {formatPrice(finalPrice)}
+                </span>
+              );
+            })()}
           </div>
 
           {product.subtitle && (

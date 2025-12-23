@@ -35,7 +35,7 @@ interface ReviewStepProps {
     subtitle: string;
     description: string;
     basePrice: string;
-    offerPrice: string;
+    offerPercentage: string;
     specifications: Array<{ title: string; items: string[] }>;
     images: ImageFile[];
     variants: ProductVariant[];
@@ -52,7 +52,7 @@ export function ReviewStep({
     subtitle,
     description,
     basePrice,
-    offerPrice,
+    offerPercentage,
     specifications,
     images,
     variants,
@@ -208,7 +208,7 @@ export function ReviewStep({
     };
 
     const parsedBasePrice = parseFloat(basePrice) || 0;
-    const parsedOfferPrice = offerPrice ? parseFloat(offerPrice) || 0 : null;
+    const parsedOfferPercentage = offerPercentage ? parseFloat(offerPercentage) || 0 : 0;
 
     const selectedVariantItemIdsForPricing = useMemo(
         () => Array.from(selectedItemIds),
@@ -234,7 +234,10 @@ export function ReviewStep({
     }, [variantStock, selectedVariantItemIdsForPricing]);
 
     const effectiveBase = parsedBasePrice + combinationPriceDelta;
-    const effectiveOffer = parsedOfferPrice !== null ? parsedOfferPrice + combinationPriceDelta : null;
+    // Apply discount to the TOTAL variant price (Base + Delta)
+    const effectiveOffer = parsedOfferPercentage > 0
+        ? effectiveBase * (1 - parsedOfferPercentage / 100)
+        : null;
 
     const inStorePriceNum =
         installationEnabled && inStorePrice !== "" ? Number(inStorePrice) : null;
@@ -365,7 +368,7 @@ export function ReviewStep({
                                     </span>
                                     {effectiveBase > 0 && (
                                         <span className="px-2 py-1 bg-[var(--danger)] text-[var(--text-inverted)] text-xs font-bold rounded">
-                                            {Math.round(((effectiveBase - effectiveOffer) / effectiveBase) * 100)}% OFF
+                                            {Math.round(parsedOfferPercentage)}% OFF
                                         </span>
                                     )}
                                 </>
