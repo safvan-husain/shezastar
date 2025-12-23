@@ -90,7 +90,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                   fill
                   unoptimized
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  className="h-full w-full object-contain transition duration-300 group-hover:scale-105"
                 />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-[var(--storefront-text-muted)]">
