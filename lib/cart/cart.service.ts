@@ -619,6 +619,7 @@ export async function mergeCarts(sessionId: string, userId: string): Promise<Car
 
     // Both exist: Merge guest items into user cart
     const mergedItems = [...userCart.items];
+    const finalBillingDetails = userCart.billingDetails || guestCart.billingDetails;
 
     for (const guestItem of guestCart.items) {
         const normalizedGuestVariants = normalizeVariantItemIds(guestItem.selectedVariantItemIds);
@@ -646,6 +647,7 @@ export async function mergeCarts(sessionId: string, userId: string): Promise<Car
         {
             $set: {
                 items: mergedItems,
+                billingDetails: finalBillingDetails,
                 updatedAt: new Date()
             }
         }
