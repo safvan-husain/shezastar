@@ -156,7 +156,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     return firstMissing?.variantTypeName ?? null;
   }, [hasVariants, product.variants, selectedVariantItems]);
 
-  const isLocationValid = installationOption !== 'home' || (installationOption === 'home' && Boolean(selectedLocationId));
+  const isLocationValid = installationOption !== 'home' || (installationOption === 'home' && (availableLocations.length === 0 || Boolean(selectedLocationId)));
 
   const currentStockLimit = useMemo(() => {
     if (hasVariantStock && product.variantStock && product.variantStock.length > 0) {

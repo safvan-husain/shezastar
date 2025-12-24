@@ -151,7 +151,7 @@ export function BuyNowButton({
     <>
       <button
         type="button"
-        className="w-full py-3 px-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full py-3 px-2 rounded-lg bg-black text-white font-semibold hover:bg-gray-800 transition flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
         disabled={disabled}
         onClick={handleBuyNow}
         aria-label={`Buy ${product.name} now`}
