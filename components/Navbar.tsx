@@ -3,14 +3,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Category } from '@/lib/category/model/category.model';
 import Image from 'next/image';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
-import { useStorefrontAuthSuggestion } from '@/components/storefront/StorefrontAuthSuggestionProvider';
-import { useToast } from '@/components/ui/Toast';
 import { Search } from './navbar/Search';
 import { CurrencySelector } from './navbar/CurrencySelector';
 import { useCurrency } from '@/lib/currency/CurrencyContext';
@@ -21,7 +18,6 @@ interface NavbarProps {
 }
 
 export function Navbar({ categories }: NavbarProps) {
-  const router = useRouter();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -29,9 +25,6 @@ export function Navbar({ categories }: NavbarProps) {
   const { items } = useStorefrontWishlist();
   const wishlistCount = items.length;
   const { totalItems } = useStorefrontCart();
-  const { refreshSession } = useStorefrontSession();
-  const { resetAuthSuggestionShown } = useStorefrontAuthSuggestion();
-  const { showToast } = useToast();
   const { currency } = useCurrency();
   const { session } = useStorefrontSession();
   const isAuthenticated = !!session?.userId;
