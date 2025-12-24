@@ -13,6 +13,7 @@ import { useStorefrontAuthSuggestion } from '@/components/storefront/StorefrontA
 import { useToast } from '@/components/ui/Toast';
 import { Search } from './navbar/Search';
 import { CurrencySelector } from './navbar/CurrencySelector';
+import { useCurrency } from '@/lib/currency/CurrencyContext';
 
 interface NavbarProps {
   categories: Category[];
@@ -31,6 +32,7 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
   const { refreshSession } = useStorefrontSession();
   const { resetAuthSuggestionShown } = useStorefrontAuthSuggestion();
   const { showToast } = useToast();
+  const { currency } = useCurrency();
 
   const handleMouseEnter = (categoryId: string) => {
     if (timeoutRef.current) {
@@ -132,16 +134,27 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
                   <CurrencySelector />
                 </div>
 
-                {/* Orders link */}
-                <Link
-                  href="/orders"
-                  className="relative inline-flex items-center justify-center rounded-full bg-white/10 p-2 hover:bg-white/20 transition-colors"
-                  aria-label="View orders"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </Link>
+                {/* Orders link (Desktop) / Currency Display (Mobile) */}
+                <div className="relative inline-flex items-center justify-center">
+                  <Link
+                    href="/orders"
+                    className="hidden lg:inline-flex items-center justify-center rounded-full bg-white/10 p-2 hover:bg-white/20 transition-colors"
+                    aria-label="View orders"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </Link>
+                  <button
+                    onClick={() => setMobileMenuOpen(true)}
+                    className="lg:hidden relative inline-flex items-center justify-center rounded-full bg-white/10 p-2 hover:bg-white/20 transition-colors"
+                    aria-label="Open menu to change currency"
+                  >
+                    <span className="text-[11px] font-bold text-amber-400 tracking-wider">
+                      {currency}
+                    </span>
+                  </button>
+                </div>
 
                 {/* Wishlist link */}
                 <Link
