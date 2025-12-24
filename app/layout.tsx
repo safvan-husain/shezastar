@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 
@@ -24,7 +25,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
+      <head>
+        <Script id="strip-extension-body-attrs" strategy="beforeInteractive">
+          {`(function () {
+  function strip() {
+    if (!document.body) return false;
+    document.body.removeAttribute('cz-shortcut-listen');
+    return true;
+  }
+
+  if (strip()) return;
+
+  var observer = new MutationObserver(function () {
+    if (strip()) observer.disconnect();
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();`}
+        </Script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
