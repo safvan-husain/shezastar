@@ -65,7 +65,7 @@ export default async function OrdersPage() {
                                             {order.status}
                                         </span>
                                         <p className="text-sm font-medium text-gray-900">
-                                            {(order.totalAmount / 100).toLocaleString('en-US', {
+                                            {order.totalAmount.toLocaleString('en-US', {
                                                 style: 'currency',
                                                 currency: order.currency.toUpperCase(),
                                             })}
@@ -108,7 +108,7 @@ export default async function OrdersPage() {
                                                         </p>
                                                     </div>
                                                     <div className="text-sm font-medium text-gray-900">
-                                                        {(item.unitPrice / 100).toLocaleString('en-US', {
+                                                        {item.unitPrice.toLocaleString('en-US', {
                                                             style: 'currency',
                                                             currency: order.currency.toUpperCase(),
                                                         })}

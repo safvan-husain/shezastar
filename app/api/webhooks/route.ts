@@ -7,6 +7,7 @@ import { getProduct } from '@/lib/product/product.service';
 import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { AppError } from '@/lib/errors/app-error';
 import { getStorefrontSessionBySessionId } from '@/lib/storefront-session';
+import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -270,11 +271,14 @@ export async function POST(req: NextRequest) {
                     }
                 }
 
+                const currencyConfig = SUPPORTED_CURRENCIES.find(c => c.code === (session.currency?.toUpperCase() as CurrencyCode));
+                const divider = currencyConfig?.decimals === 3 ? 1000 : 100;
+
                 const orderData: Omit<OrderDocument, '_id' | 'createdAt' | 'updatedAt'> = {
                     sessionId: storefrontSessionId,
                     stripeSessionId: session.id,
                     items: orderItems,
-                    totalAmount: session.amount_total ? session.amount_total / 100 : 0,
+                    totalAmount: session.amount_total ? session.amount_total / divider : 0,
                     currency: session.currency || 'usd',
                     status: status,
                     billingDetails: orderBillingDetails,
