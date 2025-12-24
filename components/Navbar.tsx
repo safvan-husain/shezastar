@@ -105,13 +105,13 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
 
   return (
     <nav className="flex bg-black text-white relative z-50">
-      <div className='max-w-8xl mx-auto flex'>
+      <div className='max-w-8xl mx-auto flex justify-between'>
         {/* Row 1: Logo | Search | User Icons */}
         <Link href={'/'} className="">
-          <Image alt='shazstar logo' width={200} height={200} src={"/brand-icon.png"} className="w-auto h-10" />
+          <Image alt='shazstar logo' width={200} height={200} src={"/brand-icon.png"} className="w-auto h-20 lg:h-28 mr-4" />
         </Link>
-        <div className="flex flex-col">
-          <div className="border-b border-gray-800">
+        <div className="flex flex-col justify-center lg:justify-normal">
+          <div className="lg:border-b lg:border-gray-800">
             <div className="flex items-center justify-between max-w-7xl mx-auto px-4 py-3 gap-8">
               {/* Logo */}
 
