@@ -5,6 +5,7 @@ import {
     updateProduct,
     deleteProduct,
     getAllProducts,
+    searchProducts,
 } from '@/lib/product/product.service';
 import { AppError } from '@/lib/errors/app-error';
 import { clear } from '../test-db';
@@ -226,5 +227,74 @@ describe('Product Service - Category filtering', () => {
         // p2 is origin. 
         // 'Exact match product' shares [L1, L2] of p2. Lineage of p1 is [L1, L2, L3]. Lineage of p2 is [L1, L2]. Overlap is [L1, L2] length 2.
         expect(result2.products[0].name).toBe('Exact match product');
+    });
+});
+
+describe('Product Service - Search', () => {
+    beforeAll(async () => {
+        await clear();
+
+        await createProduct({
+            name: 'iPhone 15 Pro',
+            subtitle: 'Titanium',
+            description: 'The definitive iPhone.',
+            basePrice: 999,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [{ title: 'Specs', items: ['A17 Pro chip', 'Action button'] }],
+        });
+
+        await createProduct({
+            name: 'Samsung Galaxy S24',
+            subtitle: 'AI Phone',
+            description: 'Galaxy AI is here.',
+            basePrice: 899,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
+        });
+    });
+
+    afterAll(async () => {
+        await clear();
+    });
+
+    it('should search by name', async () => {
+        const result = await searchProducts('iPhone');
+        expect(result).toBeDefined();
+        expect(result.length).toBe(1);
+        expect(result[0].name).toBe('iPhone 15 Pro');
+    });
+
+    it('should search by subtitle', async () => {
+        const result = await searchProducts('Titanium');
+        expect(result.length).toBe(1);
+        expect(result[0].name).toBe('iPhone 15 Pro');
+    });
+
+    it('should search by description', async () => {
+        const result = await searchProducts('Galaxy AI');
+        expect(result.length).toBe(1);
+        expect(result[0].name).toBe('Samsung Galaxy S24');
+    });
+
+    it('should search by specifications', async () => {
+        const result = await searchProducts('A17 Pro');
+        expect(result.length).toBe(1);
+        expect(result[0].name).toBe('iPhone 15 Pro');
+    });
+
+    it('should return empty array for no match', async () => {
+        const result = await searchProducts('RandomNonExistentPhone');
+        expect(result.length).toBe(0);
+    });
+
+    it('should be case insensitive', async () => {
+        const result = await searchProducts('iphone');
+        expect(result.length).toBe(1);
     });
 });

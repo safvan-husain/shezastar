@@ -368,3 +368,27 @@ export async function mapImageToVariants(id: string, mappings: ImageMappingInput
 
     return toProduct(updated);
 }
+
+export async function searchProducts(query: string, limit = 10) {
+    const collection = await getCollection<ProductDocument>(COLLECTION);
+
+    // Escape special characters for regex
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedQuery, 'i');
+
+    const filter = {
+        $or: [
+            { name: { $regex: regex } },
+            { subtitle: { $regex: regex } },
+            { description: { $regex: regex } },
+            { 'specifications.items': { $regex: regex } }
+        ]
+    };
+
+    const docs = await collection
+        .find(filter)
+        .limit(limit)
+        .toArray();
+
+    return toProducts(docs);
+}
