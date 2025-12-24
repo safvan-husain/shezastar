@@ -8,14 +8,11 @@ import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlis
 import { useStorefrontCart } from './storefront/StorefrontCartProvider';
 import { StockStatus } from './storefront/StockStatus';
 import { stripHtml } from '@/lib/utils/string.utils';
+import { useCurrency } from '@/lib/currency/CurrencyContext';
 
 interface ProductGridProps {
   products: Product[];
   emptyMessage?: string;
-}
-
-function formatPrice(value: number) {
-  return `AED ${value.toFixed(2)}`;
 }
 
 
@@ -60,6 +57,7 @@ function CartIcon() {
 
 export function ProductGrid({ products, emptyMessage = 'No products available yet.' }: ProductGridProps) {
   const { addToCart, isLoading } = useStorefrontCart();
+  const { formatPrice } = useCurrency();
 
   if (products.length === 0) {
     return (

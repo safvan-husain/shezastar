@@ -11,6 +11,7 @@ import { getVariantCombinationKey } from "@/lib/product/product.utils";
 import { stripHtml } from "@/lib/utils/string.utils";
 import CheckoutButton from "./CheckoutButton";
 import { useToast } from "@/components/ui/Toast";
+import { useCurrency } from "@/lib/currency/CurrencyContext";
 import {
   BillingDetailsForm,
   EMPTY_BILLING_DETAILS,
@@ -34,9 +35,7 @@ interface CartPageContentProps {
   isStockValid?: boolean;
 }
 
-function formatPrice(value: number) {
-  return `AED ${value.toFixed(2)}`;
-}
+
 
 function getInstallationOptionLabel(option: string) {
   if (option === 'store') {
@@ -82,6 +81,8 @@ export function CartPageContent({
     billingDetails,
     saveBillingDetails,
   } = useStorefrontCart();
+
+  const { formatPrice } = useCurrency();
 
   const effectiveCart = cart ?? initialCart;
   const effectiveItems = items.length > 0 ? items : effectiveCart?.items ?? [];

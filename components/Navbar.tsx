@@ -12,6 +12,7 @@ import { useStorefrontSession } from '@/components/storefront/StorefrontSessionP
 import { useStorefrontAuthSuggestion } from '@/components/storefront/StorefrontAuthSuggestionProvider';
 import { useToast } from '@/components/ui/Toast';
 import { Search } from './navbar/Search';
+import { CurrencySelector } from './navbar/CurrencySelector';
 
 interface NavbarProps {
   categories: Category[];
@@ -125,6 +126,11 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
               <div className="flex items-center gap-4 flex-shrink-0">
                 {/* Mobile Search Icon (optional, if we want search on mobile header) */}
                 {/* <button className="lg:hidden p-2">...</button> */}
+
+                {/* Currency Selector */}
+                <div className="hidden lg:block">
+                  <CurrencySelector />
+                </div>
 
                 {/* Orders link */}
                 <Link
@@ -341,6 +347,11 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+
+            {/* Currency Selector (Mobile) */}
+            <div className="p-4 border-b border-gray-800 flex justify-center">
+              <CurrencySelector />
             </div>
 
             {/* Quick Links */}

@@ -6,6 +6,7 @@ import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlis
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 import { getVariantCombinationKey } from '@/lib/product/product.utils';
 import { useToast } from '@/components/ui/Toast';
+import { useCurrency } from '@/lib/currency/CurrencyContext';
 import { ProductImageGallery } from './ProductImageGallery';
 import { BuyNowButton } from './BuyNowButton';
 import { StockStatus } from '@/components/storefront/StockStatus';
@@ -16,13 +17,12 @@ interface ProductDetailsProps {
 }
 
 
-function formatPrice(value: number) {
-  return `AED ${value.toFixed(2)}`;
-}
+
 
 export function ProductDetails({ product }: ProductDetailsProps) {
   const { isInWishlist, toggleWishlistItem } = useStorefrontWishlist();
   const inWishlist = isInWishlist(product.id, []);
+  const { formatPrice } = useCurrency();
 
   const { addToCart, isLoading } = useStorefrontCart();
   const { showToast } = useToast();
@@ -129,7 +129,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     const key = getVariantCombinationKey(selectedVariantItemIds);
     const entry = product.variantStock.find(vs => vs.variantCombinationKey === key);
 
-    return entry?.price ?? null;
+    // Treat 0 or negative price as "use base price"
+    if (entry?.price && entry.price > 0) {
+      return entry.price;
+    }
+    return null;
   }, [product.variantStock, selectedVariantItemIds]);
 
   const hasVariants = Boolean(product.variants && product.variants.length > 0);

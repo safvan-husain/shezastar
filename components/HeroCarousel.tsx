@@ -4,17 +4,17 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import type { HeroBannerWithId } from '@/lib/app-settings/app-settings.schema';
 import { PyramidText } from './PyramidText';
+import { useCurrency } from '@/lib/currency/CurrencyContext';
 
 interface HeroCarouselProps {
   banners: HeroBannerWithId[];
 }
 
-function formatPrice(value: number) {
-  return `AED ${value.toFixed(2)}`;
-}
+
 
 export function HeroCarousel({ banners }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { formatPrice } = useCurrency();
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % banners.length);

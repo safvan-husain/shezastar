@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/lib/product/model/product.model';
-import { formatCurrency } from '@/lib/utils/currency';
+import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { stripHtml } from '@/lib/utils/string.utils';
 
 interface SearchResultsProps {
@@ -13,6 +13,8 @@ interface SearchResultsProps {
 }
 
 export function SearchResults({ results, isLoading, onClose, query }: SearchResultsProps) {
+    const { formatPrice } = useCurrency();
+
     if (isLoading) {
         return (
             <div className="absolute top-full left-0 w-full bg-white shadow-xl border border-gray-100 rounded-b-lg p-6 z-50">
@@ -65,15 +67,15 @@ export function SearchResults({ results, isLoading, onClose, query }: SearchResu
                                     {product.offerPercentage ? (
                                         <div className="flex flex-col items-end">
                                             <span className="text-sm font-bold text-red-600">
-                                                {formatCurrency(product.basePrice * (1 - product.offerPercentage / 100))}
+                                                {formatPrice(product.basePrice * (1 - product.offerPercentage / 100))}
                                             </span>
                                             <span className="text-[10px] text-gray-400 line-through">
-                                                {formatCurrency(product.basePrice)}
+                                                {formatPrice(product.basePrice)}
                                             </span>
                                         </div>
                                     ) : (
                                         <span className="text-sm font-medium text-gray-900">
-                                            {formatCurrency(product.basePrice)}
+                                            {formatPrice(product.basePrice)}
                                         </span>
                                     )}
                                 </div>

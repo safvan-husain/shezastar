@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
+import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
+import { getExchangeRates } from "@/lib/currency/currency.service";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,11 +21,13 @@ export const metadata: Metadata = {
   description: "Sheza Star",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const rates = await getExchangeRates();
+
   return (
     <html lang="en">
       <head>
@@ -48,9 +52,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <CurrencyProvider initialRates={rates}>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </CurrencyProvider>
       </body>
     </html>
   );

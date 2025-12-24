@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { useCurrency } from "@/lib/currency/CurrencyContext";
 
 interface CheckoutButtonProps {
   hasStockIssues?: boolean;
@@ -18,6 +19,7 @@ export default function CheckoutButton({
 }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
+  const { currency } = useCurrency();
 
   const handleCheckout = async () => {
     if (isLoading) return;
@@ -52,6 +54,10 @@ export default function CheckoutButton({
     try {
       const response = await fetch(url, {
         method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ currency }),
       });
 
       const body = await response.json().catch(() => null);
@@ -119,9 +125,8 @@ export default function CheckoutButton({
     <button
       onClick={handleCheckout}
       disabled={isLoading}
-      className={`w-full bg-black text-white py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-        !hasBillingDetails ? 'bg-gray-500 hover:bg-gray-500' : 'hover:bg-gray-800'
-      }`}
+      className={`w-full bg-black text-white py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${!hasBillingDetails ? 'bg-gray-500 hover:bg-gray-500' : 'hover:bg-gray-800'
+        }`}
     >
       {isLoading ? "Processing..." : "Proceed to Checkout"}
     </button>

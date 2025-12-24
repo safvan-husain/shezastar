@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
 import { useToast } from '@/components/ui/Toast';
+import { useCurrency } from "@/lib/currency/CurrencyContext";
 import type { Product } from '@/lib/product/model/product.model';
 import type { InstallationOption } from '@/lib/cart/cart.schema';
 import {
@@ -39,6 +40,7 @@ export function BuyNowButton({
 
   const { showToast } = useToast();
   const { billingDetails, saveBillingDetails } = useStorefrontCart();
+  const { currency } = useCurrency();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditingBilling, setIsEditingBilling] = useState(!billingDetails);
   const [billingForm, setBillingForm] = useState<BillingDetailsFormValue>(() => mapBillingDetailsToFormValue(billingDetails));
@@ -75,7 +77,7 @@ export function BuyNowButton({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ items: itemPayload }),
+        body: JSON.stringify({ items: itemPayload, currency }),
       });
 
       const body = await response.json().catch(() => null);

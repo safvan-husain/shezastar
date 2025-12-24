@@ -3,6 +3,8 @@ import Stripe from 'stripe';
 import { computeCartItemPricing, getCartForCurrentSession } from '@/lib/cart/cart.service';
 import type { InstallationOption } from '@/lib/cart/cart.schema';
 import { getStorefrontSessionId } from '@/lib/storefront-session';
+import { convertPrice, getExchangeRates } from '@/lib/currency/currency.service';
+import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {})
@@ -49,8 +51,16 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json().catch(() => ({}));
-        const rawItems = Array.isArray(body.items) ? body.items : [];
+        const rawCurrency = (typeof body.currency === 'string' && body.currency ? body.currency : 'USD');
+        const targetCurrencyCode = rawCurrency.toUpperCase() as CurrencyCode;
 
+        console.log(`[Checkout] Initiating session with currency: ${targetCurrencyCode}`);
+
+        const rates = await getExchangeRates();
+        const currencyConfig = SUPPORTED_CURRENCIES.find(c => c.code === targetCurrencyCode);
+        const multiplier = currencyConfig?.decimals === 3 ? 1000 : 100;
+
+        const rawItems = Array.isArray(body.items) ? body.items : [];
         // Prepare items for stock validation
         let itemsToValidate: Array<{ productId: string; selectedVariantItemIds: string[]; quantity: number }> = [];
 
@@ -113,16 +123,19 @@ export async function POST(req: NextRequest) {
                 quantity: item.quantity,
             }));
 
-            lineItems = processedBuyNowItems.map((item) => ({
-                price_data: {
-                    currency: 'usd',
-                    product_data: {
-                        name: item.productId,
+            lineItems = processedBuyNowItems.map((item) => {
+                const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
+                return {
+                    price_data: {
+                        currency: targetCurrencyCode.toLowerCase(),
+                        product_data: {
+                            name: item.productId,
+                        },
+                        unit_amount: Math.round(convertedPrice * multiplier),
                     },
-                    unit_amount: Math.round(item.unitPrice * 100),
-                },
-                quantity: item.quantity,
-            }));
+                    quantity: item.quantity,
+                };
+            });
 
             metadata.type = 'buy_now';
             metadata.buyNowItems = JSON.stringify(processedBuyNowItems);
@@ -132,20 +145,45 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
             }
 
-            itemsToValidate = cart.items.map(item => ({
+            // Recalculate prices to ensure freshness (handle price changes/offers)
+            const freshCartItems = [];
+            for (const item of cart.items) {
+                try {
+                    const pricing = await computeCartItemPricing(
+                        item.productId,
+                        item.selectedVariantItemIds,
+                        item.installationOption,
+                        item.installationLocationId
+                    );
+                    freshCartItems.push({
+                        ...item,
+                        unitPrice: pricing.unitPrice, // Use fresh price
+                    });
+                } catch (error) {
+                    console.error(`Failed to re-compute pricing for item ${item.productId}`, error);
+                    // If product deleted or error, we might want to skip or fail. 
+                    // For now, fail to prevent incorrect charges.
+                    return NextResponse.json({ error: `Product ${item.productId} unavailable` }, { status: 400 });
+                }
+            }
+
+            itemsToValidate = freshCartItems.map(item => ({
                 productId: item.productId,
                 selectedVariantItemIds: item.selectedVariantItemIds,
                 quantity: item.quantity
             }));
 
-            lineItems = cart.items.map((item) => {
+            lineItems = freshCartItems.map((item) => {
+                const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
+                const finalAmount = Math.round(convertedPrice * multiplier);
+
                 return {
                     price_data: {
-                        currency: 'usd', // Assuming USD for now. TODO: Make dynamic if needed
+                        currency: targetCurrencyCode.toLowerCase(), // Dynamic currency
                         product_data: {
                             name: item.productId, // Ideally fetch product name, but productId is sufficient for now
                         },
-                        unit_amount: Math.round(item.unitPrice * 100), // Stripe expects cents
+                        unit_amount: finalAmount, // Handle 2 or 3 decimals
                     },
                     quantity: item.quantity,
                 };

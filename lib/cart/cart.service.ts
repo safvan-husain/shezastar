@@ -122,7 +122,7 @@ export async function computeCartItemPricing(
 
         if (entry) {
             // Use full price for the variant
-            if (entry.price != null) {
+            if (entry.price != null && entry.price > 0) {
                 productPrice = entry.price;
             }
         }
@@ -168,15 +168,68 @@ function buildEmptyCartDocument(sessionId: string, userId?: string): Omit<CartDo
     return doc;
 }
 
+async function sanitizeCartPrices(cart: CartDocument): Promise<CartDocument> {
+    let hasChanges = false;
+    // Clone items to avoid mutating original if we don't save
+    const items = [...cart.items];
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        // Check for invalid price (0 or negative) which shouldn't happen for paid products
+        if (item.unitPrice <= 0) {
+            try {
+                const pricing = await computeCartItemPricing(
+                    item.productId,
+                    item.selectedVariantItemIds,
+                    item.installationOption,
+                    item.installationLocationId
+                );
+
+                if (pricing.unitPrice > 0) {
+                    items[i] = {
+                        ...item,
+                        unitPrice: pricing.unitPrice,
+                        installationAddOnPrice: pricing.installationAddOnPrice,
+                        installationOption: pricing.installationOption,
+                        installationLocationId: pricing.installationLocationId,
+                        installationLocationDelta: pricing.installationLocationDelta ?? 0,
+                    };
+                    hasChanges = true;
+                }
+            } catch (err) {
+                console.error(`Failed to sanitize cart item ${item.productId}:`, err);
+            }
+        }
+    }
+
+    if (hasChanges) {
+        const collection = await getCartCollection();
+        await collection.updateOne(
+            { _id: cart._id },
+            { $set: { items, updatedAt: new Date() } }
+        );
+        return { ...cart, items };
+    }
+
+    return cart;
+}
+
 export async function getCart(session: StorefrontSession): Promise<Cart | null> {
     const collection = await getCartCollection();
     if (session.userId) {
         const userCart = await collection.findOne({ userId: new ObjectId(session.userId) });
-        if (userCart) return toCart(userCart);
+        if (userCart) {
+            const sanitized = await sanitizeCartPrices(userCart);
+            return toCart(sanitized);
+        }
     }
     // Fallback to sessionId lookup
     const doc = await collection.findOne({ sessionId: session.sessionId });
-    return doc ? toCart(doc) : null;
+    if (doc) {
+        const sanitized = await sanitizeCartPrices(doc);
+        return toCart(sanitized);
+    }
+    return null;
 }
 
 /**
