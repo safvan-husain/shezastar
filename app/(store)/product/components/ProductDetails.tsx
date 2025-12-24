@@ -147,6 +147,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     });
   }, [hasVariants, product.variants, selectedVariantItems]);
 
+  const missingVariantTypeName = useMemo(() => {
+    if (!hasVariants || !product.variants) return null;
+    const firstMissing = product.variants.find(variant => {
+      if (!variant.selectedItems || variant.selectedItems.length === 0) return false;
+      return !selectedVariantItems[variant.variantTypeId];
+    });
+    return firstMissing?.variantTypeName ?? null;
+  }, [hasVariants, product.variants, selectedVariantItems]);
+
   const isLocationValid = installationOption !== 'home' || (installationOption === 'home' && Boolean(selectedLocationId));
 
   const currentStockLimit = useMemo(() => {
@@ -168,18 +177,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     return isProductInStock(product);
   }, [allVariantsSelected, currentStockLimit, product]);
 
-  const finalPrice = useMemo(() => {
-    // Determine the base product price (without add-ons) to show in the cart
-    const effectiveBase = selectedVariantPrice ?? product.basePrice;
+  const productPriceBeforeDiscount = useMemo(() => selectedVariantPrice ?? product.basePrice, [product.basePrice, selectedVariantPrice]);
 
-    // Apply offer percentage if present
-    let effectiveProductPrice = effectiveBase;
+  const productPriceAfterDiscount = useMemo(() => {
+    let price = productPriceBeforeDiscount;
     if (product.offerPercentage && product.offerPercentage > 0) {
-      effectiveProductPrice = effectiveBase * (1 - product.offerPercentage / 100);
+      price = productPriceBeforeDiscount * (1 - product.offerPercentage / 100);
     }
+    return price;
+  }, [productPriceBeforeDiscount, product.offerPercentage]);
 
-    return effectiveProductPrice + addOnPrice;
-  }, [product.basePrice, product.offerPercentage, selectedVariantPrice, addOnPrice]);
+  const finalPrice = useMemo(() => {
+    return productPriceAfterDiscount + addOnPrice;
+  }, [productPriceAfterDiscount, addOnPrice]);
 
   const selectedVariantDetails = useMemo(() => {
     if (!product.variantStock || product.variantStock.length === 0 || selectedVariantItemIds.length === 0) {
@@ -207,21 +217,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               const discountPct = product.offerPercentage ?? 0;
               const hasDiscount = discountPct > 0;
 
-              // Base price (variant override OR product base)
-              const rawBase = selectedVariantPrice ?? product.basePrice;
-              const baseWithAddon = rawBase + addOnPrice;
-
               if (hasDiscount) {
-                const discountedPrice = rawBase * (1 - discountPct / 100);
-                const discountedWithAddon = discountedPrice + addOnPrice;
-
                 return (
                   <>
                     <span className="text-4xl font-bold text-[var(--storefront-sale)]">
-                      {formatPrice(discountedWithAddon)}
+                      {formatPrice(productPriceAfterDiscount)}
                     </span>
                     <span className="text-xl text-[var(--storefront-text-muted)] line-through">
-                      {formatPrice(baseWithAddon)}
+                      {formatPrice(productPriceBeforeDiscount)}
                     </span>
                     <span className="text-sm font-semibold text-[var(--storefront-sale)]">
                       Save {Math.round(discountPct)}%
@@ -232,7 +235,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
               return (
                 <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">
-                  {formatPrice(finalPrice)}
+                  {formatPrice(productPriceAfterDiscount)}
                 </span>
               );
             })()}
@@ -360,6 +363,34 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               </p>
             </div>
           )}
+
+          {/* Price Breakdown & Hints */}
+          <div className="space-y-4 pt-4 border-t border-[var(--storefront-border)]">
+            {missingVariantTypeName && (
+              <p className="text-sm font-medium text-red-500 animate-pulse">
+                Please select a {missingVariantTypeName}
+              </p>
+            )}
+
+            {installationOption !== 'none' && (
+              <div className="bg-[var(--storefront-bg-hover)] p-4 rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-[var(--storefront-text-secondary)]">Product Price</span>
+                  <span className="text-[var(--storefront-text-primary)] font-medium">{formatPrice(productPriceAfterDiscount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[var(--storefront-text-secondary)]">
+                    Installation ({installationOption === 'store' ? 'At Store' : 'At Home'})
+                  </span>
+                  <span className="text-[var(--storefront-text-primary)] font-medium">{formatPrice(addOnPrice)}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-[var(--storefront-border)] font-bold">
+                  <span className="text-[var(--storefront-text-primary)]">Total</span>
+                  <span className="text-[var(--storefront-text-primary)]">{formatPrice(finalPrice)}</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="space-y-4">
             <div className="grid w-full grid-cols-[1fr_2fr] gap-4 sm:grid-cols-[1fr_2fr_2fr_1fr]">
