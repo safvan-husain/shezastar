@@ -16,11 +16,19 @@ interface ProductVariant {
     selectedItems: VariantItem[];
 }
 
+import { VariantDetailsModal } from './VariantDetailsModal';
+import { Button } from '@/components/ui/Button';
+
+// ... (previous interfaces)
+
 interface VariantStock {
     variantCombinationKey: string;
     stockCount: number;
     priceDelta?: number;
     price?: number;
+    variantTitle?: string;
+    variantSubtitle?: string;
+    variantDescription?: string;
 }
 
 interface VariantStockStepProps {
@@ -35,6 +43,9 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
     const [combinations, setCombinations] = useState<Array<{ key: string; label: string; itemIds: string[] }>>([]);
     const [stockValues, setStockValues] = useState<Record<string, number>>({});
     const [priceValues, setPriceValues] = useState<Record<string, number>>({});
+
+    // State for modal
+    const [editingVariantKey, setEditingVariantKey] = useState<string | null>(null);
 
     // Generate all possible combinations when variants change
     useEffect(() => {
@@ -61,14 +72,35 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
         setPriceValues(initialPriceValues);
     }, [variants, variantStock, basePrice]);
 
-    const rebuildVariantStock = (stocks: Record<string, number>, prices: Record<string, number>) => {
-        const newVariantStock: VariantStock[] = Object.entries(stocks).map(([key, stockCount]) => ({
-            variantCombinationKey: key,
-            stockCount,
-            price: prices[key] ?? 0,
-            // Clear priceDelta to avoid confusion
-            priceDelta: undefined
-        }));
+    const rebuildVariantStock = (stocks: Record<string, number>, prices: Record<string, number>, updatedDetails?: { key: string, title?: string, subtitle?: string, description?: string }) => {
+        const newVariantStock: VariantStock[] = Object.entries(stocks).map(([key, stockCount]) => {
+            // Check if we are updating this specific variant's details
+            let title: string | undefined;
+            let subtitle: string | undefined;
+            let description: string | undefined;
+
+            if (updatedDetails && updatedDetails.key === key) {
+                title = updatedDetails.title;
+                subtitle = updatedDetails.subtitle;
+                description = updatedDetails.description;
+            } else {
+                // Otherwise preserve existing details
+                const existing = variantStock.find(vs => vs.variantCombinationKey === key);
+                title = existing?.variantTitle;
+                subtitle = existing?.variantSubtitle;
+                description = existing?.variantDescription;
+            }
+
+            return {
+                variantCombinationKey: key,
+                stockCount,
+                price: prices[key] ?? 0,
+                priceDelta: undefined,
+                variantTitle: title,
+                variantSubtitle: subtitle,
+                variantDescription: description
+            };
+        });
         onVariantStockChange(newVariantStock);
     };
 
@@ -84,7 +116,13 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
         rebuildVariantStock(stockValues, newPriceValues);
     };
 
+    const handleDetailsSave = (title?: string, subtitle?: string, description?: string) => {
+        if (!editingVariantKey) return;
+        rebuildVariantStock(stockValues, priceValues, { key: editingVariantKey, title, subtitle, description });
+    };
+
     const handleBulkSet = () => {
+        // ... (same as before)
         const value = prompt('Enter stock count to set for all variants:');
         if (value === null) return;
 
@@ -104,6 +142,14 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
     };
 
     const totalStock = Object.values(stockValues).reduce((sum, val) => sum + val, 0);
+
+    const activeEditingVariant = editingVariantKey
+        ? combinations.find(c => c.key === editingVariantKey)
+        : null;
+
+    const getExistingDetails = (key: string) => {
+        return variantStock.find(vs => vs.variantCombinationKey === key);
+    };
 
     return (
         <Card>
@@ -141,14 +187,24 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
                     {combinations.map((combo) => {
                         const stock = stockValues[combo.key] ?? 0;
                         const price = priceValues[combo.key] ?? 0;
+                        const existing = getExistingDetails(combo.key);
+                        const hasCustomDetails = existing?.variantTitle || existing?.variantSubtitle || existing?.variantDescription;
 
                         return (
-                            <div key={combo.key} className="flex items-center gap-6 p-4 bg-[var(--bg-subtle)] rounded-lg">
+                            <div key={combo.key} className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-[var(--bg-subtle)] rounded-lg">
                                 <div className="flex-1">
                                     <p className="font-medium text-[var(--foreground)]">{combo.label}</p>
                                     <p className="text-xs text-[var(--muted-foreground)] mt-1">Key: {combo.key}</p>
+                                    {hasCustomDetails && (
+                                        <div className="mt-2 text-xs text-[var(--primary)] flex items-center gap-1">
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                            Custom details configured
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-4 flex-wrap">
                                     <div className="flex items-center gap-2">
                                         <label htmlFor={`stock-${combo.key}`} className="text-sm text-[var(--muted-foreground)]">
                                             Stock:
@@ -184,6 +240,17 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
                                             </div>
                                         )}
                                     </div>
+
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => setEditingVariantKey(combo.key)}
+                                        title="Edit variant title and description"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </Button>
                                 </div>
                             </div>
                         );
@@ -194,8 +261,21 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <p className="text-sm text-blue-900 dark:text-blue-100">
                     <strong>Note:</strong> Stock is tracked per variant combination. When a customer purchases a specific variant, only that combination's stock will be reduced.
+                    You can also override the product title and description for specific combinations.
                 </p>
             </div>
+
+            {activeEditingVariant && (
+                <VariantDetailsModal
+                    isOpen={!!editingVariantKey}
+                    onClose={() => setEditingVariantKey(null)}
+                    variantName={activeEditingVariant.label}
+                    initialTitle={getExistingDetails(activeEditingVariant.key)?.variantTitle}
+                    initialSubtitle={getExistingDetails(activeEditingVariant.key)?.variantSubtitle}
+                    initialDescription={getExistingDetails(activeEditingVariant.key)?.variantDescription}
+                    onSave={handleDetailsSave}
+                />
+            )}
         </Card>
     );
 }

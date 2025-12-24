@@ -52,7 +52,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const hasVariantStock = (product.variantStock?.length ?? 0) > 0;
 
-  // ... (stock logic remains the same)
   const stockByKey = useMemo(() => {
     const map = new Map<string, number>();
     for (const stockEntry of product.variantStock ?? []) {
@@ -178,6 +177,18 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     return effectiveProductPrice + addOnPrice;
   }, [product.basePrice, product.offerPercentage, selectedVariantPrice, addOnPrice]);
 
+  const selectedVariantDetails = useMemo(() => {
+    if (!product.variantStock || product.variantStock.length === 0 || selectedVariantItemIds.length === 0) {
+      return null;
+    }
+    const key = getVariantCombinationKey(selectedVariantItemIds);
+    return product.variantStock.find(vs => vs.variantCombinationKey === key);
+  }, [product.variantStock, selectedVariantItemIds]);
+
+  const displayTitle = selectedVariantDetails?.variantTitle || product.name;
+  const displaySubtitle = selectedVariantDetails?.variantSubtitle || product.subtitle;
+  const displayDescription = selectedVariantDetails?.variantDescription || product.description;
+
   return (
     <div className='flex flex-col'>
       <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
@@ -185,7 +196,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
         <div className="space-y-6 min-w-0">
 
-          <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)] break-words">{product.name}</h1>
+          <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)] break-words">{displayTitle}</h1>
 
           <div className="flex items-baseline gap-3">
             {(() => {
@@ -215,8 +226,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 );
               }
 
-
-
               return (
                 <span className="text-4xl font-bold text-[var(--storefront-text-primary)]">
                   {formatPrice(finalPrice)}
@@ -225,8 +234,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             })()}
           </div>
 
-          {product.subtitle && (
-            <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4 break-words">{product.subtitle}</p>
+          {displaySubtitle && (
+            <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4 break-words">{displaySubtitle}</p>
           )}
 
           <StockStatus inStock={displayInStock} />
@@ -432,7 +441,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   />
                 </svg>
               </button>
-
               <BuyNowButton
                 product={product}
                 quantity={quantity}
@@ -442,8 +450,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 disabled={!allVariantsSelected || !isLocationValid}
                 maxAvailable={currentStockLimit}
               />
-
-
 
             </div>
 
@@ -529,10 +535,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         </div>
       </div>
 
-      {product.description && (
+      {displayDescription && (
         <div className="space-y-2 text-black mt-4">
           <h3 className='border-b border-[var(--storefront-border)] pb-2'>Description</h3>
-          <div className="text-[var(--storefront-text-secondary)] leading-relaxed break-words [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:mb-4 [&_h2]:mb-3 [&_h3]:mb-2" dangerouslySetInnerHTML={{ __html: product.description || '' }} />
+          <div className="text-[var(--storefront-text-secondary)] leading-relaxed break-words [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h1]:mb-4 [&_h2]:mb-3 [&_h3]:mb-2" dangerouslySetInnerHTML={{ __html: displayDescription }} />
         </div>
       )}
 

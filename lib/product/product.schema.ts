@@ -27,6 +27,9 @@ export const VariantStockSchema = z.object({
     stockCount: z.number().int().min(0, 'Stock count must be non-negative'),
     // Full price for this variant combination.
     price: z.number().min(0, 'Price must be non-negative').optional(),
+    variantTitle: z.string().optional(),
+    variantSubtitle: z.string().optional(),
+    variantDescription: z.string().optional(),
 });
 
 export const ProductInstallationLocationSchema = z.object({
