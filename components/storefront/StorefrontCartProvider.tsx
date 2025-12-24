@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import type { Cart, InstallationOption } from '@/lib/cart';
 import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
@@ -49,6 +49,12 @@ interface StorefrontCartProviderProps {
 
 export function StorefrontCartProvider({ initialCart, children }: StorefrontCartProviderProps) {
     const [cart, setCart] = useState<Cart | null>(initialCart);
+
+    // Sync state with prop when server re-renders
+    useEffect(() => {
+        setCart(initialCart);
+    }, [initialCart]);
+
     const [isLoading, setIsLoading] = useState(false);
     const { showToast } = useToast();
     const { suggestAuthIfGuest } = useStorefrontAuthSuggestion();

@@ -18,10 +18,9 @@ import { UserMenu } from './navbar/UserMenu';
 
 interface NavbarProps {
   categories: Category[];
-  isAuthenticated: boolean;
 }
 
-export function Navbar({ categories, isAuthenticated }: NavbarProps) {
+export function Navbar({ categories }: NavbarProps) {
   const router = useRouter();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -34,6 +33,8 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
   const { resetAuthSuggestionShown } = useStorefrontAuthSuggestion();
   const { showToast } = useToast();
   const { currency } = useCurrency();
+  const { session } = useStorefrontSession();
+  const isAuthenticated = !!session?.userId;
 
   const handleMouseEnter = (categoryId: string) => {
     if (timeoutRef.current) {

@@ -21,6 +21,11 @@ interface StorefrontSessionProviderProps {
 
 export function StorefrontSessionProvider({ initialSession, children }: StorefrontSessionProviderProps) {
     const [session, setSession] = useState(initialSession);
+
+    // Sync state with prop when server re-renders (e.g. after router.refresh())
+    useEffect(() => {
+        setSession(initialSession);
+    }, [initialSession]);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const { showToast } = useToast();
 

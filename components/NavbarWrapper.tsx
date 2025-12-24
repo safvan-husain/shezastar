@@ -8,12 +8,10 @@ export async function NavbarWrapper() {
       getAllCategories(),
       getStorefrontSession(),
     ]);
-    const isAuthenticated = !!session?.userId;
-
-    return <Navbar categories={categories} isAuthenticated={isAuthenticated} />;
+    return <Navbar categories={categories} />;
   } catch (error) {
     console.error('Failed to load categories for navbar:', error);
     // Return empty navbar if categories fail to load
-    return <Navbar categories={[]} isAuthenticated={false} />;
+    return <Navbar categories={[]} />;
   }
 }

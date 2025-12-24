@@ -7,6 +7,9 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
+import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
+import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 
 const registerSchema = z
     .object({
@@ -23,6 +26,9 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
     const router = useRouter();
+    const { refreshSession } = useStorefrontSession();
+    const { refreshCart } = useStorefrontCart();
+    const { refreshWishlist } = useStorefrontWishlist();
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -62,6 +68,11 @@ export default function RegisterForm() {
                 const friendlyMessage = errorCode ? ERROR_MESSAGES[errorCode] : body.message;
                 throw new Error(friendlyMessage || 'Registration failed. Please try again.');
             }
+
+            // Refresh all state immediately
+            await refreshSession();
+            await refreshCart();
+            await refreshWishlist();
 
             // Redirect to home or refresh (auto-login assumed)
             router.refresh();

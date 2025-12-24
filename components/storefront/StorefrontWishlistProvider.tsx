@@ -55,6 +55,12 @@ export function StorefrontWishlistProvider({
   const { suggestAuthIfGuest } = useStorefrontAuthSuggestion();
 
   const [items, setItems] = useState<WishlistItemResponse[]>(initialWishlist?.items ?? []);
+
+  // Sync state with prop when server re-renders
+  useEffect(() => {
+    setItems(initialWishlist?.items ?? []);
+  }, [initialWishlist]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 

@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
+import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
+import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontAuthSuggestion } from '@/components/storefront/StorefrontAuthSuggestionProvider';
 import { useToast } from '@/components/ui/Toast';
 import { BillingAddressModal } from '@/components/storefront/BillingAddressModal';
@@ -14,6 +16,8 @@ export function UserMenu() {
     const menuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const { refreshSession } = useStorefrontSession();
+    const { refreshCart } = useStorefrontCart();
+    const { refreshWishlist } = useStorefrontWishlist();
     const { resetAuthSuggestionShown } = useStorefrontAuthSuggestion();
     const { showToast } = useToast();
 
@@ -50,6 +54,8 @@ export function UserMenu() {
 
             resetAuthSuggestionShown();
             await refreshSession();
+            await refreshCart();
+            await refreshWishlist();
             router.refresh();
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Logout failed';

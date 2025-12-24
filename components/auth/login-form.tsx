@@ -7,6 +7,9 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
+import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
+import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -17,6 +20,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
     const router = useRouter();
+    const { refreshSession } = useStorefrontSession();
+    const { refreshCart } = useStorefrontCart();
+    const { refreshWishlist } = useStorefrontWishlist();
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -55,8 +61,15 @@ export default function LoginForm() {
                 throw new Error(friendlyMessage || 'Login failed. Please check your credentials.');
             }
 
-            // Redirect to home or refresh
+            // Refresh session, cart, and wishlist context immediately
+            await refreshSession();
+            await refreshCart();
+            await refreshWishlist();
+
+            // Notify server to re-render server components
             router.refresh();
+
+            // Redirect to home
             router.push('/');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred during sign in.');
