@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/Toast';
 import { Search } from './navbar/Search';
 import { CurrencySelector } from './navbar/CurrencySelector';
 import { useCurrency } from '@/lib/currency/CurrencyContext';
+import { UserMenu } from './navbar/UserMenu';
 
 interface NavbarProps {
   categories: Category[];
@@ -74,37 +75,7 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
     return category.subCategories.some(sub => sub.subSubCategories.length > 0);
   };
 
-  const handleLogout = async () => {
-    const url = '/api/auth/logout';
-    try {
-      const response = await fetch(url, { method: 'POST' });
-      if (!response.ok) {
-        let body: any = {};
-        try {
-          body = await response.json();
-        } catch {
-          body = { error: 'Failed to parse error response' };
-        }
-        const message = body.message || body.error || 'Logout failed';
-        showToast(message, 'error', {
-          status: response.status,
-          body,
-          url,
-          method: 'POST',
-        });
-        return;
-      }
 
-      resetAuthSuggestionShown();
-      await refreshSession().catch(() => {
-        // refreshSession already surfaces errors via toast
-      });
-      router.refresh();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Logout failed';
-      showToast(message, 'error', { url, method: 'POST' });
-    }
-  };
 
   return (
     <nav className="flex bg-black text-white relative z-50">
@@ -191,15 +162,9 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
 
                 {/* Auth Link (Desktop) */}
                 {isAuthenticated ? (
-                  <button
-                    onClick={handleLogout}
-                    className="hidden lg:inline-flex items-center justify-center p-2 hover:bg-gray-800 rounded transition-colors"
-                    aria-label="Logout"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
+                  <div className="hidden lg:block">
+                    <UserMenu />
+                  </div>
                 ) : (
                   <Link
                     href="/account"
@@ -399,19 +364,9 @@ export function Navbar({ categories, isAuthenticated }: NavbarProps) {
             {/* Auth Link (Mobile) */}
             <div className="py-2 border-b border-gray-800">
               {isAuthenticated ? (
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    handleLogout();
-                  }}
-                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-200 hover:text-white hover:bg-gray-800 transition-colors"
-                  aria-label="Logout"
-                >
-                  <span className="font-medium">Logout</span>
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                </button>
+                <div className="px-4 py-3">
+                  <UserMenu />
+                </div>
               ) : (
                 <Link
                   href="/account"

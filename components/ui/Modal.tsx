@@ -8,9 +8,10 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: ReactNode;
+    containerClassName?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, containerClassName = '' }: ModalProps) {
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
@@ -30,7 +31,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                 className="absolute inset-0 bg-[var(--bg-base)]/60"
                 onClick={onClose}
             />
-            <div className="relative bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-[var(--border-subtle)]">
+            <div className={`relative bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-[var(--border-subtle)] ${containerClassName}`}>
                 <div className="sticky top-0 bg-[var(--bg-subtle)] border-b border-[var(--border-subtle)] px-6 py-4 flex justify-between items-center">
                     <h2 className="text-xl font-semibold text-[var(--text-primary)]">{title}</h2>
                     <button
