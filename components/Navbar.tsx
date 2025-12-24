@@ -42,6 +42,13 @@ export function Navbar({ categories }: NavbarProps) {
     }, 150);
   };
 
+  const handleLinkClick = () => {
+    setActiveDropdown(null);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -229,6 +236,7 @@ export function Navbar({ categories }: NavbarProps) {
                                     <Link
                                       href={`/category/${subCategory.slug ?? subCategory.id}`}
                                       className="block"
+                                      onClick={handleLinkClick}
                                     >
                                       <h3 className="text-black font-bold text-sm uppercase tracking-wider border-b border-gray-100 pb-3 hover:text-amber-600 transition-colors">
                                         {subCategory.name}
@@ -240,6 +248,7 @@ export function Navbar({ categories }: NavbarProps) {
                                           key={subSubCategory.id}
                                           href={`/category/${subSubCategory.slug ?? subSubCategory.id}`}
                                           className="text-gray-500 hover:text-black text-sm transition-colors py-0.5"
+                                          onClick={handleLinkClick}
                                         >
                                           {subSubCategory.name}
                                         </Link>
@@ -268,6 +277,7 @@ export function Navbar({ categories }: NavbarProps) {
                                           key={subCategory.id}
                                           href={`/category/${subCategory.slug ?? subCategory.id}`}
                                           className="text-gray-500 hover:text-black text-sm transition-colors whitespace-nowrap"
+                                          onClick={handleLinkClick}
                                         >
                                           {subCategory.name}
                                         </Link>
