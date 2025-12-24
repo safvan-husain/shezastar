@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/lib/product/model/product.model';
 import { formatCurrency } from '@/lib/utils/currency';
+import { stripHtml } from '@/lib/utils/string.utils';
 
 interface SearchResultsProps {
     results: Product[];
@@ -78,7 +79,7 @@ export function SearchResults({ results, isLoading, onClose, query }: SearchResu
                                 </div>
                             </div>
                             <p className="text-xs text-gray-500 truncate mt-0.5">
-                                {product.subtitle || product.description?.substring(0, 60)}
+                                {product.subtitle || stripHtml(product.description?.substring(0, 60))}
                             </p>
                         </div>
                     </Link>
