@@ -375,18 +375,26 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             {installationOption !== 'none' && (
               <div className="bg-[var(--storefront-bg-hover)] p-4 rounded-lg space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[var(--storefront-text-secondary)]">Product Price</span>
-                  <span className="text-[var(--storefront-text-primary)] font-medium">{formatPrice(productPriceAfterDiscount)}</span>
+                  <span className="text-[var(--storefront-text-secondary)]">
+                    Product Price {quantity > 1 && `(x${quantity})`}
+                  </span>
+                  <span className="text-[var(--storefront-text-primary)] font-medium">
+                    {formatPrice(productPriceAfterDiscount * quantity)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[var(--storefront-text-secondary)]">
-                    Installation ({installationOption === 'store' ? 'At Store' : 'At Home'})
+                    Installation ({installationOption === 'store' ? 'At Store' : 'At Home'}) {quantity > 1 && `(x${quantity})`}
                   </span>
-                  <span className="text-[var(--storefront-text-primary)] font-medium">{formatPrice(addOnPrice)}</span>
+                  <span className="text-[var(--storefront-text-primary)] font-medium">
+                    {formatPrice(addOnPrice * quantity)}
+                  </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-[var(--storefront-border)] font-bold">
                   <span className="text-[var(--storefront-text-primary)]">Total</span>
-                  <span className="text-[var(--storefront-text-primary)]">{formatPrice(finalPrice)}</span>
+                  <span className="text-[var(--storefront-text-primary)]">
+                    {formatPrice(finalPrice * quantity)}
+                  </span>
                 </div>
               </div>
             )}
