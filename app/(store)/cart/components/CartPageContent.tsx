@@ -8,6 +8,7 @@ import type { Product } from "@/lib/product/model/product.model";
 import { useStorefrontCart } from "@/components/storefront/StorefrontCartProvider";
 import { GuestAuthBanner } from "@/components/storefront/GuestAuthBanner";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
+import { stripHtml } from "@/lib/utils/string.utils";
 import CheckoutButton from "./CheckoutButton";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -371,37 +372,37 @@ export function CartPageContent({
 
               <div className="flex-1 flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-[var(--storefront-text-primary)]">
-                        {product?.name ?? "Product unavailable"}
+                  <div>
+                    <p className="font-semibold text-[var(--storefront-text-primary)]">
+                      {product?.name ?? "Product unavailable"}
+                    </p>
+                    {product ? (
+                      <p className="text-sm text-[var(--storefront-text-secondary)]">
+                        {stripHtml(product.description)}
                       </p>
-                      {product ? (
-                        <p className="text-sm text-[var(--storefront-text-secondary)]">
-                          {product.description}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-[var(--storefront-text-muted)]">
-                          This product is no longer available.
-                        </p>
-                      )}
-                      {item.installationOption && item.installationOption !== 'none' && (
-                        <p className="text-sm text-[var(--storefront-text-secondary)]">
-                          Installation: {getInstallationOptionLabel(item.installationOption)} (
-                          +{formatPrice(item.installationAddOnPrice)})
-                        </p>
-                      )}
-                      {isOutOfStock && (
-                        <p className="mt-2 text-xs text-[var(--storefront-sale-text)]">
-                          This product has not this much count.{" "}
-                          {availableForLine != null && (
-                            <>
-                              There is only {availableForLine} left.{" "}
-                            </>
-                          )}
-                          Please adjust the count.
-                        </p>
-                      )}
-                    </div>
+                    ) : (
+                      <p className="text-xs text-[var(--storefront-text-muted)]">
+                        This product is no longer available.
+                      </p>
+                    )}
+                    {item.installationOption && item.installationOption !== 'none' && (
+                      <p className="text-sm text-[var(--storefront-text-secondary)]">
+                        Installation: {getInstallationOptionLabel(item.installationOption)} (
+                        +{formatPrice(item.installationAddOnPrice)})
+                      </p>
+                    )}
+                    {isOutOfStock && (
+                      <p className="mt-2 text-xs text-[var(--storefront-sale-text)]">
+                        This product has not this much count.{" "}
+                        {availableForLine != null && (
+                          <>
+                            There is only {availableForLine} left.{" "}
+                          </>
+                        )}
+                        Please adjust the count.
+                      </p>
+                    )}
+                  </div>
 
                   <button
                     type="button"

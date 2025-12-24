@@ -8,6 +8,7 @@ import { Product } from '@/lib/product/model/product.model';
 import { ProductCardImage } from './ProductCardImage';
 import AddToFeaturedButton from './AddToFeaturedButton';
 import { getProductStockInfo } from '@/lib/product/product.utils';
+import { stripHtml } from '@/lib/utils/string.utils';
 
 interface ProductCardProps {
     product: Product;
@@ -84,7 +85,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </h2>
                     {product.description && (
                         <p className="text-[var(--muted-foreground)] text-sm mb-4 line-clamp-2">
-                            {product.description}
+                            {stripHtml(product.description)}
                         </p>
                     )}
 

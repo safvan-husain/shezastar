@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { Product } from '@/lib/product/model/product.model';
+import { stripHtml } from '@/lib/utils/string.utils';
 
 interface AddFeaturedProductModalProps {
     onClose: () => void;
@@ -39,7 +40,7 @@ export default function AddFeaturedProductModal({
                 const term = searchTerm.toLowerCase();
                 return (
                     product.name.toLowerCase().includes(term) ||
-                    product.description?.toLowerCase().includes(term)
+                    (product.description && stripHtml(product.description).toLowerCase().includes(term))
                 );
             }
 

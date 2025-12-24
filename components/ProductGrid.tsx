@@ -7,6 +7,7 @@ import { Card } from './ui/Card';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from './storefront/StorefrontCartProvider';
 import { StockStatus } from './storefront/StockStatus';
+import { stripHtml } from '@/lib/utils/string.utils';
 
 interface ProductGridProps {
   products: Product[];
@@ -16,6 +17,7 @@ interface ProductGridProps {
 function formatPrice(value: number) {
   return `AED ${value.toFixed(2)}`;
 }
+
 
 function HeartIcon({ filled }: { filled?: boolean }) {
   return (
@@ -134,7 +136,7 @@ export function ProductGrid({ products, emptyMessage = 'No products available ye
                 <h3 className="text-base font-medium text-[var(--storefront-text-primary)] line-clamp-2">{product.name}</h3>
                 {(product.subtitle || product.description) && (
                   <p className="text-xs text-[var(--storefront-text-muted)] line-clamp-1">
-                    {product.subtitle || product.description}
+                    {product.subtitle || (product.description && stripHtml(product.description))}
                   </p>
                 )}
               </div>

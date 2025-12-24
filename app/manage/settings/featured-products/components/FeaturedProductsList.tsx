@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Button } from '@/components/ui/Button';
 import { Product } from '@/lib/product/model/product.model';
 import AddFeaturedProductModal from './AddFeaturedProductModal';
+import { stripHtml } from '@/lib/utils/string.utils';
 
 interface FeaturedProductsListProps {
     initialProducts: Product[];
@@ -105,7 +106,7 @@ export default function FeaturedProductsList({ initialProducts }: FeaturedProduc
                                 </h3>
                                 {product.description && (
                                     <p className="text-sm text-[var(--text-secondary)] mb-3 line-clamp-2">
-                                        {product.description}
+                                        {stripHtml(product.description)}
                                     </p>
                                 )}
                                 <div className="flex items-center gap-2 pb-3 border-b border-[var(--border)]">
