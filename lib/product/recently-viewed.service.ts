@@ -16,17 +16,23 @@ export async function trackProductView(sessionId: string, productId: string, use
         return; // Don't track if invalid ID
     }
 
-    const query: any = { sessionId, productId: prodId };
+    // If userId is present, we identify the record by userId and productId (ignoring sessionId)
+    // to avoid duplicates when user session changes but userId remains same.
+    // If userId is not present, we identify by sessionId and productId.
+    const query: any = { productId: prodId };
     if (userId) {
         query.userId = new ObjectId(userId);
+    } else {
+        query.sessionId = sessionId;
     }
 
-    // Update viewedAt or insert new
+    // Update viewedAt, sessionId, and ensure userId is set if logged in
     await collection.updateOne(
         query,
         {
             $set: {
                 viewedAt: now,
+                sessionId, // Always update to current session ID
                 ...(userId ? { userId: new ObjectId(userId) } : {})
             }
         },
@@ -40,6 +46,56 @@ export async function trackProductView(sessionId: string, productId: string, use
     if (allViews.length > LIMIT) {
         const idsToDelete = allViews.slice(LIMIT).map(v => v._id);
         await collection.deleteMany({ _id: { $in: idsToDelete } });
+    }
+}
+
+/**
+ * Merges guest recently viewed products into the user's account.
+ * Prioritizes the most recent view if both exist.
+ */
+export async function mergeRecentlyViewed(sessionId: string, userId: string) {
+    const collection = await getCollection<RecentlyViewedDocument>(COLLECTION);
+    const userObjectId = new ObjectId(userId);
+
+    // 1. Get all guest views
+    const guestViews = await collection.find({ sessionId, userId: { $exists: false } }).toArray();
+    if (guestViews.length === 0) return;
+
+    // 2. Get all existing user views (to check for conflicts)
+    const userViews = await collection.find({ userId: userObjectId }).toArray();
+    const userViewMap = new Map(userViews.map(v => [v.productId.toString(), v]));
+
+    for (const guestView of guestViews) {
+        const productIdStr = guestView.productId.toString();
+        const existingUserView = userViewMap.get(productIdStr);
+
+        if (existingUserView) {
+            // User already viewed this. Keep the one with later viewedAt.
+            if (guestView.viewedAt > existingUserView.viewedAt) {
+                await collection.updateOne(
+                    { _id: existingUserView._id },
+                    {
+                        $set: {
+                            viewedAt: guestView.viewedAt,
+                            sessionId // Update session to current
+                        }
+                    }
+                );
+            }
+            // Delete the duplicate guest view
+            await collection.deleteOne({ _id: guestView._id });
+        } else {
+            // User hasn't viewed this. Transfer guest view to user.
+            await collection.updateOne(
+                { _id: guestView._id },
+                {
+                    $set: {
+                        userId: userObjectId,
+                        sessionId // Update session to current (optional but good consistency)
+                    }
+                }
+            );
+        }
     }
 }
 
