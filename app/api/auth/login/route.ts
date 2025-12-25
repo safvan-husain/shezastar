@@ -5,6 +5,7 @@ import { catchError } from '@/lib/errors/app-error';
 import { ensureStorefrontSession, bindSessionToUser } from '@/lib/storefront-session';
 import { mergeCarts } from '@/lib/cart/cart.service';
 import { mergeWishlists } from '@/lib/wishlist/wishlist.service';
+import { mergeRecentlyViewed } from '@/lib/product/recently-viewed.service';
 
 export async function POST(req: NextRequest) {
     try {
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
 
         await mergeCarts(session.sessionId, user.id);
         await mergeWishlists(session.sessionId, user.id);
+        await mergeRecentlyViewed(session.sessionId, user.id);
 
         // 2. Bind session
         await bindSessionToUser(session.sessionId, user.id);

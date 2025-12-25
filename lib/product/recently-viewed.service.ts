@@ -49,6 +49,56 @@ export async function trackProductView(sessionId: string, productId: string, use
     }
 }
 
+/**
+ * Merges guest recently viewed products into the user's account.
+ * Prioritizes the most recent view if both exist.
+ */
+export async function mergeRecentlyViewed(sessionId: string, userId: string) {
+    const collection = await getCollection<RecentlyViewedDocument>(COLLECTION);
+    const userObjectId = new ObjectId(userId);
+
+    // 1. Get all guest views
+    const guestViews = await collection.find({ sessionId, userId: { $exists: false } }).toArray();
+    if (guestViews.length === 0) return;
+
+    // 2. Get all existing user views (to check for conflicts)
+    const userViews = await collection.find({ userId: userObjectId }).toArray();
+    const userViewMap = new Map(userViews.map(v => [v.productId.toString(), v]));
+
+    for (const guestView of guestViews) {
+        const productIdStr = guestView.productId.toString();
+        const existingUserView = userViewMap.get(productIdStr);
+
+        if (existingUserView) {
+            // User already viewed this. Keep the one with later viewedAt.
+            if (guestView.viewedAt > existingUserView.viewedAt) {
+                await collection.updateOne(
+                    { _id: existingUserView._id },
+                    {
+                        $set: {
+                            viewedAt: guestView.viewedAt,
+                            sessionId // Update session to current
+                        }
+                    }
+                );
+            }
+            // Delete the duplicate guest view
+            await collection.deleteOne({ _id: guestView._id });
+        } else {
+            // User hasn't viewed this. Transfer guest view to user.
+            await collection.updateOne(
+                { _id: guestView._id },
+                {
+                    $set: {
+                        userId: userObjectId,
+                        sessionId // Update session to current (optional but good consistency)
+                    }
+                }
+            );
+        }
+    }
+}
+
 export async function getRecentlyViewedProducts(sessionId: string, userId?: string) {
     const collection = await getCollection<RecentlyViewedDocument>(COLLECTION);
     const userQuery: any = userId ? { userId: new ObjectId(userId) } : { sessionId };
