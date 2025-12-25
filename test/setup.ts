@@ -1,9 +1,9 @@
 import { beforeAll, afterAll, vi } from 'vitest';
-import * as db from './test-db.test';
+import * as db from './test-db';
 
 // Mock the real module
 vi.mock('@/lib/db/mongo-client', async () => {
-    return await import('./test-db.test');
+    return await import('./test-db');
 });
 
 // Stub Next.js server-only checks so Vitest can import server modules.
