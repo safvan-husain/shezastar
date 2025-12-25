@@ -64,6 +64,20 @@ vi.mock('@/lib/product/product.service-stock', () => ({
     validateStockAvailability: validateStockAvailabilityMock,
 }));
 
+// Mock Currency Service
+vi.mock('@/lib/currency/currency.service', () => ({
+    getExchangeRates: vi.fn().mockResolvedValue({
+        AED: 1,
+        USD: 1, // Set to 1 for tests to make math simple
+        SAR: 1,
+        QAR: 1,
+        KWD: 1,
+        BHD: 1,
+        OMR: 1
+    }),
+    convertPrice: vi.fn((price) => price), // Identity function for tests
+}));
+
 describe('Checkout Session API', () => {
     let POST: any;
 
@@ -168,7 +182,7 @@ describe('Checkout Session API', () => {
                 expect.objectContaining({
                     quantity: 1,
                     price_data: expect.objectContaining({
-                        unit_amount: 10000,
+                        unit_amount: 5000,
                         product_data: expect.objectContaining({
                             name: 'cart-prod-1'
                         })

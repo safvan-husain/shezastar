@@ -88,7 +88,7 @@ export function toCart(doc: CartDocument): Cart {
             createdAt: item.createdAt.toISOString(),
             updatedAt: item.updatedAt.toISOString(),
         })),
-        billingDetails: doc.billingDetails,
+        billingDetails: doc.billingDetails || undefined,
         subtotal,
         totalItems,
         createdAt: doc.createdAt.toISOString(),
