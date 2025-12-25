@@ -16,17 +16,23 @@ export async function trackProductView(sessionId: string, productId: string, use
         return; // Don't track if invalid ID
     }
 
-    const query: any = { sessionId, productId: prodId };
+    // If userId is present, we identify the record by userId and productId (ignoring sessionId)
+    // to avoid duplicates when user session changes but userId remains same.
+    // If userId is not present, we identify by sessionId and productId.
+    const query: any = { productId: prodId };
     if (userId) {
         query.userId = new ObjectId(userId);
+    } else {
+        query.sessionId = sessionId;
     }
 
-    // Update viewedAt or insert new
+    // Update viewedAt, sessionId, and ensure userId is set if logged in
     await collection.updateOne(
         query,
         {
             $set: {
                 viewedAt: now,
+                sessionId, // Always update to current session ID
                 ...(userId ? { userId: new ObjectId(userId) } : {})
             }
         },
