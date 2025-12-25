@@ -21,6 +21,8 @@ import {
   toBillingDetailsPayload,
   validateBillingDetailsForm,
 } from "@/components/storefront/BillingDetailsForm";
+import type { CartItem } from "@/lib/cart/model/cart.model";
+import { CartItemDetailsModal } from "@/components/storefront/CartItemDetailsModal";
 
 interface CartPageContentProps {
   initialCart: Cart | null;
@@ -94,6 +96,14 @@ export function CartPageContent({
     mapBillingDetailsToFormValue(currentBillingDetails)
   );
   const [billingErrors, setBillingErrors] = useState<BillingDetailsFormErrors>({});
+
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedItemForDetails, setSelectedItemForDetails] = useState<CartItem | null>(null);
+
+  const openDetailsModal = (item: CartItem) => {
+    setSelectedItemForDetails(item);
+    setIsDetailsModalOpen(true);
+  };
 
   useEffect(() => {
     if (currentBillingDetails) {
@@ -373,12 +383,12 @@ export function CartPageContent({
 
               <div className="flex-1 flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-[var(--storefront-text-primary)]">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-[var(--storefront-text-primary)] truncate">
                       {product?.name ?? "Product unavailable"}
                     </p>
                     {product ? (
-                      <p className="text-sm text-[var(--storefront-text-secondary)]">
+                      <p className="text-sm text-[var(--storefront-text-secondary)] line-clamp-2">
                         {stripHtml(product.description)}
                       </p>
                     ) : (
@@ -386,12 +396,42 @@ export function CartPageContent({
                         This product is no longer available.
                       </p>
                     )}
-                    {item.installationOption && item.installationOption !== 'none' && (
-                      <p className="text-sm text-[var(--storefront-text-secondary)]">
-                        Installation: {getInstallationOptionLabel(item.installationOption)} (
-                        +{formatPrice(item.installationAddOnPrice)})
-                      </p>
-                    )}
+
+                    <div className="mt-2 space-y-1.5">
+                      {item.installationOption && item.installationOption !== 'none' && (
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-medium text-[var(--storefront-text-secondary)]">
+                            Installation: {getInstallationOptionLabel(item.installationOption)} (
+                            +{formatPrice(item.installationAddOnPrice)})
+                          </p>
+                          {item.installationOption === 'home' && item.installationLocationId && (
+                            <p className="text-xs text-[var(--storefront-text-muted)] italic">
+                              Location: {product?.installationService?.availableLocations?.find(l => l.locationId === item.installationLocationId)?.name || 'Standard'}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Line item price breakdown */}
+                      <div className="bg-[var(--storefront-bg-subtle)] p-2 rounded border border-[var(--storefront-border-light)] inline-block">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] items-center">
+                          <span className="text-[var(--storefront-text-muted)]">Product (x{item.quantity}):</span>
+                          <span className="text-right text-[var(--storefront-text-secondary)]">{formatPrice((item.unitPrice - item.installationAddOnPrice) * item.quantity)}</span>
+
+                          {item.installationOption !== 'none' && (
+                            <>
+                              <span className="text-[var(--storefront-text-muted)]">Installation (x{item.quantity}):</span>
+                              <span className="text-right text-[var(--storefront-text-secondary)]">{formatPrice(item.installationAddOnPrice * item.quantity)}</span>
+                            </>
+                          )}
+
+                          <div className="col-span-2 border-t border-[var(--storefront-border-light)] mt-0.5 pt-0.5 flex justify-between font-bold">
+                            <span className="text-[var(--storefront-text-primary)]">Line Total:</span>
+                            <span className="text-[var(--storefront-text-primary)]">{formatPrice(lineTotal)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     {isOutOfStock && (
                       <p className="mt-2 text-xs text-[var(--storefront-sale-text)]">
                         This product has not this much count.{" "}
@@ -405,20 +445,29 @@ export function CartPageContent({
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    className="text-xs text-[var(--storefront-text-muted)] hover:text-[var(--storefront-text-primary)]"
-                    disabled={isLoading}
-                    onClick={async () => {
-                      await removeItem(
-                        item.productId,
-                        item.selectedVariantItemIds,
-                        item.installationOption
-                      );
-                    }}
-                  >
-                    Remove
-                  </button>
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      type="button"
+                      className="text-xs text-[var(--storefront-text-muted)] hover:text-[var(--storefront-text-primary)] transition-colors"
+                      disabled={isLoading}
+                      onClick={async () => {
+                        await removeItem(
+                          item.productId,
+                          item.selectedVariantItemIds,
+                          item.installationOption
+                        );
+                      }}
+                    >
+                      Remove
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-[var(--storefront-button-primary)] hover:underline"
+                      onClick={() => openDetailsModal(item as any as CartItem)}
+                    >
+                      View Details
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between gap-4">
@@ -538,6 +587,13 @@ export function CartPageContent({
           </div>
         </div>
       </div>
+
+      <CartItemDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        item={selectedItemForDetails!}
+        product={selectedItemForDetails ? productsById[selectedItemForDetails.productId] : null}
+      />
     </div>
   );
 }
