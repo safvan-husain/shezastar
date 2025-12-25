@@ -95,13 +95,13 @@ describe('Recently Viewed Service', () => {
 
         // 4. Verify results
         const products = await getRecentlyViewedProducts(sessionId, userId);
-
+        
         // Should have 2 items (P1, P2)
         expect(products.length).toBe(2);
-
+        
         // P1 should be updated to recent time (from guest view)
         // P2 should be assigned to user
-
+        
         // Verify duplicates check by checking raw collection
         const rawDocs = await collection.find({ userId: new ObjectId(userId) }).toArray();
         expect(rawDocs.length).toBe(2);
@@ -109,7 +109,7 @@ describe('Recently Viewed Service', () => {
         // Verify P1 view time is recent (approx now)
         const p1Doc = rawDocs.find(d => d.productId.toString() === product1Id);
         const p2Doc = rawDocs.find(d => d.productId.toString() === product2Id);
-
+      
         expect(p1Doc).toBeDefined();
         expect(p2Doc).toBeDefined();
 
