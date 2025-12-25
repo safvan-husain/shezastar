@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
+import { filterImagesByVariants } from "@/lib/product/model/product.model";
 
 interface ImageFile {
     id: string;
@@ -157,37 +158,15 @@ export function ReviewStep({
     }, [selectedSubCategoryIds, showToast]);
 
     const displayedImages = useMemo(() => {
-        if (images.length === 0) return [] as ImageFile[];
+        // filterImagesByVariants expects images with mappedVariants property.
+        // In ReviewStep, mappings are in imageMappings record.
+        // We synthesize the property for the utility.
+        const synthesizedImages = images.map((img: ImageFile) => ({
+            ...img,
+            mappedVariants: imageMappings[img.id] || []
+        })) as any[];
 
-        // No variant selection: show all images
-        if (selectedItemIds.size === 0) {
-            return images;
-        }
-
-        const selectedVariantItemIds = Array.from(selectedItemIds);
-
-        return images.filter(image => {
-            const mapped = imageMappings[image.id] || [];
-
-            // Images with no mappings show for all variants
-            if (!mapped || mapped.length === 0) {
-                return true;
-            }
-
-            // Mirror backend filterImagesByVariants semantics:
-            // image.mappedVariants is a list of "rules" (single item or combo)
-            // The image should be shown if ANY rule is satisfied.
-            return mapped.some(mappedId => {
-                // Exact single-item match
-                if (selectedVariantItemIds.includes(mappedId)) {
-                    return true;
-                }
-
-                // Combination mapping, e.g. "red+128gb"
-                const mappedItems = mappedId.split("+");
-                return mappedItems.every(item => selectedVariantItemIds.includes(item));
-            });
-        });
+        return filterImagesByVariants(synthesizedImages, Array.from(selectedItemIds)) as unknown as ImageFile[];
     }, [images, imageMappings, selectedItemIds]);
 
     const activeImage =

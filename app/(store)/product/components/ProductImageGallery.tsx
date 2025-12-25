@@ -20,34 +20,7 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
   // Organize images: variant-specific first, then general images
   const allImages = product.images || [];
 
-  const organizedImages = (() => {
-    if (selectedVariantItemIds.length === 0) {
-      // No variants selected, show all images in original order
-      return [...allImages].sort((a, b) => a.order - b.order);
-    }
-
-    // Get variant-specific images (matching selected variants)
-    const variantImages = filterImagesByVariants(allImages, selectedVariantItemIds);
-
-    // Get general images (no variant mapping)
-    const generalImages = allImages.filter(image =>
-      !image.mappedVariants || image.mappedVariants.length === 0
-    );
-
-    // Get other variant images (mapped to different variants)
-    const otherVariantImages = allImages.filter(image =>
-      image.mappedVariants &&
-      image.mappedVariants.length > 0 &&
-      !variantImages.some(vi => vi.id === image.id)
-    );
-
-    // Combine: variant-specific first, then general, then other variants
-    return [
-      ...variantImages.sort((a, b) => a.order - b.order),
-      ...generalImages.sort((a, b) => a.order - b.order),
-      ...otherVariantImages.sort((a, b) => a.order - b.order)
-    ];
-  })();
+  const organizedImages = filterImagesByVariants(allImages, selectedVariantItemIds);
 
   // Reset selected index when variants change to show the variant-specific image
   useEffect(() => {

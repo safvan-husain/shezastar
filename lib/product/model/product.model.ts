@@ -59,34 +59,44 @@ export function toProducts(docs: ProductDocument[]): Product[] {
     return docs.map(toProduct);
 }
 
-/**
- * Filter images based on selected variant items
- * Returns images that match the selected variants or have no mapping (show for all)
- */
 export function filterImagesByVariants(
     images: ProductImage[],
     selectedVariantItemIds: string[]
 ): ProductImage[] {
-    return images
-        .filter(image => {
-            // If no mapping, show for all variants
-            if (!image.mappedVariants || image.mappedVariants.length === 0) {
+    if (selectedVariantItemIds.length === 0) {
+        return [...images].sort((a, b) => a.order - b.order);
+    }
+
+    // 1. Get variant-specific images (strictly matching selected variants)
+    const variantImages = images.filter(image => {
+        if (!image.mappedVariants || image.mappedVariants.length === 0) return false;
+
+        return image.mappedVariants.some(mappedId => {
+            // Check for exact match (single variant item)
+            if (selectedVariantItemIds.includes(mappedId)) {
                 return true;
             }
 
-            // Check if any selected variant item matches the image mapping
-            return image.mappedVariants.some(mappedId => {
-                // Check for exact match (single variant item)
-                if (selectedVariantItemIds.includes(mappedId)) {
-                    return true;
-                }
-
-                // Check for combination match (e.g., "red+128gb")
-                const mappedItems = mappedId.split('+');
+            // Check for combination match (e.g., "red+128gb")
+            const mappedItems = mappedId.split('+');
+            if (mappedItems.length > 1) {
                 return mappedItems.every(item => selectedVariantItemIds.includes(item));
-            });
-        })
-        .sort((a, b) => a.order - b.order);
+            }
+            return false;
+        });
+    });
+
+    // If we have variant-specific images, return ONLY those
+    if (variantImages.length > 0) {
+        return variantImages.sort((a, b) => a.order - b.order);
+    }
+
+    // 2. Fallback: If no matching variant images, return ONLY general images (no mappings)
+    const generalImages = images.filter(image =>
+        !image.mappedVariants || image.mappedVariants.length === 0
+    );
+
+    return generalImages.sort((a, b) => a.order - b.order);
 }
 
 /**
