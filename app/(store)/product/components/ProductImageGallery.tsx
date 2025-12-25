@@ -92,20 +92,16 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
                 priority
               />
 
-              {/* Zoom Lens - Tracks mouse position */}
-              {isHovering && (
-                <div
-                  className="absolute border border-white/60 bg-white/10 pointer-events-none z-20 shadow-sm backdrop-blur-[1px]"
-                  style={{
-                    left: `${mousePos.x}%`,
-                    top: `${mousePos.y}%`,
-                    width: '40%',
-                    height: '40%',
-                    transform: 'translate(-50%, -50%)',
-                    boxShadow: '0 0 0 1px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.1)'
-                  }}
-                />
-              )}
+              {/* Inner Zoom Overlay - Visible on hover */}
+              <div
+                className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-300 ${isHovering ? 'opacity-100' : 'opacity-0'}`}
+                style={{
+                  backgroundImage: `url('${primaryImage.url}')`,
+                  backgroundPosition: `${mousePos.x}% ${mousePos.y}%`,
+                  backgroundSize: '150%', // Increased zoom (approx 30% more than previous 250%)
+                  backgroundRepeat: 'no-repeat',
+                }}
+              />
 
               {/* Hover Indicator */}
               <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase text-white/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 z-20 shadow-lg border border-white/10">
@@ -124,21 +120,6 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
             </div>
           )}
         </div>
-
-        {/* Side Zoom Modal (Floating Panel) - Outside overflow-hidden container */}
-        {isHovering && primaryImage && (
-          <div
-            className="absolute left-[102%] top-0 w-[120%] h-full z-[100] rounded-xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] bg-white border border-gray-200 overflow-hidden hidden lg:block animate-in fade-in zoom-in-95 duration-150"
-            style={{
-              // Zoom Ratio = Panel Width (120%) / Lens Width (40%) = 3x magnitude
-              // backgroundSize = 100% / LensWidth% = 100 / 0.4 = 250%
-              backgroundImage: `url('${primaryImage.url}')`,
-              backgroundPosition: `${mousePos.x}% ${mousePos.y}%`,
-              backgroundSize: '250%',
-              backgroundRepeat: 'no-repeat'
-            }}
-          />
-        )}
       </div>
 
       {/* Thumbnail Grid */}
