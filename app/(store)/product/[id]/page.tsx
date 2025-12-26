@@ -177,7 +177,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const filteredRelatedProducts = relatedProducts.filter(p => p.id !== product.id);
 
   return (
-    <div className="container mx-auto px-4 py-12 space-y-12 mt-24 max-w-7xl">
+    <div className="container mx-auto px-4 py-12 space-y-12 mt-24 lg:mt-32 max-w-7xl">
       {relatedError && <ProductErrorHandler error={relatedError} />}
 
       <ProductDetails product={product} />

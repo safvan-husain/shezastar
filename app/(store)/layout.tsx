@@ -31,7 +31,7 @@ export default async function StorefrontLayout({
                 <div className="fixed top-0 left-0 right-0 z-[100]">
                   <NavbarWrapper />
                 </div>
-                <main className="flex-1">
+                <main className="flex-1 lg:mt-10">
                   {children}
                 </main>
                 <FooterWrapper />

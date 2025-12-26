@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Product, filterImagesByVariants } from '@/lib/product/model/product.model';
-import { Modal } from '@/components/ui/Modal';
 
 interface ProductImageGalleryProps {
   product: Product;
@@ -14,7 +13,6 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Organize images: variant-specific first, then general images
@@ -49,9 +47,8 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
         {/* Primary Image Container - Overflow Hidden for rounded corners */}
         <div
           ref={containerRef}
-          className="relative aspect-square overflow-hidden rounded-lg bg-[var(--storefront-bg-subtle)] cursor-crosshair border border-[var(--storefront-border)]"
+          className="relative aspect-square overflow-hidden rounded-lg bg-[var(--storefront-bg-subtle)] border border-[var(--storefront-border)]"
           onMouseMove={handleMouseMove}
-          onClick={() => setIsModalOpen(true)}
         >
           {primaryImage ? (
             <>
@@ -75,14 +72,6 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
                   backgroundRepeat: 'no-repeat',
                 }}
               />
-
-              {/* Hover Indicator */}
-              <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase text-white/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 z-20 shadow-lg border border-white/10">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                </svg>
-                Click to Expand
-              </div>
             </>
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-[var(--storefront-text-muted)]">
@@ -120,101 +109,7 @@ export function ProductImageGallery({ product, selectedVariantItemIds }: Product
         </div>
       )}
 
-      {/* Full Resolution Lightbox Zoom */}
-      {isModalOpen && primaryImage && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-300"
-          onClick={() => setIsModalOpen(false)}
-        >
-          {/* Close Button */}
-          <button
-            className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors z-[110] p-2 hover:bg-white/10 rounded-full"
-            onClick={() => setIsModalOpen(false)}
-            aria-label="Close"
-          >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
 
-          {/* Navigation Controls (if multiple images) */}
-          {organizedImages.length > 1 && (
-            <>
-              <button
-                className="absolute left-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors z-[110] p-3 hover:bg-white/10 rounded-full flex items-center justify-center"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedIndex((prev) => (prev === 0 ? organizedImages.length - 1 : prev - 1));
-                }}
-                aria-label="Previous"
-              >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
-                className="absolute right-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors z-[110] p-3 hover:bg-white/10 rounded-full flex items-center justify-center"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedIndex((prev) => (prev === organizedImages.length - 1 ? 0 : prev + 1));
-                }}
-                aria-label="Next"
-              >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </>
-          )}
-
-          {/* Main Image */}
-          <div
-            className="relative w-full h-full max-w-6xl max-h-[85vh] m-4 animate-in zoom-in-95 duration-300 pointer-events-none"
-          >
-            <Image
-              src={primaryImage.url}
-              alt={product.name}
-              fill
-              unoptimized
-              className="object-contain"
-              priority
-            />
-          </div>
-
-          {/* Indicators / Thumbnail Strip */}
-          <div
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {organizedImages.map((image, idx) => (
-              <button
-                key={image.id || idx}
-                onClick={() => setSelectedIndex(idx)}
-                className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${selectedIndex === idx
-                  ? 'border-white scale-110 shadow-lg'
-                  : 'border-transparent opacity-50 hover:opacity-100'
-                  }`}
-              >
-                <Image
-                  src={image.url}
-                  alt={`Thumbnail ${idx + 1}`}
-                  fill
-                  unoptimized
-                  className="object-cover"
-                />
-              </button>
-            ))}
-          </div>
-
-          {/* Product Info Overlay */}
-          <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center pointer-events-none">
-            <h2 className="text-white text-lg font-medium tracking-wide drop-shadow-md">{product.name}</h2>
-            {organizedImages.length > 1 && (
-              <p className="text-white/60 text-sm mt-1">{selectedIndex + 1} / {organizedImages.length}</p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
