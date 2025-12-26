@@ -28,7 +28,7 @@ export default async function StorefrontLayout({
           <StorefrontCartProvider initialCart={cart}>
             <CurrencyProvider initialRates={rates}>
               <div className="bg-white min-h-screen flex flex-col">
-                <div className="fixed top-0 left-0 right-0 z-50">
+                <div className="fixed top-0 left-0 right-0 z-[100]">
                   <NavbarWrapper />
                 </div>
                 <main className="flex-1">
