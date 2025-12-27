@@ -33,14 +33,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
     const showToast = useCallback((message: string, type: Toast['type'], details?: ToastDetails) => {
         const id = Math.random().toString(36).substring(7);
-        const newToast: Toast = { 
-            id, 
-            message, 
-            type, 
+        const newToast: Toast = {
+            id,
+            message,
+            type,
             details: details ? { ...details, timestamp: new Date().toISOString() } : undefined,
             pinned: false,
         };
-        
+
         setToasts((prev) => [...prev, newToast]);
 
         // Auto-remove after 5 seconds (unless pinned)
@@ -75,7 +75,7 @@ export function useToast() {
 
 function ToastContainer({ toasts, removeToast, pinToast }: { toasts: Toast[]; removeToast: (id: string) => void; pinToast: (id: string) => void }) {
     return (
-        <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
+        <div className="fixed top-4 right-4 z-[9999] space-y-2 max-w-md">
             {toasts.map((toast) => (
                 <ToastItem key={toast.id} toast={toast} onRemove={removeToast} onPin={pinToast} />
             ))}
@@ -147,9 +147,8 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
 
     return (
         <div
-            className={`border-2 rounded-xl shadow-lg animate-in slide-in-from-right-full backdrop-blur-sm ${typeStyles[toast.type]} ${
-                toast.details ? 'cursor-pointer' : ''
-            }`}
+            className={`border-2 rounded-xl shadow-lg animate-in slide-in-from-right-full backdrop-blur-sm ${typeStyles[toast.type]} ${toast.details ? 'cursor-pointer' : ''
+                }`}
             onClick={toast.details ? handleToggleDetails : undefined}
         >
             <div className="px-4 py-3 flex items-start gap-3">
@@ -162,7 +161,7 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
                     {toast.pinned && (
                         <p className="text-xs opacity-75 mt-1 flex items-center gap-1">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L11 4.323V3a1 1 0 011-1zm-5 8.274l-.818 2.552c-.25.78.409 1.574 1.195 1.574H6.5a1 1 0 01.894.553l.448.894a1 1 0 001.788 0l.448-.894A1 1 0 0111 13.4h1.123c.786 0 1.445-.794 1.195-1.574L12.5 10.274 11 9.051V6a1 1 0 10-2 0v3.051l-1.5 1.223z"/>
+                                <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L11 4.323V3a1 1 0 011-1zm-5 8.274l-.818 2.552c-.25.78.409 1.574 1.195 1.574H6.5a1 1 0 01.894.553l.448.894a1 1 0 001.788 0l.448-.894A1 1 0 0111 13.4h1.123c.786 0 1.445-.794 1.195-1.574L12.5 10.274 11 9.051V6a1 1 0 10-2 0v3.051l-1.5 1.223z" />
                             </svg>
                             Pinned
                         </p>
@@ -180,7 +179,7 @@ function ToastItem({ toast, onRemove, onPin }: { toast: Toast; onRemove: (id: st
                     </svg>
                 </button>
             </div>
-            
+
             {showDetails && toast.details && (
                 <div className="px-4 pb-3 border-t border-[var(--border-subtle)] mt-2 pt-3">
                     <div className="flex justify-between items-center mb-3">
