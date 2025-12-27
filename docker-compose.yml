@@ -38,6 +38,7 @@ services:
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
       - MONGODB_AUTH_SOURCE=admin
+      - MONGODB_URI=
     depends_on:
       mongodb:
         condition: service_healthy
@@ -59,6 +60,7 @@ services:
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
       - MONGODB_AUTH_SOURCE=admin
+      - MONGODB_URI=
     entrypoint: npx tsx scripts/run-migrations.ts
     depends_on:
       mongodb:
@@ -88,6 +90,7 @@ services:
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
       - MONGODB_AUTH_SOURCE=admin
+      - MONGODB_URI=
     depends_on:
       mongodb:
         condition: service_healthy
