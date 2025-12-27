@@ -40,7 +40,7 @@ export function Navbar({ categories }: NavbarProps) {
 
   return (
     <nav className="flex flex-col bg-black text-white relative z-[100] w-full">
-      <div className='flex lg:max-w-8xl w-full lg:w-none lg:mx-auto items-center justify-between'>
+      <div className='flex lg:max-w-8xl w-full md:w-auto lg:mx-auto items-center justify-between'>
         {/* Logo */}
         <Link href="/" className="flex-shrink-0 ml-2 lg:ml-0">
           <Image
