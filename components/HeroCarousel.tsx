@@ -92,51 +92,8 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
 
           {/* Pricing */}
           <div className="mb-8 flex flex-col items-center gap-4">
-            <div className="hidden sm:flex justify-center items-center gap-4">
+            <div className="flex justify-center items-center gap-4">
               {priceDetails}
-            </div>
-            <div className="flex flex-col items-center gap-4 sm:hidden">
-              {hasMultipleSlides ? (
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={prevSlide}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition hover:bg-white/30"
-                    aria-label="Previous slide"
-                  >
-                    <svg
-                      className="h-6 w-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      strokeWidth="2"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <div className="flex flex-col items-center gap-2">
-                    {priceDetails}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={nextSlide}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition hover:bg-white/30"
-                    aria-label="Next slide"
-                  >
-                    <svg
-                      className="h-6 w-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      strokeWidth="2"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">{priceDetails}</div>
-              )}
             </div>
           </div>
         </div>
@@ -197,19 +154,6 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
           ))}
         </div>
       )}
-
-      {/* Scroll Down Indicator */}
-      <div className="absolute bottom-8 left-1/2 z-20 -translate-x-1/2 animate-bounce">
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          strokeWidth="2"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
-      </div>
     </section>
   );
 }

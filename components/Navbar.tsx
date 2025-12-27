@@ -39,8 +39,8 @@ export function Navbar({ categories }: NavbarProps) {
   };
 
   return (
-    <nav className="flex bg-black text-white relative z-[100] w-full">
-      <div className='flex max-w-8xl w-full sm:w-auto lg:mx-auto items-center justify-between'>
+    <nav className="flex flex-col bg-black text-white relative z-[100] w-full">
+      <div className='flex lg:max-w-8xl w-full lg:w-none lg:mx-auto items-center justify-between'>
         {/* Logo */}
         <Link href="/" className="flex-shrink-0 ml-2 lg:ml-0">
           <Image
@@ -163,15 +163,7 @@ export function Navbar({ categories }: NavbarProps) {
             </div>
           </div>
 
-          {/* Mobile Search Bar Expansion (Second Row) */}
-          <div
-            className={`lg:hidden w-full bg-[#111] transition-all duration-300 ease-in-out border-b border-gray-800 ${isSearchOpen ? 'max-h-20 opacity-100 overflow-visible' : 'max-h-0 opacity-0 pointer-events-none overflow-hidden'
-              }`}
-          >
-            <div className="p-3 max-w-8xl mx-auto">
-              <Search />
-            </div>
-          </div>
+
 
           {/* Desktop Categories Row */}
           <DesktopCategories categories={categories} />
@@ -182,6 +174,15 @@ export function Navbar({ categories }: NavbarProps) {
             onClose={() => setMobileMenuOpen(false)}
             categories={categories}
           />
+        </div>
+      </div>
+      {/* Mobile Search Bar Expansion (Second Row) */}
+      <div
+        className={`lg:hidden w-full bg-[#111] transition-all duration-300 ease-in-out border-b border-gray-800 ${isSearchOpen ? 'max-h-20 opacity-100 overflow-visible' : 'max-h-0 opacity-0 pointer-events-none overflow-hidden'
+          }`}
+      >
+        <div className="p-3 max-w-8xl mx-auto">
+          <Search />
         </div>
       </div>
     </nav>
