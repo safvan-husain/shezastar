@@ -261,7 +261,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                       const isDisabled = !isAvailable && !isSelected;
 
                       const baseClasses =
-                        'px-4 py-2 rounded-md border transition text-[var(--storefront-text-primary)]';
+                        'px-4 py-2 rounded-md border transition text-[var(--storefront-text-primary)] text-left';
                       const stateClasses = isSelected
                         ? 'border-[var(--storefront-text-primary)] bg-[var(--storefront-bg-hover)] font-semibold'
                         : 'border-[var(--storefront-border)] bg-[var(--storefront-bg)] hover:border-[var(--storefront-text-primary)]';
