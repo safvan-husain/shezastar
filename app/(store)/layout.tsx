@@ -9,6 +9,7 @@ import { StorefrontCartProvider } from "@/components/storefront/StorefrontCartPr
 import { StorefrontAuthSuggestionProvider } from "@/components/storefront/StorefrontAuthSuggestionProvider";
 import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
 import { getExchangeRates } from "@/lib/currency/currency.service";
+import { WhatsAppFloatingButton } from "@/components/storefront/WhatsAppFloatingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function StorefrontLayout({
                 <main className="flex-1 lg:mt-10">
                   {children}
                 </main>
+                <WhatsAppFloatingButton />
                 <FooterWrapper />
               </div>
             </CurrencyProvider>

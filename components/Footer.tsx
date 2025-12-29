@@ -65,6 +65,24 @@ export function Footer({ categories }: FooterProps) {
             <ul className="space-y-2">
               <li>
                 <Link
+                  href="/aboutus"
+                  className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
+                >
+                  <span className='text-yellow-400'>›</span>
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contact-us"
+                  className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
+                >
+                  <span className='text-yellow-400'>›</span>
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/privacy-policy"
                   className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
                 >
