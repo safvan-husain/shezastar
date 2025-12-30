@@ -92,11 +92,20 @@ export function Footer({ categories }: FooterProps) {
               </li>
               <li>
                 <Link
-                  href="/terms-of-service"
+                  href="/return-refund-policy"
                   className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
                 >
                   <span className='text-yellow-400'>›</span>
-                  Terms of Service
+                  Return & Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms-and-conditions"
+                  className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
+                >
+                  <span className='text-yellow-400'>›</span>
+                  Terms & Conditions
                 </Link>
               </li>
             </ul>
