@@ -18,9 +18,50 @@ export default function AboutUsPage() {
       </div>
 
       {/* First Section - 3 paragraphs with image on right */}
-      <div className="grid md:grid-cols-2 gap-8 items-start mb-16">
-        <div className="space-y-6 text-[var(--storefront-text-secondary)] leading-relaxed">
-          <p className="text-lg">
+      <div className="mb-16">
+        {/* Desktop layout - side by side */}
+        <div className="hidden md:grid md:grid-cols-2 gap-8 items-start">
+          <div className="space-y-6 text-[var(--storefront-text-secondary)] leading-relaxed">
+            <p className="text-lg">
+              SHEZA STAR CAR ACCESSORIES SPS LLC, one of the leading companies in the
+              car accessories trading industry, was founded with a clear vision: to
+              provide top-quality car accessories and auto services that enhance the
+              driving experience. Established under the umbrella of the SHEZA
+              ENTERPRISES FZE, which has been a pioneer in various fields since 2022,
+              SHEZA STAR quickly grew to become a trusted name in the market.
+            </p>
+            <p>
+              Our journey began in the vibrant city of Sharjah, United Arab Emirates,
+              where we set up our headquarters. With the support of SHEZA
+              ENTERPRISES FZE's extensive network and experience, SHEZA STAR expanded
+              its operations rapidly. Today, we have established a significant
+              presence across the region and now sell our products globally,
+              delivering exceptional products and services to our valued customers
+              worldwide.
+            </p>
+            <p>
+              At SHEZA STAR, we are passionate about cars and committed to offering
+              an extensive range of car accessories. Our product lineup includes car
+              multimedia systems, parking sensors, interior and exterior accessories,
+              care products, and a myriad of other car-related items. We continuously
+              strive to source and provide the latest and most innovative products
+              to help our customers maintain and enhance their vehicles.
+            </p>
+          </div>
+          <div className="rounded-lg overflow-hidden shadow-[var(--storefront-shadow-lg)]">
+            <Image
+              src="/about-images/storefront.jpeg"
+              alt="SHEZA STAR Storefront"
+              width={600}
+              height={400}
+              className="w-full h-auto object-contain"
+            />
+          </div>
+        </div>
+
+        {/* Mobile layout - stacked with image after first paragraph */}
+        <div className="md:hidden space-y-6">
+          <p className="text-lg text-[var(--storefront-text-secondary)] leading-relaxed">
             SHEZA STAR CAR ACCESSORIES SPS LLC, one of the leading companies in the
             car accessories trading industry, was founded with a clear vision: to
             provide top-quality car accessories and auto services that enhance the
@@ -28,32 +69,36 @@ export default function AboutUsPage() {
             ENTERPRISES FZE, which has been a pioneer in various fields since 2022,
             SHEZA STAR quickly grew to become a trusted name in the market.
           </p>
-          <p>
-            Our journey began in the vibrant city of Sharjah, United Arab Emirates,
-            where we set up our headquarters. With the support of SHEZA
-            ENTERPRISES FZE's extensive network and experience, SHEZA STAR expanded
-            its operations rapidly. Today, we have established a significant
-            presence across the region and now sell our products globally,
-            delivering exceptional products and services to our valued customers
-            worldwide.
-          </p>
-          <p>
-            At SHEZA STAR, we are passionate about cars and committed to offering
-            an extensive range of car accessories. Our product lineup includes car
-            multimedia systems, parking sensors, interior and exterior accessories,
-            care products, and a myriad of other car-related items. We continuously
-            strive to source and provide the latest and most innovative products
-            to help our customers maintain and enhance their vehicles.
-          </p>
-        </div>
-        <div className="rounded-lg overflow-hidden shadow-[var(--storefront-shadow-lg)]">
-          <Image
-            src="/about-images/storefront.jpeg"
-            alt="SHEZA STAR Storefront"
-            width={600}
-            height={400}
-            className="w-full h-auto object-contain"
-          />
+          
+          <div className="rounded-lg overflow-hidden shadow-[var(--storefront-shadow-lg)]">
+            <Image
+              src="/about-images/storefront.jpeg"
+              alt="SHEZA STAR Storefront"
+              width={600}
+              height={400}
+              className="w-full h-auto object-contain"
+            />
+          </div>
+
+          <div className="space-y-6 text-[var(--storefront-text-secondary)] leading-relaxed">
+            <p>
+              Our journey began in the vibrant city of Sharjah, United Arab Emirates,
+              where we set up our headquarters. With the support of SHEZA
+              ENTERPRISES FZE's extensive network and experience, SHEZA STAR expanded
+              its operations rapidly. Today, we have established a significant
+              presence across the region and now sell our products globally,
+              delivering exceptional products and services to our valued customers
+              worldwide.
+            </p>
+            <p>
+              At SHEZA STAR, we are passionate about cars and committed to offering
+              an extensive range of car accessories. Our product lineup includes car
+              multimedia systems, parking sensors, interior and exterior accessories,
+              care products, and a myriad of other car-related items. We continuously
+              strive to source and provide the latest and most innovative products
+              to help our customers maintain and enhance their vehicles.
+            </p>
+          </div>
         </div>
       </div>
 
