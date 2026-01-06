@@ -5,7 +5,7 @@ services:
     container_name: shezastar-mongodb
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "27017:27017" # Exposed in base, useful for both checks and external tools
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-password}
@@ -29,12 +29,11 @@ services:
       context: .
       target: seeder
     container_name: shezastar-seed
-    env_file:
-      - .env
+    # env_file loaded by overrides or default system
     environment:
-      - MONGODB_USER=${MONGODB_USER}
-      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
-      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_USER=${MONGODB_USER:-admin}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD:-password}
+      - MONGODB_DATABASE=${MONGODB_DATABASE:-shezastar}
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
       - MONGODB_AUTH_SOURCE=admin
@@ -49,14 +48,12 @@ services:
   migration:
     build:
       context: .
-      target: seeder
+      target: seeder # Using seeder stage or deps stage that has tsx? Dockerfile says seeder has source.
     container_name: shezastar-migration
-    env_file:
-      - .env
     environment:
-      - MONGODB_USER=${MONGODB_USER}
-      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
-      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_USER=${MONGODB_USER:-admin}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD:-password}
+      - MONGODB_DATABASE=${MONGODB_DATABASE:-shezastar}
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
       - MONGODB_AUTH_SOURCE=admin
@@ -75,18 +72,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: runner
+      # target specified in overrides
     container_name: shezastar-app
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
+    # Restart policy, ports, env, volumes in overrides
     environment:
-      - NODE_ENV=production
-      - MONGODB_USER=${MONGODB_USER}
-      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
-      - MONGODB_DATABASE=${MONGODB_DATABASE}
       - MONGODB_HOST=mongodb
       - MONGODB_PORT=27017
       - MONGODB_AUTH_SOURCE=admin
@@ -94,12 +83,11 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
-      seed:
+      seed: # Optional? If seed runs once, maybe app shouldn't wait forever if seed is already done in prod?
+        # Keeping consistent with original logic: app waits for seed and migration
         condition: service_completed_successfully
       migration:
         condition: service_completed_successfully
-    volumes:
-      - shezastar-uploads:/app/public/uploads
     networks:
       - shezastar-network
 

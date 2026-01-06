@@ -1,0 +1,30 @@
+services:
+  seed:
+    env_file:
+      - .env.production
+
+  migration:
+    env_file:
+      - .env.production
+
+  app:
+    build:
+      target: runner
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_AUTH_SOURCE=admin
+      - MONGODB_URI=
+      # Production optimizations
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      - shezastar-uploads:/app/public/uploads

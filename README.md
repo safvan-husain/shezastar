@@ -58,6 +58,29 @@ npm run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+### 6. Docker Deployment
+
+#### Local Development
+The default `docker-compose.yml` and `docker-compose.override.yml` are configured for local development with hot-reloading.
+
+```bash
+# Start development environment
+docker compose up --build
+
+# Run in background
+docker compose up -d
+```
+The app will be available at [http://localhost:3000](http://localhost:3000). Source code changes will be reflected immediately.
+
+#### Production
+For production deployment, use the production override file.
+
+```bash
+# Start production environment
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+```
+Ensure `.env.production` is configured with strong secrets before deploying.
+
 ## Usage Guide
 
 ### 1. Create Variant Types

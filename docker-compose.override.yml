@@ -1,0 +1,50 @@
+services:
+  seed:
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+
+  migration:
+    env_file:
+      - .env
+
+  app:
+    build:
+      target: deps # Using deps or base + source mount for dev usually. 
+      # Actually, better to use a specific dev approach.
+      # Common pattern: target 'deps' and run 'npm run dev' with volume mount.
+      # But the Dockerfile 'deps' stage only has node_modules. 
+      # Let's check Dockerfile again. 'deps' does 'npm ci'.
+      # 'builder' copies source and builds.
+      # 'runner' is for prod.
+      
+      # For dev, we often just use 'base', install deps (if not mounted), and run dev.
+      # Or use 'deps' and mount everything.
+    
+    # We will use 'deps' stage as it has node_modules installed. 
+    # We mount '.' to '/app' so local changes are reflected.
+    # But we MUST preserve /app/node_modules from the image so we don't overwrite it with local empty/different one if user has one.
+    # Actually, usually we mount '.' to '/app' but put /app/node_modules in an anonymous volume or named volume.
+    
+    image: shezastar-dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - shezastar-uploads:/app/public/uploads
+    environment:
+      - NODE_ENV=development
+      - MONGODB_USER=${MONGODB_USER:-admin}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD:-password}
+      - MONGODB_DATABASE=${MONGODB_DATABASE:-shezastar}
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_AUTH_SOURCE=admin
+      - MONGODB_URI=
+      # We set MONGODB_URI to empty to force the app to construct it from the parts above,
+      # since the MONGODB_URI in .env likely points to localhost.
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    command: npm run dev
