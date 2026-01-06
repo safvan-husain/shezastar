@@ -48,8 +48,33 @@ export async function POST(req: NextRequest) {
 
         // Check if authorized
         if (payment.status === 'AUTHORIZED') {
+            // We stored orderId in order.reference_id
+            const orderId = payment.order.reference_id;
+            let order: any = null;
+
+            try {
+                order = await getOrderById(orderId);
+            } catch (e) {
+                console.error(`[Tabby Webhook] Order not found for reference_id: ${orderId}`);
+                // Fallback to searching by paymentProviderSessionId if we already updated it once
+                const { getOrderByPaymentProviderSessionId } = await import('@/lib/order/order.service');
+                order = await getOrderByPaymentProviderSessionId(paymentId);
+            }
+
+            if (!order) {
+                console.error(`[Tabby Webhook] No order found for payment ${paymentId}`);
+                return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+            }
+
+            // IDEMPOTENCY GUARD: Only proceed if the order is still 'pending'.
+            // This prevents duplicate stock reduction or overwriting manual status changes (e.g., 'completed', 'cancelled').
+            if (order.status !== 'pending') {
+                console.log(`[Tabby Webhook] Order ${order.id || order._id} status is '${order.status}'. Skipping automated fulfillment.`);
+                return NextResponse.json({ received: true });
+            }
+
             // Capture the payment
-            console.log(`[Tabby Webhook] Capturing payment ${paymentId}`);
+            console.log(`[Tabby Webhook] Capturing payment ${paymentId} for order ${orderId}`);
 
             const captureResponse = await fetch(`${TABBY_API_URL_V1}/payments/${paymentId}/captures`, {
                 method: 'POST',
@@ -65,31 +90,10 @@ export async function POST(req: NextRequest) {
             if (!captureResponse.ok) {
                 const errorText = await captureResponse.text();
                 console.error(`[Tabby Webhook] Capture failed for ${paymentId}:`, errorText);
-                // Return 200 to acknowledge webhook, but log error. 
-                // Or retry? 
-                // If capture fails, we probably shouldn't create the order yet or marked as pending.
                 return NextResponse.json({ error: 'Capture failed' }, { status: 500 });
             }
 
             console.log(`[Tabby Webhook] Payment ${paymentId} captured.`);
-
-            // Proceed to Update Order
-            // We stored sessionId in order.reference_id
-            const orderId = payment.order.reference_id;
-
-            let order: any = null;
-            try {
-                order = await getOrderById(orderId);
-            } catch (e) {
-                console.error(`[Tabby Webhook] Order not found for reference_id: ${orderId}`);
-                // Fallback to searching by paymentProviderSessionId if we already updated it once
-                order = await (await import('@/lib/order/order.service')).getOrderByPaymentProviderSessionId(paymentId);
-            }
-
-            if (!order) {
-                console.error(`[Tabby Webhook] No order found for payment ${paymentId}`);
-                return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-            }
 
             // Update Order Status
             const { getCollection } = await import('@/lib/db/mongo-client');
