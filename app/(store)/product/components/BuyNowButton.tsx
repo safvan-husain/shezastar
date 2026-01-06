@@ -48,6 +48,8 @@ export function BuyNowButton({
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
 
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'tabby'>('stripe');
+
   useEffect(() => {
     setBillingForm(mapBillingDetailsToFormValue(billingDetails));
     setIsEditingBilling(!billingDetails);
@@ -68,7 +70,7 @@ export function BuyNowButton({
   );
 
   const startCheckout = async () => {
-    const url = '/api/checkout_sessions';
+    const url = paymentMethod === 'tabby' ? '/api/tabby/checkout_session' : '/api/checkout_sessions';
     const method = 'POST';
     setIsProcessingCheckout(true);
     try {
@@ -83,7 +85,9 @@ export function BuyNowButton({
       const body = await response.json().catch(() => null);
 
       if (!response.ok || !body?.url) {
-        showToast('Failed to start checkout', 'error', {
+        // Handle Tabby rejection reason specifically if available
+        const errorMessage = body?.reason ? `Tabby rejected: ${body.reason}` : 'Failed to start checkout';
+        showToast(errorMessage, 'error', {
           status: response.status,
           body,
           url,
@@ -194,6 +198,21 @@ export function BuyNowButton({
                     <p className="mt-2 text-[var(--storefront-text-muted)]">Notes: {billingDetails.orderNotes}</p>
                   )}
                 </div>
+
+                <div className="space-y-2 text-black">
+                  <p className="text-sm font-medium text-[var(--storefront-text-secondary)]">Payment Method</p>
+                  <div className="flex gap-4">
+                    <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-all ${paymentMethod === 'stripe' ? 'border-black bg-black/5 ring-1 ring-black' : 'border-[var(--storefront-border)] hover:bg-[var(--storefront-bg-subtle)]'}`}>
+                      <input type="radio" name="payment_bn" value="stripe" checked={paymentMethod === 'stripe'} onChange={() => setPaymentMethod('stripe')} className="sr-only" />
+                      <span className="font-medium text-sm">Pay with Card</span>
+                    </label>
+                    <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-all ${paymentMethod === 'tabby' ? 'border-[#3EEDBF] bg-[#3EEDBF]/10 ring-1 ring-[#3EEDBF]' : 'border-[var(--storefront-border)] hover:bg-[var(--storefront-bg-subtle)]'}`}>
+                      <input type="radio" name="payment_bn" value="tabby" checked={paymentMethod === 'tabby'} onChange={() => setPaymentMethod('tabby')} className="sr-only" />
+                      <span className="font-medium text-sm">Tabby</span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex gap-2 text-sm">
                     <button
@@ -221,7 +240,7 @@ export function BuyNowButton({
                     disabled={isProcessingCheckout}
                     className="inline-flex items-center justify-center rounded-md bg-[var(--storefront-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--storefront-button-primary-hover)] disabled:opacity-50"
                   >
-                    {isProcessingCheckout ? 'Redirecting…' : 'Continue to payment'}
+                    {isProcessingCheckout ? 'Redirecting…' : paymentMethod === 'tabby' ? 'Proceed with Tabby' : 'Continue to payment'}
                   </button>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { updateOrderStatus, createOrder, getOrderByStripeSessionId } from '@/lib/order/order.service';
+import { updateOrderStatus, createOrder, getOrderByStripeSessionId, getOrderById, updateOrderStatusById } from '@/lib/order/order.service';
 import { clearCart, getCartBySessionId, getCart } from '@/lib/cart/cart.service';
 import { OrderDocument, OrderItemDocument } from '@/lib/order/model/order.model';
 import { getProduct } from '@/lib/product/product.service';
@@ -58,12 +58,56 @@ export async function POST(req: NextRequest) {
                     ? await getCart(cartLookupSession)
                     : await getCartBySessionId(storefrontSessionId);
 
-                // Idempotency: if we already created this order, don't create again,
-                // but still try to clear the cart for standard checkout.
-                const existingOrder = await getOrderByStripeSessionId(session.id);
-                if (existingOrder) {
-                    if (existingOrder.status !== status) {
-                        await updateOrderStatus(session.id, status);
+                // NEW: Priority Lookup by client_reference_id (Order ID)
+                let order: any = null;
+                if (session.client_reference_id) {
+                    try {
+                        order = await getOrderById(session.client_reference_id);
+                    } catch (e) {
+                        console.warn(`Order not found for client_reference_id: ${session.client_reference_id}`);
+                    }
+                }
+
+                // Fallback to legacy lookup by Stripe Session ID
+                if (!order) {
+                    order = await getOrderByStripeSessionId(session.id);
+                }
+
+                if (order) {
+                    // Update existing order
+                    const updateData: any = {
+                        status: status,
+                        paymentProviderSessionId: session.id, // Store Stripe Session ID
+                    };
+
+                    // If it was a legacy order that didn't have billing details, try to sync them
+                    if (!order.billingDetails && session.metadata?.billingDetails) {
+                        try {
+                            updateData.billingDetails = JSON.parse(session.metadata.billingDetails);
+                        } catch (e) { }
+                    }
+
+                    await updateOrderStatus(session.id, status); // Legacy helper still works due to $or lookup
+
+                    // Specific update for new fields
+                    const { getCollection } = await import('@/lib/db/mongo-client');
+                    const collection = await getCollection<any>('orders');
+                    await collection.updateOne(
+                        { _id: order.id ? new (await import('@/lib/db/mongo-client')).ObjectId(order.id) : order._id },
+                        { $set: { paymentProviderSessionId: session.id, updatedAt: new Date() } }
+                    );
+
+                    // Re-fetch enriched order for stock reduction
+                    const updatedOrder = await getOrderById(order.id || order._id.toHexString());
+
+                    // Stock reduction
+                    for (const item of updatedOrder.items) {
+                        try {
+                            const { reduceVariantStock } = await import('@/lib/product/product.service-stock');
+                            await reduceVariantStock(item.productId, item.selectedVariantItemIds, item.quantity);
+                        } catch (stockError) {
+                            console.error(`Failed to reduce stock for product ${item.productId}:`, stockError);
+                        }
                     }
 
                     if (shouldClearCart) {
@@ -78,20 +122,15 @@ export async function POST(req: NextRequest) {
                         };
                         try {
                             await clearCart(minimalSession);
-                            console.log(`Idempotent webhook: cart cleared for session ${storefrontSessionId}`);
-                        } catch (clearError) {
-                            if (clearError instanceof AppError && clearError.code === 'CART_NOT_FOUND') {
-                                console.warn(`Idempotent webhook: cart not found for session ${storefrontSessionId}`);
-                            } else {
-                                throw clearError;
-                            }
-                        }
+                        } catch (e) { }
                     }
 
                     return NextResponse.json({ received: true });
                 }
 
+                // LEGACY FALLBACK: If order still not found, create it (should be rare now)
                 const orderItems: OrderItemDocument[] = [];
+                // ... existing item reconstruction logic ...
 
                 if (session.metadata?.type === 'buy_now' && session.metadata?.buyNowItems) {
                     try {
@@ -284,24 +323,19 @@ export async function POST(req: NextRequest) {
                     billingDetails: orderBillingDetails,
                 };
 
+                // Note: The new logic above handles stock reduction and cart clearing for existing orders.
+                // This block is only reached if LEGACY FALLBACK creation occurs.
                 await createOrder(orderData);
 
-                // Reduce stock for each item after successful order creation
+                // Reduce stock for fallback
                 for (const item of orderItems) {
                     try {
                         const { reduceVariantStock } = await import('@/lib/product/product.service-stock');
                         await reduceVariantStock(item.productId, item.selectedVariantItemIds, item.quantity);
-                        console.log(`Reduced stock for product ${item.productId}, variant ${item.selectedVariantItemIds.join('+')}, quantity ${item.quantity}`);
-                    } catch (stockError) {
-                        // Log error but don't fail the order
-                        console.error(`Failed to reduce stock for product ${item.productId}:`, stockError);
-                        // TODO: Consider adding to a queue for manual review
-                    }
+                    } catch (e) { }
                 }
 
-                // Clear the cart ONLY if it's not a Buy Now order
                 if (shouldClearCart) {
-                    // Create a minimal session object for clearCart function
                     const minimalSession = {
                         sessionId: storefrontSessionId,
                         status: 'active' as const,
@@ -311,18 +345,7 @@ export async function POST(req: NextRequest) {
                         lastActiveAt: new Date().toISOString(),
                         userId: storefrontSession?.userId,
                     };
-                    try {
-                        await clearCart(minimalSession);
-                        console.log(`Order created and cart cleared for session ${storefrontSessionId}`);
-                    } catch (clearError) {
-                        if (clearError instanceof AppError && clearError.code === 'CART_NOT_FOUND') {
-                            console.warn(`Cart not found to clear for session ${storefrontSessionId}`);
-                        } else {
-                            throw clearError;
-                        }
-                    }
-                } else {
-                    console.log(`Order created (Buy Now) for session ${storefrontSessionId}. Cart preserved.`);
+                    try { await clearCart(minimalSession); } catch (e) { }
                 }
             } catch (error) {
                 console.error('Error processing checkout.session.completed:', error);

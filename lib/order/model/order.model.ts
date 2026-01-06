@@ -22,6 +22,9 @@ export interface OrderItemDocument {
 export interface OrderDocument {
     _id: ObjectId;
     sessionId: string;
+    paymentProvider?: 'stripe' | 'tabby';
+    paymentProviderSessionId?: string;
+    paymentProviderOrderId?: string;
     stripeSessionId?: string;
     items: OrderItemDocument[];
     totalAmount: number;
@@ -50,6 +53,9 @@ export interface OrderItem {
 export interface Order {
     id: string;
     sessionId: string;
+    paymentProvider?: 'stripe' | 'tabby';
+    paymentProviderSessionId?: string;
+    paymentProviderOrderId?: string;
     stripeSessionId?: string;
     items: OrderItem[];
     totalAmount: number;
@@ -64,6 +70,9 @@ export function toOrder(doc: OrderDocument): Order {
     return {
         id: doc._id.toHexString(),
         sessionId: doc.sessionId,
+        paymentProvider: doc.paymentProvider,
+        paymentProviderSessionId: doc.paymentProviderSessionId,
+        paymentProviderOrderId: doc.paymentProviderOrderId,
         stripeSessionId: doc.stripeSessionId,
         items: doc.items.map(item => ({
             productId: item.productId,

@@ -14,6 +14,8 @@ async function getOrderCollection() {
         await Promise.all([
             collection.createIndex({ sessionId: 1 }),
             collection.createIndex({ stripeSessionId: 1 }, { unique: true, sparse: true }),
+            collection.createIndex({ paymentProviderSessionId: 1 }, { unique: true, sparse: true }),
+            collection.createIndex({ paymentProviderOrderId: 1 }, { unique: true, sparse: true }),
             collection.createIndex({ createdAt: -1 }),
             collection.createIndex({ status: 1, createdAt: -1 }),
         ]);
@@ -38,7 +40,18 @@ export async function createOrder(orderData: Omit<OrderDocument, '_id' | 'create
 
 export async function getOrderByStripeSessionId(stripeSessionId: string): Promise<Order | null> {
     const collection = await getOrderCollection();
-    const doc = await collection.findOne({ stripeSessionId });
+    const doc = await collection.findOne({
+        $or: [
+            { stripeSessionId },
+            { paymentProviderSessionId: stripeSessionId }
+        ]
+    });
+    return doc ? toOrder(doc) : null;
+}
+
+export async function getOrderByPaymentProviderSessionId(paymentProviderSessionId: string): Promise<Order | null> {
+    const collection = await getOrderCollection();
+    const doc = await collection.findOne({ paymentProviderSessionId });
     return doc ? toOrder(doc) : null;
 }
 
@@ -47,7 +60,12 @@ export async function updateOrderStatus(stripeSessionId: string, status: OrderSt
     const now = new Date();
 
     const result = await collection.findOneAndUpdate(
-        { stripeSessionId },
+        {
+            $or: [
+                { stripeSessionId: stripeSessionId },
+                { paymentProviderSessionId: stripeSessionId }
+            ]
+        },
         {
             $set: {
                 status,
