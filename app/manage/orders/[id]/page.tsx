@@ -152,6 +152,12 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                             {order.currency.toUpperCase()}
                                         </span>
                                     </p>
+                                    <p className="text-[var(--text-primary)] mt-1">
+                                        Gateway:{' '}
+                                        <span className="font-semibold capitalize">
+                                            {order.paymentProvider || 'N/A'}
+                                        </span>
+                                    </p>
                                 </div>
                                 <div>
                                     <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">

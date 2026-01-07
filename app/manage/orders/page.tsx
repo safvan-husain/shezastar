@@ -241,6 +241,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                             <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                                                 Items
                                             </th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                                                Gateway
+                                            </th>
                                             <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                                                 Total
                                             </th>
@@ -276,6 +279,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-[var(--text-secondary)]">
                                                         {itemsCount}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--text-secondary)]">
+                                                        <span className="capitalize">{order.paymentProvider || 'N/A'}</span>
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-[var(--text-primary)]">
                                                         {order.totalAmount.toFixed(2)} {order.currency.toUpperCase()}
@@ -336,6 +342,14 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                                     {itemsCount}
                                                 </p>
                                             </div>
+                                            <div>
+                                                <p className="uppercase tracking-wide text-[var(--muted-foreground)] text-[10px]">
+                                                    Gateway
+                                                </p>
+                                                <p className="text-sm font-semibold text-[var(--text-primary)] capitalize">
+                                                    {order.paymentProvider || 'N/A'}
+                                                </p>
+                                            </div>
                                         </div>
                                         <div className="mt-3 flex items-center justify-between">
                                             <p className="text-sm font-semibold text-[var(--text-primary)]">
@@ -354,7 +368,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
                         {/* Pagination */}
                         {pagination.totalPages > 1 && (
-                        <div className="flex items-center justify-between mt-4 text-sm text-[var(--text-secondary)]">
+                            <div className="flex items-center justify-between mt-4 text-sm text-[var(--text-secondary)]">
                                 <div>
                                     Page {pagination.page} of{' '}
                                     {pagination.totalPages}
