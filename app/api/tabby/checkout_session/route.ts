@@ -51,7 +51,6 @@ export async function POST(req: NextRequest) {
         // Tabby expects amount as string, e.g. "100.00"
 
         let itemsToValidate: Array<{ productId: string; selectedVariantItemIds: string[]; quantity: number }> = [];
-        let tabbyItems: any[] = [];
         let totalAmount = 0;
         let processedBuyNowItems: Array<{
             productId: string;
@@ -112,19 +111,7 @@ export async function POST(req: NextRequest) {
                 quantity: item.quantity,
             }));
 
-            tabbyItems = processedBuyNowItems.map((item) => {
-                const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
-                const itemTotal = convertedPrice * item.quantity; // Not strictly used for line item total logic here but good for check
-
-                // Tabby items payload structure
-                return {
-                    title: item.productId, // Should ideally be product name
-                    quantity: item.quantity,
-                    unit_price: convertedPrice.toFixed(2),
-                    reference_id: item.productId,
-                    category: 'General', // Default
-                };
-            });
+            // Simplified: No longer building detailed tabbyItems here as we use a summary item later.
 
             // Calculate total based on items
             totalAmount = processedBuyNowItems.reduce((sum, item) => {
@@ -163,16 +150,7 @@ export async function POST(req: NextRequest) {
                 quantity: item.quantity
             }));
 
-            tabbyItems = freshCartItems.map((item) => {
-                const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
-                return {
-                    title: item.productId,
-                    quantity: item.quantity,
-                    unit_price: convertedPrice.toFixed(2),
-                    reference_id: item.productId,
-                    category: 'General',
-                };
-            });
+            // Simplified: No longer building detailed tabbyItems here as we use a summary item later.
 
             totalAmount = freshCartItems.reduce((sum, item) => {
                 const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
@@ -295,42 +273,31 @@ export async function POST(req: NextRequest) {
                 },
                 order: {
                     reference_id: pendingOrder.id,
-                    items: tabbyItems,
+                    items: [
+                        {
+                            title: `Order #${pendingOrder.id}`,
+                            quantity: 1,
+                            unit_price: totalAmount.toFixed(2),
+                            reference_id: pendingOrder.id,
+                            category: 'General',
+                        }
+                    ],
                 },
                 meta: meta,
-                merchant_urls: {
-                    success: `${origin}/checkout/success`,
-                    cancel: `${origin}/checkout/cancel`,
-                    failure: `${origin}/checkout/failure`,
-                }
             },
             lang: 'en',
             merchant_code: tabbyMerchantCode,
+            merchant_urls: {
+                success: `${origin}/checkout/success`,
+                cancel: `${origin}/checkout/cancel`,
+                failure: `${origin}/checkout/failure`,
+            }
         };
 
         const response = await fetch(TABBY_API_URL, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${tabbyPublicKey}`, // Use Public Key for client-side/checkout session usually, but docs say "Bearer <token>". Check if it's Public or Secret. Usually Secret for backend. 
-                // Quick Start says: "Your backend checks eligibility... creates session via API". Backend usually uses Secret Key. 
-                // BUT Stripe checkout session uses Secret Key. 
-                // Docs snippet in chunk 4 said `Authorization: Bearer <token>`.
-                // I'll assume Secret Key for backend-to-backend calls. 
-                // Wait, some integrations use Public Key for session creation. 
-                // Checking docs again or assuming Secret Key since it's server-side.
-                // However, I will use `TABBY_PUBLIC_KEY` in the header as per standard "pk_test_..." pattern often being public, but Tabby calls it "Public Key" and "Secret Key".
-                // Let's use Secret Key if I'm not sure, creating a session is a privileged action? 
-                // No, creating a session can be public for some providers, but here `merchant_code` is also sent.
-                // Let's try Secret Key first.
-                // Actually, I'll use TABBY_PUBLIC_KEY strictly because usually PK is for frontend/client and SK is for webhooks/capture.
-                // BUT this IS backend.
-                // Let's check environment variable names the user added. 
-                // They added both.
-                // I will use `TABBY_PUBLIC_KEY` for auth header as a safe bet for session creation or `TABBY_SECRET_KEY`?
-                // Looking at standard integrations: usually SK is for capture/refund. PK is for checkout.
-                // I'll use `TABBY_PUBLIC_KEY` (often pk_test_...) for the Bearer token in session creation.
-                // EDIT: Tabby docs say "Authenticate using your Public Key used in the Authorization header" for checkout session creation?
-                // I will use `process.env.TABBY_PUBLIC_KEY`.
+                'Authorization': `Bearer ${tabbySecretKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(tabbyPayload),
