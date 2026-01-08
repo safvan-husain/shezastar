@@ -17,12 +17,12 @@ export default function CheckoutButton({
   hasBillingDetails = true,
   onMissingBillingDetails,
 }: CheckoutButtonProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<'stripe' | 'tabby' | null>(null);
   const { showToast } = useToast();
   const { currency } = useCurrency();
 
   const handleCheckout = async (provider: 'stripe' | 'tabby') => {
-    if (isLoading) return;
+    if (loadingProvider) return;
 
     const url = provider === 'tabby' ? "/api/tabby/checkout_session" : "/api/checkout_sessions";
     const method = "POST";
@@ -50,7 +50,7 @@ export default function CheckoutButton({
       return;
     }
 
-    setIsLoading(true);
+    setLoadingProvider(provider);
     try {
       const response = await fetch(url, {
         method,
@@ -119,7 +119,7 @@ export default function CheckoutButton({
       // eslint-disable-next-line no-console
       console.error("Error during checkout:", error);
     } finally {
-      setIsLoading(false);
+      setLoadingProvider(null);
     }
   };
 
@@ -127,20 +127,33 @@ export default function CheckoutButton({
     <div className="flex flex-col gap-3">
       <button
         onClick={() => handleCheckout('stripe')}
-        disabled={isLoading}
+        disabled={loadingProvider !== null}
         className={`w-full bg-black text-white py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${!hasBillingDetails ? 'bg-gray-500 hover:bg-gray-500' : 'hover:bg-gray-800'
           }`}
       >
-        {isLoading ? "Processing..." : "Proceed to Checkout"}
+        {loadingProvider === 'stripe' ? "Processing..." : "Proceed to Checkout"}
       </button>
       {currency === 'AED' && (
         <button
           onClick={() => handleCheckout('tabby')}
-          disabled={isLoading}
+          disabled={loadingProvider !== null}
           className={`w-full bg-[#3EEDBF] text-black py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${!hasBillingDetails ? 'opacity-60' : 'hover:bg-[#35d8ae]'
             }`}
         >
-          {isLoading ? "Processing..." : "Proceed with Tabby"}
+          <div className="flex items-center justify-center gap-2">
+            {loadingProvider === 'tabby' ? (
+              "Processing..."
+            ) : (
+              <>
+                <span>Proceed with </span>
+                <img
+                  src="https://cdn.tabby.ai/assets/logo.svg"
+                  alt="Tabby"
+                  className="h-6 w-auto brightness-0"
+                />
+              </>
+            )}
+          </div>
         </button>
       )}
     </div>

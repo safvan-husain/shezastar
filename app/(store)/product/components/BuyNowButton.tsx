@@ -165,7 +165,20 @@ export function BuyNowButton({
         onClick={handleBuyNow}
         aria-label={isTabby ? `Buy ${product.name} with Tabby` : `Buy ${product.name} now`}
       >
-        {isTabby ? 'Buy with Tabby' : 'Buy Now'}
+        {isProcessingCheckout ? (
+          'Redirecting…'
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <span>{isTabby ? 'Buy with ' : 'Buy Now'}</span>
+            {isTabby && (
+              <img
+                src="https://cdn.tabby.ai/assets/logo.svg"
+                alt="Tabby"
+                className="h-6 w-auto brightness-0"
+              />
+            )}
+          </div>
+        )}
       </button>
       {isDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
@@ -229,9 +242,22 @@ export function BuyNowButton({
                     type="button"
                     onClick={startCheckout}
                     disabled={isProcessingCheckout}
-                    className="inline-flex items-center justify-center rounded-md bg-[var(--storefront-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--storefront-button-primary-hover)] disabled:opacity-50"
+                    className="inline-flex items-center justify-center rounded-md bg-[var(--storefront-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--storefront-button-primary-hover)] disabled:opacity-50 gap-2"
                   >
-                    {isProcessingCheckout ? 'Redirecting…' : paymentProvider === 'tabby' ? 'Proceed with Tabby' : 'Continue to payment'}
+                    {isProcessingCheckout ? (
+                      'Redirecting…'
+                    ) : (
+                      <>
+                        {paymentProvider === 'tabby' && (
+                          <img
+                            src="https://cdn.tabby.ai/assets/logo.svg"
+                            alt="Tabby"
+                            className="h-3 w-auto brightness-0 invert"
+                          />
+                        )}
+                        <span>{paymentProvider === 'tabby' ? 'Proceed with Tabby' : 'Continue to payment'}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
