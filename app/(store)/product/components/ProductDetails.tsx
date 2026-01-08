@@ -11,15 +11,20 @@ import { ProductImageGallery } from './ProductImageGallery';
 import { BuyNowButton } from './BuyNowButton';
 import { StockStatus } from '@/components/storefront/StockStatus';
 import type { InstallationOption } from '@/lib/cart/cart.schema';
+import { TabbyPromo } from '@/components/storefront/TabbyPromo';
 
 interface ProductDetailsProps {
   product: Product;
+  tabbyConfig?: {
+    publicKey: string;
+    merchantCode: string;
+  };
 }
 
 
 
 
-export function ProductDetails({ product }: ProductDetailsProps) {
+export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
   const { isInWishlist, toggleWishlistItem } = useStorefrontWishlist();
   const inWishlist = isInWishlist(product.id, []);
   const { formatPrice } = useCurrency();
@@ -243,6 +248,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
           {displaySubtitle && (
             <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4 break-words">{displaySubtitle}</p>
+          )}
+
+          {tabbyConfig && (
+            <TabbyPromo
+              price={finalPrice}
+              currency="AED"
+              publicKey={tabbyConfig.publicKey}
+              merchantCode={tabbyConfig.merchantCode}
+              source="product"
+            />
           )}
 
           <StockStatus inStock={displayInStock} />

@@ -40,6 +40,9 @@ function buildErrorPayload(error: unknown, overrides?: Partial<ToastErrorPayload
 }
 
 export default async function CartPage() {
+  const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY || '';
+  const tabbyMerchantCode = process.env.TABBY_MERCHANT_CODE || '';
+
   let cartError: ToastErrorPayload | null = null;
   const productErrors: ToastErrorPayload[] = [];
   let productsById: ProductsById = {};
@@ -126,6 +129,7 @@ export default async function CartPage() {
         productsById={productsById}
         stockIssuesByLineKey={stockIssuesByLineKey}
         isStockValid={isStockValid}
+        tabbyConfig={{ publicKey: tabbyPublicKey, merchantCode: tabbyMerchantCode }}
       />
     </div>
   );

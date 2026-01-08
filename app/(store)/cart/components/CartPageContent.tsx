@@ -23,6 +23,7 @@ import {
 } from "@/components/storefront/BillingDetailsForm";
 import type { CartItem } from "@/lib/cart/model/cart.model";
 import { CartItemDetailsModal } from "@/components/storefront/CartItemDetailsModal";
+import { TabbyPromo } from "@/components/storefront/TabbyPromo";
 
 interface CartPageContentProps {
   initialCart: Cart | null;
@@ -35,6 +36,10 @@ interface CartPageContentProps {
     }
   >;
   isStockValid?: boolean;
+  tabbyConfig?: {
+    publicKey: string;
+    merchantCode: string;
+  };
 }
 
 
@@ -70,6 +75,7 @@ export function CartPageContent({
   productsById,
   stockIssuesByLineKey = {},
   isStockValid = true,
+  tabbyConfig,
 }: CartPageContentProps) {
   const {
     cart,
@@ -564,6 +570,19 @@ export function CartPageContent({
               {formatPrice(subtotal || effectiveItems.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0))}
             </span>
           </div>
+
+          {tabbyConfig && (
+            <div className="w-full">
+              <TabbyPromo
+                price={subtotal || effectiveItems.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0)}
+                currency="AED"
+                publicKey={tabbyConfig.publicKey}
+                merchantCode={tabbyConfig.merchantCode}
+                source="cart"
+              />
+            </div>
+          )}
+
           <p className="text-xs text-[var(--storefront-text-muted)]">
             Taxes and shipping calculated at checkout.
           </p>

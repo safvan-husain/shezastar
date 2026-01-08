@@ -146,6 +146,8 @@ async function fetchRelatedProducts(categoryIds: string[], originId?: string): P
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
+  const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY || '';
+  const tabbyMerchantCode = process.env.TABBY_MERCHANT_CODE || '';
 
   const { product, error: productError } = await fetchProduct(id);
 
@@ -180,7 +182,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
     <div className="container mx-auto px-4 py-12 space-y-12 mt-24 lg:mt-32 max-w-7xl">
       {relatedError && <ProductErrorHandler error={relatedError} />}
 
-      <ProductDetails product={product} />
+      <ProductDetails
+        product={product}
+        tabbyConfig={{ publicKey: tabbyPublicKey, merchantCode: tabbyMerchantCode }}
+      />
 
       <RelatedProducts products={filteredRelatedProducts} />
 
