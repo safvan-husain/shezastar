@@ -27,7 +27,7 @@ interface ProductDetailsProps {
 export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
   const { isInWishlist, toggleWishlistItem } = useStorefrontWishlist();
   const inWishlist = isInWishlist(product.id, []);
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
 
   const { addToCart, isLoading } = useStorefrontCart();
   const { showToast } = useToast();
@@ -416,8 +416,7 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
           </div>
 
           <div className="space-y-4">
-            <div className="grid w-full grid-cols-[1fr_2fr] gap-4 sm:grid-cols-[1fr_2fr_2fr_1fr]">
-
+            <div className="grid w-full grid-cols-[1fr_2fr] gap-4 sm:grid-cols-[1fr_2fr_1fr]">
               <div className="flex w-fit justify-start text-black items-center border border-[var(--storefront-border)] rounded-lg bg-white">
                 <button
                   type="button"
@@ -478,7 +477,7 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
 
               <button
                 type="button"
-                className="sm:order-4 w-full py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] hover:bg-[var(--storefront-button-secondary-hover)] transition flex items-center justify-center"
+                className="w-full py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] hover:bg-[var(--storefront-button-secondary-hover)] transition flex items-center justify-center"
                 aria-pressed={inWishlist}
                 aria-label={inWishlist ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
                 onClick={() => {
@@ -499,6 +498,9 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
                   />
                 </svg>
               </button>
+            </div>
+
+            <div className={`grid w-full gap-4 ${(tabbyConfig && currency === 'AED') ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
               <BuyNowButton
                 product={product}
                 quantity={quantity}
@@ -507,86 +509,98 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
                 installationLocationId={selectedLocationId}
                 disabled={!allVariantsSelected || !isLocationValid}
                 maxAvailable={currentStockLimit}
+                paymentProvider="stripe"
               />
+              {tabbyConfig && currency === 'AED' && (
+                <BuyNowButton
+                  product={product}
+                  quantity={quantity}
+                  selectedVariantItemIds={selectedVariantItemIds}
+                  installationOption={installationOption}
+                  installationLocationId={selectedLocationId}
+                  disabled={!allVariantsSelected || !isLocationValid}
+                  maxAvailable={currentStockLimit}
+                  paymentProvider="tabby"
+                />
+              )}
+            </div>
+          </div>
 
+          {/* Product Features Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4 pt-8 border-t border-[var(--storefront-border)]">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
+                <div
+                  className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
+                  style={{
+                    maskImage: 'url(/icons/dollar-sign-svgrepo-com.svg)',
+                    WebkitMaskImage: 'url(/icons/dollar-sign-svgrepo-com.svg)',
+                    maskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    maskPosition: 'center'
+                  }}
+                />
+              </div>
+              <div>
+                <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">Low Prices</h4>
+                <p className="text-xs text-[var(--storefront-text-muted)]">Price match guarantee</p>
+              </div>
             </div>
 
-            {/* Product Features Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4 pt-8 border-t border-[var(--storefront-border)]">
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
-                  <div
-                    className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
-                    style={{
-                      maskImage: 'url(/icons/dollar-sign-svgrepo-com.svg)',
-                      WebkitMaskImage: 'url(/icons/dollar-sign-svgrepo-com.svg)',
-                      maskSize: 'contain',
-                      maskRepeat: 'no-repeat',
-                      maskPosition: 'center'
-                    }}
-                  />
-                </div>
-                <div>
-                  <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">Low Prices</h4>
-                  <p className="text-xs text-[var(--storefront-text-muted)]">Price match guarantee</p>
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
+                <div
+                  className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
+                  style={{
+                    maskImage: 'url(/icons/done-round-svgrepo-com.svg)',
+                    WebkitMaskImage: 'url(/icons/done-round-svgrepo-com.svg)',
+                    maskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    maskPosition: 'center'
+                  }}
+                />
               </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
-                  <div
-                    className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
-                    style={{
-                      maskImage: 'url(/icons/done-round-svgrepo-com.svg)',
-                      WebkitMaskImage: 'url(/icons/done-round-svgrepo-com.svg)',
-                      maskSize: 'contain',
-                      maskRepeat: 'no-repeat',
-                      maskPosition: 'center'
-                    }}
-                  />
-                </div>
-                <div>
-                  <h4 className="font-bold text-[var(--storefront-text-primary)]  text-sm">Guaranteed Fitment.</h4>
-                  <p className="text-xs text-[var(--storefront-text-muted)]">Always the correct part</p>
-                </div>
+              <div>
+                <h4 className="font-bold text-[var(--storefront-text-primary)]  text-sm">Guaranteed Fitment.</h4>
+                <p className="text-xs text-[var(--storefront-text-muted)]">Always the correct part</p>
               </div>
+            </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
-                  <div
-                    className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
-                    style={{
-                      maskImage: 'url(/icons/support-svgrepo-com.svg)',
-                      WebkitMaskImage: 'url(/icons/support-svgrepo-com.svg)',
-                      maskSize: 'contain',
-                      maskRepeat: 'no-repeat',
-                      maskPosition: 'center'
-                    }}
-                  />
-                </div>
-                <div>
-                  <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">In-House Experts.</h4>
-                  <p className="text-xs text-[var(--storefront-text-muted)]">We know our products</p>
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
+                <div
+                  className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
+                  style={{
+                    maskImage: 'url(/icons/support-svgrepo-com.svg)',
+                    WebkitMaskImage: 'url(/icons/support-svgrepo-com.svg)',
+                    maskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    maskPosition: 'center'
+                  }}
+                />
               </div>
+              <div>
+                <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">In-House Experts.</h4>
+                <p className="text-xs text-[var(--storefront-text-muted)]">We know our products</p>
+              </div>
+            </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
-                  <div
-                    className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
-                    style={{
-                      maskImage: 'url(/icons/return-svgrepo-com.svg)',
-                      WebkitMaskImage: 'url(/icons/return-svgrepo-com.svg)',
-                      maskSize: 'contain',
-                      maskRepeat: 'no-repeat',
-                      maskPosition: 'center'
-                    }}
-                  />
-                </div>
-                <div>
-                  <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">Easy Returns.</h4>
-                  <p className="text-xs text-[var(--storefront-text-muted)]">Quick & Hassle Free</p>
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[var(--storefront-border)] flex items-center justify-center">
+                <div
+                  className="w-7 h-7 bg-[var(--storefront-text-secondary)]"
+                  style={{
+                    maskImage: 'url(/icons/return-svgrepo-com.svg)',
+                    WebkitMaskImage: 'url(/icons/return-svgrepo-com.svg)',
+                    maskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    maskPosition: 'center'
+                  }}
+                />
+              </div>
+              <div>
+                <h4 className="font-bold text-[var(--storefront-text-primary)] text-sm">Easy Returns.</h4>
+                <p className="text-xs text-[var(--storefront-text-muted)]">Quick & Hassle Free</p>
               </div>
             </div>
           </div>

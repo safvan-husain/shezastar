@@ -111,7 +111,7 @@ export function BillingDetailsForm({ value, errors = {}, onChange }: BillingDeta
     };
 
     return (
-        <div className="bg-[var(--storefront-bg-subtle)] border border-[var(--storefront-border-light)] rounded-lg p-3 sm:p-4 space-y-4">
+        <div className="bg-[var(--storefront-bg-subtle)] border border-[var(--storefront-border-light)] rounded-lg p-3 sm:p-4 space-y-4 z-[100]">
             <div className="grid md:grid-cols-2 gap-4">
                 <FormField
                     label="First name"

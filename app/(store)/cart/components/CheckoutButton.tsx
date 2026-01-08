@@ -18,14 +18,13 @@ export default function CheckoutButton({
   onMissingBillingDetails,
 }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'tabby'>('stripe');
   const { showToast } = useToast();
   const { currency } = useCurrency();
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (provider: 'stripe' | 'tabby') => {
     if (isLoading) return;
 
-    const url = paymentMethod === 'tabby' ? "/api/tabby/checkout_session" : "/api/checkout_sessions";
+    const url = provider === 'tabby' ? "/api/tabby/checkout_session" : "/api/checkout_sessions";
     const method = "POST";
 
     if (hasStockIssues) {
@@ -125,30 +124,25 @@ export default function CheckoutButton({
   };
 
   return (
-    <div className="space-y-4">
-      {hasBillingDetails && !hasStockIssues && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-[var(--storefront-text-secondary)]">Payment Method</p>
-          <div className="flex gap-4">
-            <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-all ${paymentMethod === 'stripe' ? 'border-black bg-black/5 ring-1 ring-black' : 'border-[var(--storefront-border)] hover:bg-[var(--storefront-bg-subtle)]'}`}>
-              <input type="radio" name="payment" value="stripe" checked={paymentMethod === 'stripe'} onChange={() => setPaymentMethod('stripe')} className="sr-only" />
-              <span className="font-medium text-sm">Pay with Card</span>
-            </label>
-            <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-all ${paymentMethod === 'tabby' ? 'border-[#3EEDBF] bg-[#3EEDBF]/10 ring-1 ring-[#3EEDBF]' : 'border-[var(--storefront-border)] hover:bg-[var(--storefront-bg-subtle)]'}`}>
-              <input type="radio" name="payment" value="tabby" checked={paymentMethod === 'tabby'} onChange={() => setPaymentMethod('tabby')} className="sr-only" />
-              <span className="font-medium text-sm">Tabby</span>
-            </label>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col gap-3">
       <button
-        onClick={handleCheckout}
+        onClick={() => handleCheckout('stripe')}
         disabled={isLoading}
         className={`w-full bg-black text-white py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${!hasBillingDetails ? 'bg-gray-500 hover:bg-gray-500' : 'hover:bg-gray-800'
           }`}
       >
-        {isLoading ? "Processing..." : paymentMethod === 'tabby' ? "Proceed with Tabby" : "Proceed to Checkout"}
+        {isLoading ? "Processing..." : "Proceed to Checkout"}
       </button>
+      {currency === 'AED' && (
+        <button
+          onClick={() => handleCheckout('tabby')}
+          disabled={isLoading}
+          className={`w-full bg-[#3EEDBF] text-black py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${!hasBillingDetails ? 'opacity-60' : 'hover:bg-[#35d8ae]'
+            }`}
+        >
+          {isLoading ? "Processing..." : "Proceed with Tabby"}
+        </button>
+      )}
     </div>
   );
 }

@@ -25,6 +25,7 @@ interface BuyNowButtonProps {
   installationLocationId?: string;
   disabled?: boolean;
   maxAvailable: number | null;
+  paymentProvider?: 'stripe' | 'tabby';
 }
 
 
@@ -36,6 +37,7 @@ export function BuyNowButton({
   selectedVariantItemIds,
   disabled,
   maxAvailable,
+  paymentProvider = 'stripe',
 }: BuyNowButtonProps) {
 
   const { showToast } = useToast();
@@ -47,8 +49,6 @@ export function BuyNowButton({
   const [billingErrors, setBillingErrors] = useState<BillingDetailsFormErrors>({});
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
-
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'tabby'>('stripe');
 
   useEffect(() => {
     setBillingForm(mapBillingDetailsToFormValue(billingDetails));
@@ -70,7 +70,7 @@ export function BuyNowButton({
   );
 
   const startCheckout = async () => {
-    const url = paymentMethod === 'tabby' ? '/api/tabby/checkout_session' : '/api/checkout_sessions';
+    const url = paymentProvider === 'tabby' ? '/api/tabby/checkout_session' : '/api/checkout_sessions';
     const method = 'POST';
     setIsProcessingCheckout(true);
     try {
@@ -151,19 +151,24 @@ export function BuyNowButton({
     setIsDialogOpen(false);
   };
 
+  const isTabby = paymentProvider === 'tabby';
+
   return (
     <>
       <button
         type="button"
-        className="w-full py-3 px-2 rounded-lg bg-black text-white font-semibold hover:bg-gray-800 transition flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+        className={`w-full py-3 px-2 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isTabby
+          ? 'bg-[#3EEDBF] text-black hover:bg-[#35d8ae]'
+          : 'bg-black text-white hover:bg-gray-800'
+          }`}
         disabled={disabled}
         onClick={handleBuyNow}
-        aria-label={`Buy ${product.name} now`}
+        aria-label={isTabby ? `Buy ${product.name} with Tabby` : `Buy ${product.name} now`}
       >
-        Buy Now
+        {isTabby ? 'Buy with Tabby' : 'Buy Now'}
       </button>
       {isDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/40" onClick={closeDialog} />
           <div className="relative z-10 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[var(--storefront-bg)] p-4 sm:p-6 shadow-lg space-y-4 my-8">
             <div className="flex items-center justify-between">
@@ -199,20 +204,6 @@ export function BuyNowButton({
                   )}
                 </div>
 
-                <div className="space-y-2 text-black">
-                  <p className="text-sm font-medium text-[var(--storefront-text-secondary)]">Payment Method</p>
-                  <div className="flex gap-4">
-                    <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-all ${paymentMethod === 'stripe' ? 'border-black bg-black/5 ring-1 ring-black' : 'border-[var(--storefront-border)] hover:bg-[var(--storefront-bg-subtle)]'}`}>
-                      <input type="radio" name="payment_bn" value="stripe" checked={paymentMethod === 'stripe'} onChange={() => setPaymentMethod('stripe')} className="sr-only" />
-                      <span className="font-medium text-sm">Pay with Card</span>
-                    </label>
-                    <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-all ${paymentMethod === 'tabby' ? 'border-[#3EEDBF] bg-[#3EEDBF]/10 ring-1 ring-[#3EEDBF]' : 'border-[var(--storefront-border)] hover:bg-[var(--storefront-bg-subtle)]'}`}>
-                      <input type="radio" name="payment_bn" value="tabby" checked={paymentMethod === 'tabby'} onChange={() => setPaymentMethod('tabby')} className="sr-only" />
-                      <span className="font-medium text-sm">Tabby</span>
-                    </label>
-                  </div>
-                </div>
-
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex gap-2 text-sm">
                     <button
@@ -240,7 +231,7 @@ export function BuyNowButton({
                     disabled={isProcessingCheckout}
                     className="inline-flex items-center justify-center rounded-md bg-[var(--storefront-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--storefront-button-primary-hover)] disabled:opacity-50"
                   >
-                    {isProcessingCheckout ? 'Redirecting…' : paymentMethod === 'tabby' ? 'Proceed with Tabby' : 'Continue to payment'}
+                    {isProcessingCheckout ? 'Redirecting…' : paymentProvider === 'tabby' ? 'Proceed with Tabby' : 'Continue to payment'}
                   </button>
                 </div>
               </div>

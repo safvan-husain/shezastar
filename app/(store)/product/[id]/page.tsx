@@ -148,6 +148,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
   const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY || '';
   const tabbyMerchantCode = process.env.TABBY_MERCHANT_CODE || '';
+  const tabbyConfig = (tabbyPublicKey && tabbyMerchantCode)
+    ? { publicKey: tabbyPublicKey, merchantCode: tabbyMerchantCode }
+    : undefined;
 
   const { product, error: productError } = await fetchProduct(id);
 
@@ -184,7 +187,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       <ProductDetails
         product={product}
-        tabbyConfig={{ publicKey: tabbyPublicKey, merchantCode: tabbyMerchantCode }}
+        tabbyConfig={tabbyConfig}
       />
 
       <RelatedProducts products={filteredRelatedProducts} />
