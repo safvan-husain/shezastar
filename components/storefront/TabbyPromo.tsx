@@ -12,6 +12,12 @@ interface TabbyPromoProps {
     lang?: 'en' | 'ar';
 }
 
+declare global {
+    interface Window {
+        TabbyPromo: any;
+    }
+}
+
 
 export function TabbyPromo({
     price,
@@ -30,26 +36,43 @@ export function TabbyPromo({
 
     useEffect(() => {
         const scriptId = 'tabby-promo-script';
-        if (!document.getElementById(scriptId)) {
-            const script = document.createElement('script');
-            script.src = 'https://checkout.tabby.ai/tabby-promo.js';
-            script.id = scriptId;
-            script.async = true;
-            document.body.appendChild(script);
+
+        const initTabby = () => {
+            if (window.TabbyPromo) {
+                new window.TabbyPromo({
+                    selector: '#TabbyPromo',
+                    currency: currency,
+                    price: price.toFixed(2),
+                    lang: lang,
+                    source: source,
+                    publicKey: publicKey,
+                    merchantCode: merchantCode,
+                });
+            }
+        };
+
+        const script = document.getElementById(scriptId) as HTMLScriptElement;
+
+        if (!script) {
+            const newScript = document.createElement('script');
+            newScript.src = 'https://checkout.tabby.ai/tabby-promo.js';
+            newScript.id = scriptId;
+            newScript.async = true;
+            newScript.onload = initTabby;
+            document.body.appendChild(newScript);
+        } else {
+            if (window.TabbyPromo) {
+                initTabby();
+            } else {
+                script.addEventListener('load', initTabby);
+                return () => script.removeEventListener('load', initTabby);
+            }
         }
-    }, []);
+    }, [price, currency, publicKey, merchantCode, source, lang]);
 
     return (
         <div className="my-4">
-            {/* @ts-expect-error Tabby custom element */}
-            <tabby-promo
-                price={price}
-                currency={currency}
-                public-key={publicKey}
-                merchant-code={merchantCode}
-                lang={lang}
-                source={source}
-            ></tabby-promo>
+            <div id="TabbyPromo" />
         </div>
     );
 }

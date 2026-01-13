@@ -250,16 +250,6 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
             <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4 break-words">{displaySubtitle}</p>
           )}
 
-          {tabbyConfig && currency === 'AED' && (
-            <div className="flex items-center gap-2 my-2 p-2 bg-[#3EEDBF]/10 rounded-lg w-fit">
-              <div className="bg-[#3EEDBF] rounded-full p-1">
-                <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-              </div>
-              <span className="text-sm font-semibold text-[var(--storefront-text-primary)]">Available with</span>
-              <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-5 w-auto" />
-            </div>
-          )}
-
           {tabbyConfig && (
             <TabbyPromo
               price={finalPrice}

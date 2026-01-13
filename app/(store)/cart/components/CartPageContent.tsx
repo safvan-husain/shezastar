@@ -90,7 +90,7 @@ export function CartPageContent({
     saveBillingDetails,
   } = useStorefrontCart();
 
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
 
   const effectiveCart = cart ?? initialCart;
   const effectiveItems = items.length > 0 ? items : effectiveCart?.items ?? [];
