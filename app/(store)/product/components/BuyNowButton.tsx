@@ -312,7 +312,7 @@ export function BuyNowButton({
                           {tabbyStatus === 'loading' && <span className="text-xs text-gray-500">Checking...</span>}
                         </div>
                         {tabbyStatus === 'rejected' && tabbyRejectionReason && (
-                          <p className="text-xs text-red-500 mt-2 ml-7">{tabbyRejectionReason?.replaceAll("_", "")}</p>
+                          <p className="text-xs text-red-500 mt-2 ml-7">{tabbyRejectionReason?.replaceAll("_", " ")}</p>
                         )}
                       </label>
                     )}
