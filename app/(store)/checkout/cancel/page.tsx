@@ -5,7 +5,7 @@ import Link from 'next/link';
 export default function CancelPage() {
     return (
         <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center mt-12 animate-in fade-in duration-700">
-            <div className="mb-8 relative">
+            <div className="mb-8 relative mt-12">
                 <div className="absolute inset-0 bg-amber-50 rounded-full scale-150 blur-2xl opacity-50"></div>
                 <svg
                     width="80"
@@ -36,7 +36,7 @@ export default function CancelPage() {
                 </span>
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mb-12">
                 <Link
                     href="/cart"
                     className="flex-1 bg-black text-white px-8 py-4 rounded-xl font-bold hover:bg-gray-800 transition-all active:scale-95 shadow-lg shadow-black/10 text-center"
@@ -49,12 +49,6 @@ export default function CancelPage() {
                 >
                     Continue Shopping
                 </Link>
-            </div>
-
-            <div className="mt-12 p-6 bg-gray-50 rounded-2xl border border-gray-100 max-w-sm">
-                <p className="text-sm text-gray-500 italic">
-                    "Changed your mind or had trouble with payment? We're here to help if you have any questions."
-                </p>
             </div>
         </div>
     );

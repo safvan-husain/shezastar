@@ -352,8 +352,8 @@ export function BuyNowButton({
                       <>
                         {selectedProvider === 'tabby' ? (
                           <>
-                            <span>Pay with</span>
-                            <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-3 w-auto brightness-0" />
+                            <span className='text-black'>Pay with</span>
+                            <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-5 w-auto brightness-0" />
                           </>
                         ) : (
                           'Proceed to Payment'
