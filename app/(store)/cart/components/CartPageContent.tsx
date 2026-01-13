@@ -595,14 +595,7 @@ export function CartPageContent({
             <CheckoutButton
               hasStockIssues={hasStockIssues}
               availableCount={firstIssueAvailable ?? undefined}
-              hasBillingDetails={hasBillingDetails}
-              onMissingBillingDetails={handleMissingBillingDetails}
             />
-            {!hasBillingDetails && (
-              <p className="mt-2 text-xs text-[var(--storefront-sale-text)] text-right">
-                Add your building address above to continue to checkout.
-              </p>
-            )}
           </div>
         </div>
       </div>

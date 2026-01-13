@@ -25,7 +25,10 @@ interface BuyNowButtonProps {
   installationLocationId?: string;
   disabled?: boolean;
   maxAvailable: number | null;
-  paymentProvider?: 'stripe' | 'tabby';
+  tabbyConfig?: {
+    publicKey: string;
+    merchantCode: string;
+  };
 }
 
 
@@ -37,7 +40,7 @@ export function BuyNowButton({
   selectedVariantItemIds,
   disabled,
   maxAvailable,
-  paymentProvider = 'stripe',
+  tabbyConfig,
 }: BuyNowButtonProps) {
 
   const { showToast } = useToast();
@@ -49,12 +52,23 @@ export function BuyNowButton({
   const [billingErrors, setBillingErrors] = useState<BillingDetailsFormErrors>({});
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<'stripe' | 'tabby'>('stripe');
+
+  // Tabby Check State
+  const [tabbyStatus, setTabbyStatus] = useState<'idle' | 'loading' | 'available' | 'rejected'>('idle');
+  const [tabbyRejectionReason, setTabbyRejectionReason] = useState<string | null>(null);
 
   useEffect(() => {
     setBillingForm(mapBillingDetailsToFormValue(billingDetails));
     setIsEditingBilling(!billingDetails);
     setBillingErrors({});
   }, [billingDetails]);
+
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setSelectedProvider('stripe');
+    }
+  }, [isDialogOpen]);
 
   const itemPayload = useMemo(
     () => [
@@ -69,8 +83,58 @@ export function BuyNowButton({
     [product.id, quantity, selectedVariantItemIds, installationOption, installationLocationId]
   );
 
+  const checkTabbyAvailability = async () => {
+    if (currency !== 'AED' || !tabbyConfig) return;
+
+    setTabbyStatus('loading');
+    setTabbyRejectionReason(null);
+    try {
+      // Use the availability endpoint
+      const response = await fetch('/api/tabby/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currency,
+          items: itemPayload // Pass items to check limits if needed
+        }),
+      });
+      const data = await response.json();
+      if (data.available) {
+        setTabbyStatus('available');
+      } else {
+        setTabbyStatus('rejected');
+        setTabbyRejectionReason(data.reason || "Sorry, Tabby is unable to approve this purchase.");
+        if (selectedProvider === 'tabby') {
+          setSelectedProvider('stripe');
+        }
+      }
+    } catch (error) {
+      console.error("Tabby check failed", error);
+      setTabbyStatus('rejected');
+      setTabbyRejectionReason("Unable to verify Tabby availability.");
+      if (selectedProvider === 'tabby') {
+        setSelectedProvider('stripe');
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isDialogOpen && billingDetails && currency === 'AED' && tabbyConfig) {
+      checkTabbyAvailability();
+    } else {
+      setTabbyStatus('idle');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDialogOpen, billingDetails, currency, tabbyConfig]);
+
+
   const startCheckout = async () => {
-    const url = paymentProvider === 'tabby' ? '/api/tabby/checkout_session' : '/api/checkout_sessions';
+    if (selectedProvider === 'tabby' && tabbyStatus === 'rejected') {
+      showToast("Tabby is not available for this purchase.", "error");
+      return;
+    }
+
+    const url = selectedProvider === 'tabby' ? '/api/tabby/checkout_session' : '/api/checkout_sessions';
     const method = 'POST';
     setIsProcessingCheckout(true);
     try {
@@ -86,7 +150,16 @@ export function BuyNowButton({
 
       if (!response.ok || !body?.url) {
         // Handle Tabby rejection reason specifically if available
-        const errorMessage = body?.reason ? `Tabby rejected: ${body.reason}` : 'Failed to start checkout';
+        let errorMessage = body?.reason || body?.message || body?.error || 'Failed to start checkout';
+
+        if (selectedProvider === 'tabby') {
+          if (body?.reason) {
+            errorMessage = body.reason;
+          } else {
+            errorMessage = 'Sorry, Tabby is unable to approve this purchase. Please use an alternative payment method for your order';
+          }
+        }
+
         showToast(errorMessage, 'error', {
           status: response.status,
           body,
@@ -151,34 +224,16 @@ export function BuyNowButton({
     setIsDialogOpen(false);
   };
 
-  const isTabby = paymentProvider === 'tabby';
-
   return (
     <>
       <button
         type="button"
-        className={`w-full py-3 px-2 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isTabby
-          ? 'bg-[#3EEDBF] text-black hover:bg-[#35d8ae]'
-          : 'bg-black text-white hover:bg-gray-800'
-          }`}
+        className="w-full py-3 px-2 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed bg-black text-white hover:bg-gray-800"
         disabled={disabled}
         onClick={handleBuyNow}
-        aria-label={isTabby ? `Buy ${product.name} with Tabby` : `Buy ${product.name} now`}
+        aria-label={`Buy ${product.name} now`}
       >
-        {isProcessingCheckout ? (
-          'Redirecting…'
-        ) : (
-          <div className="flex items-center justify-center gap-2">
-            <span>{isTabby ? 'Buy with ' : 'Buy Now'}</span>
-            {isTabby && (
-              <img
-                src="https://cdn.tabby.ai/assets/logo.svg"
-                alt="Tabby"
-                className="h-6 w-auto brightness-0"
-              />
-            )}
-          </div>
-        )}
+        {isProcessingCheckout ? 'Redirecting…' : 'Buy Now'}
       </button>
       {isDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
@@ -217,14 +272,62 @@ export function BuyNowButton({
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="space-y-3 pt-4 border-t border-[var(--storefront-border-light)]">
+                  <h4 className="font-semibold text-[var(--storefront-text-primary)]">Select Payment Method</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    <label className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition ${selectedProvider === 'stripe' ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="paymentProvider"
+                          value="stripe"
+                          checked={selectedProvider === 'stripe'}
+                          onChange={() => setSelectedProvider('stripe')}
+                          className="w-4 h-4 text-black focus:ring-black"
+                        />
+                        <span className="font-medium text-sm text-[var(--storefront-text-primary)]">Standard Checkout (Card, Apple Pay)</span>
+                      </div>
+                    </label>
+
+                    {currency === 'AED' && tabbyConfig && (
+                      <label className={`flex flex-col p-3 border rounded-lg transition ${selectedProvider === 'tabby' ? 'border-[#3EEDBF] bg-[#3EEDBF]/5' : 'border-gray-200'} ${tabbyStatus === 'rejected' ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name="paymentProvider"
+                              value="tabby"
+                              checked={selectedProvider === 'tabby'}
+                              onChange={() => setSelectedProvider('tabby')}
+                              disabled={tabbyStatus === 'rejected'}
+                              className="w-4 h-4 text-[#3EEDBF] focus:ring-[#3EEDBF]"
+                            />
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm text-[var(--storefront-text-primary)]">Tabby</span>
+                              <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-4 w-auto" />
+                            </div>
+                          </div>
+                          {tabbyStatus === 'available' && (
+                            <span className="text-xs font-semibold text-[#3EEDBF] border border-[#3EEDBF] px-2 py-0.5 rounded">Available</span>
+                          )}
+                          {tabbyStatus === 'loading' && <span className="text-xs text-gray-500">Checking...</span>}
+                        </div>
+                        {tabbyStatus === 'rejected' && tabbyRejectionReason && (
+                          <p className="text-xs text-red-500 mt-2 ml-7">{tabbyRejectionReason}</p>
+                        )}
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--storefront-border-light)] pt-4">
                   <div className="flex gap-2 text-sm">
                     <button
                       type="button"
                       className="text-[var(--storefront-button-primary)] hover:underline"
                       onClick={() => setIsEditingBilling(true)}
                     >
-                      Edit
+                      Edit Address
                     </button>
                     <button
                       type="button"
@@ -235,27 +338,27 @@ export function BuyNowButton({
                         setIsEditingBilling(true);
                       }}
                     >
-                      Create another
+                      New Address
                     </button>
                   </div>
                   <button
                     type="button"
                     onClick={startCheckout}
-                    disabled={isProcessingCheckout}
-                    className="inline-flex items-center justify-center rounded-md bg-[var(--storefront-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--storefront-button-primary-hover)] disabled:opacity-50 gap-2"
+                    disabled={isProcessingCheckout || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
+                    className={`inline-flex items-center justify-center rounded-md px-6 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 gap-2 ${selectedProvider === 'tabby' ? 'bg-[#3EEDBF] text-black hover:bg-[#35d8ae]' : 'bg-[var(--storefront-button-primary)]'}`}
                   >
                     {isProcessingCheckout ? (
                       'Redirecting…'
                     ) : (
                       <>
-                        {paymentProvider === 'tabby' && (
-                          <img
-                            src="https://cdn.tabby.ai/assets/logo.svg"
-                            alt="Tabby"
-                            className="h-3 w-auto brightness-0 invert"
-                          />
+                        {selectedProvider === 'tabby' ? (
+                          <>
+                            <span>Pay with</span>
+                            <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-3 w-auto brightness-0" />
+                          </>
+                        ) : (
+                          'Proceed to Payment'
                         )}
-                        <span>{paymentProvider === 'tabby' ? 'Proceed with Tabby' : 'Continue to payment'}</span>
                       </>
                     )}
                   </button>
@@ -264,7 +367,7 @@ export function BuyNowButton({
             ) : (
               <form onSubmit={handleFormSubmit} className="space-y-4">
                 <p className="text-sm text-[var(--storefront-text-secondary)]">
-                  We need your building address before we redirect you to payment.
+                  We need your billing address before we redirect you to payment.
                 </p>
                 <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={(field, value) => {
                   setBillingForm((prev) => ({ ...prev, [field]: value }));

@@ -250,6 +250,16 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
             <p className="text-lg font-medium text-[var(--storefront-text-secondary)] -mt-4 break-words">{displaySubtitle}</p>
           )}
 
+          {tabbyConfig && currency === 'AED' && (
+            <div className="flex items-center gap-2 my-2 p-2 bg-[#3EEDBF]/10 rounded-lg w-fit">
+              <div className="bg-[#3EEDBF] rounded-full p-1">
+                <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+              </div>
+              <span className="text-sm font-semibold text-[var(--storefront-text-primary)]">Available with</span>
+              <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-5 w-auto" />
+            </div>
+          )}
+
           {tabbyConfig && (
             <TabbyPromo
               price={finalPrice}
@@ -416,8 +426,8 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
           </div>
 
           <div className="space-y-4">
-            <div className="grid w-full grid-cols-[1fr_2fr] gap-4 sm:grid-cols-[1fr_2fr_1fr]">
-              <div className="flex w-fit justify-start text-black items-center border border-[var(--storefront-border)] rounded-lg bg-white">
+            <div className="grid w-full grid-cols-[1fr_2fr] sm:grid-cols-[1fr_2fr_2fr_1fr] gap-4">
+              <div className="flex justify-between text-black items-center border border-[var(--storefront-border)] rounded-lg bg-white">
                 <button
                   type="button"
                   className="p-3 hover:bg-gray-50 transition"
@@ -477,7 +487,7 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
 
               <button
                 type="button"
-                className="w-full py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] hover:bg-[var(--storefront-button-secondary-hover)] transition flex items-center justify-center"
+                className="sm:order-4 w-full py-3 rounded-lg border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] text-[var(--storefront-text-primary)] hover:bg-[var(--storefront-button-secondary-hover)] transition flex items-center justify-center"
                 aria-pressed={inWishlist}
                 aria-label={inWishlist ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
                 onClick={() => {
@@ -498,20 +508,7 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
                   />
                 </svg>
               </button>
-            </div>
-
-            <div className={`grid w-full gap-4 ${(tabbyConfig && currency === 'AED') ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
-              <BuyNowButton
-                product={product}
-                quantity={quantity}
-                selectedVariantItemIds={selectedVariantItemIds}
-                installationOption={installationOption}
-                installationLocationId={selectedLocationId}
-                disabled={!allVariantsSelected || !isLocationValid}
-                maxAvailable={currentStockLimit}
-                paymentProvider="stripe"
-              />
-              {tabbyConfig && currency === 'AED' && (
+              <div className='sm:order-3'>
                 <BuyNowButton
                   product={product}
                   quantity={quantity}
@@ -520,9 +517,9 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
                   installationLocationId={selectedLocationId}
                   disabled={!allVariantsSelected || !isLocationValid}
                   maxAvailable={currentStockLimit}
-                  paymentProvider="tabby"
+                  tabbyConfig={tabbyConfig}
                 />
-              )}
+              </div>
             </div>
           </div>
 

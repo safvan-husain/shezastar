@@ -29,7 +29,11 @@ export default function CancelPage() {
             </h1>
 
             <p className="text-lg text-gray-600 mb-10 max-w-md mx-auto">
-                No worries! Your order has been cancelled and you haven't been charged. Your items are still waiting in your cart.
+                You aborted the payment. Please retry or choose another payment method.
+                <br />
+                <span dir="rtl" className="block mt-2 font-arabic">
+                    لقد ألغيت الدفعة. فضلاً حاول مجددًا أو اختر طريقة دفع أخرى.
+                </span>
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">

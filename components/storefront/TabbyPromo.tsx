@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useCurrency } from '@/lib/currency/CurrencyContext';
 
 interface TabbyPromoProps {
@@ -12,6 +12,7 @@ interface TabbyPromoProps {
     lang?: 'en' | 'ar';
 }
 
+
 export function TabbyPromo({
     price,
     currency,
@@ -20,44 +21,35 @@ export function TabbyPromo({
     source = 'product',
     lang = 'en',
 }: TabbyPromoProps) {
-    const { currency: currentCurrency, formatPrice } = useCurrency();
+    const { currency: currentCurrency } = useCurrency();
 
-    // Tabby promo snippet is only for AED, SAR, KWD. 
-    // The user specifically asked for AED.
+    // Tabby promo snippet is only for AED, SAR, KWD.
     if (currentCurrency !== 'AED' || currency !== 'AED') {
         return null;
     }
 
-    const installmentAmount = price / 4;
-
-    // Format price for the popup URL (2 decimal places for AED)
-    const formattedPrice = price.toFixed(2);
-
-    // Construct the Tabby popup URL based on the documentation
-    // https://checkout.tabby.ai/promos/product-page/installments/en/?price=340.00&currency=AED&merchant_code=AE&public_key=pk_xyz
-    const popupUrl = `https://checkout.tabby.ai/promos/product-page/installments/${lang}/?price=${formattedPrice}&currency=${currency}&merchant_code=${merchantCode}&public_key=${publicKey}`;
+    useEffect(() => {
+        const scriptId = 'tabby-promo-script';
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.tabby.ai/tabby-promo.js';
+            script.id = scriptId;
+            script.async = true;
+            document.body.appendChild(script);
+        }
+    }, []);
 
     return (
-        <div className="flex flex-col gap-2 py-4 px-4 rounded-xl border border-[var(--storefront-border)] bg-[var(--storefront-bg-subtle)] my-4">
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                    <img
-                        src="https://cdn.tabby.ai/assets/logo.svg"
-                        alt="Tabby"
-                        className="h-5 w-auto"
-                    />
-                    <span className="text-sm font-medium text-[var(--storefront-text-primary)]">
-                        Pay in 4 interest-free payments of <span className="font-bold">{formatPrice(installmentAmount)}</span>
-                    </span>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => window.open(popupUrl, 'tabby-promo', 'width=600,height=800,resizable=yes,scrollbars=yes')}
-                    className="text-xs font-semibold underline text-[var(--storefront-text-secondary)] hover:text-[var(--storefront-text-primary)]"
-                >
-                    Learn more
-                </button>
-            </div>
+        <div className="my-4">
+            {/* @ts-expect-error Tabby custom element */}
+            <tabby-promo
+                price={price}
+                currency={currency}
+                public-key={publicKey}
+                merchant-code={merchantCode}
+                lang={lang}
+                source={source}
+            ></tabby-promo>
         </div>
     );
 }

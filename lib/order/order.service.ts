@@ -177,3 +177,23 @@ export async function updateOrderStatusById(id: string, status: OrderStatus): Pr
 
     return toOrder(result);
 }
+
+export async function countOrdersByEmail(email: string): Promise<number> {
+    const collection = await getOrderCollection();
+    return collection.countDocuments({
+        "billingDetails.email": email,
+        status: { $in: ['paid', 'completed'] }
+    });
+}
+
+export async function getOrdersByEmail(email: string, limit: number = 10): Promise<Order[]> {
+    const collection = await getOrderCollection();
+    const docs = await collection.find({
+        "billingDetails.email": email,
+        status: { $in: ['paid', 'completed'] }
+    })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .toArray();
+    return docs.map(toOrder);
+}

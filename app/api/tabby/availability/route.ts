@@ -1,13 +1,12 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { computeCartItemPricing, getCartForCurrentSession } from '@/lib/cart/cart.service';
 import type { InstallationOption } from '@/lib/cart/cart.schema';
 import { getStorefrontSession } from '@/lib/storefront-session';
 import { convertPrice, getExchangeRates } from '@/lib/currency/currency.service';
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
-import { createOrder, getOrdersByEmail } from '@/lib/order/order.service';
-import { OrderDocument, OrderItemDocument } from '@/lib/order/model/order.model';
+import { getOrdersByEmail } from '@/lib/order/order.service';
 import { getProduct } from '@/lib/product/product.service';
-import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { getUserById } from '@/lib/auth/auth.service';
 
 const TABBY_API_URL = 'https://api.tabby.ai/api/v2/checkout';
@@ -42,15 +41,12 @@ export async function POST(req: NextRequest) {
 
         const billingDetails = cart.billingDetails;
         const body = await req.json().catch(() => ({}));
-        const rawCurrency = (typeof body.currency === 'string' && body.currency ? body.currency : 'AED'); // Default to AED for Tabby usually
+        const rawCurrency = (typeof body.currency === 'string' && body.currency ? body.currency : 'AED');
         const targetCurrencyCode = rawCurrency.toUpperCase() as CurrencyCode;
 
-        console.log(`[Tabby Checkout] Initiating session with currency: ${targetCurrencyCode}`);
+        console.log(`[Tabby Availability Check] Initiating check with currency: ${targetCurrencyCode}`);
 
         const rates = await getExchangeRates();
-        const currencyConfig = SUPPORTED_CURRENCIES.find(c => c.code === targetCurrencyCode);
-
-        // Tabby expects amount as string, e.g. "100.00"
 
         let itemsToValidate: Array<{ productId: string; selectedVariantItemIds: string[]; quantity: number }> = [];
         let totalAmount = 0;
@@ -69,10 +65,8 @@ export async function POST(req: NextRequest) {
 
         if (rawItems.length > 0) {
             // Buy Now Flow
-
             for (const item of rawItems) {
                 if (!item || typeof item.productId !== 'string') continue;
-
                 const rawQuantity = Number(item.quantity);
                 if (!Number.isFinite(rawQuantity) || rawQuantity <= 0 || !Number.isInteger(rawQuantity)) continue;
 
@@ -113,9 +107,6 @@ export async function POST(req: NextRequest) {
                 quantity: item.quantity,
             }));
 
-            // Simplified: No longer building detailed tabbyItems here as we use a summary item later.
-
-            // Calculate total based on items
             totalAmount = processedBuyNowItems.reduce((sum, item) => {
                 const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
                 return sum + (convertedPrice * item.quantity);
@@ -141,7 +132,6 @@ export async function POST(req: NextRequest) {
                         unitPrice: pricing.unitPrice,
                     });
                 } catch (error) {
-                    console.error(`Failed to re-compute pricing for item ${item.productId}`, error);
                     return NextResponse.json({ error: `Product ${item.productId} unavailable` }, { status: 400 });
                 }
             }
@@ -152,92 +142,19 @@ export async function POST(req: NextRequest) {
                 quantity: item.quantity
             }));
 
-            // Simplified: No longer building detailed tabbyItems here as we use a summary item later.
-
             totalAmount = freshCartItems.reduce((sum, item) => {
                 const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
                 return sum + (convertedPrice * item.quantity);
             }, 0);
         }
 
-        // Preparation for Order Persistence
-        const orderItems: OrderItemDocument[] = [];
-        const sourceItems = rawItems.length > 0 ? processedBuyNowItems : (await Promise.all(cart.items.map(async item => {
-            const pricing = await computeCartItemPricing(item.productId, item.selectedVariantItemIds, item.installationOption, item.installationLocationId);
-            return { ...item, unitPrice: pricing.unitPrice };
-        })));
-
-        for (const item of sourceItems) {
-            try {
-                const product = await getProduct(item.productId);
-                let productImage = product.images.length > 0 ? product.images[0].url : undefined;
-                if (item.selectedVariantItemIds.length > 0) {
-                    const matchedImages = filterImagesByVariants(product.images, item.selectedVariantItemIds);
-                    if (matchedImages.length > 0) productImage = matchedImages[0].url;
-                }
-
-                let variantNames: string[] = [];
-                for (const variant of product.variants) {
-                    for (const vItem of variant.selectedItems) {
-                        if (item.selectedVariantItemIds.includes(vItem.id)) {
-                            variantNames.push(`${variant.variantTypeName}: ${vItem.name}`);
-                        }
-                    }
-                }
-                const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
-
-                let installationLocationName: string | undefined;
-                if (item.installationLocationId && product.installationService?.availableLocations) {
-                    const loc = product.installationService.availableLocations.find(l => l.locationId === item.installationLocationId);
-                    if (loc) installationLocationName = loc.name;
-                }
-
-                orderItems.push({
-                    productId: item.productId,
-                    productName: product.name,
-                    productImage,
-                    variantName,
-                    selectedVariantItemIds: item.selectedVariantItemIds,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    installationOption: item.installationOption,
-                    installationAddOnPrice: (item as any).installationAddOnPrice ?? 0,
-                    installationLocationId: item.installationLocationId,
-                    installationLocationName,
-                    installationLocationDelta: (item as any).installationLocationDelta ?? 0,
-                });
-            } catch (error) {
-                console.error(`Failed to enrich order item ${item.productId}`, error);
-                orderItems.push({
-                    productId: item.productId,
-                    productName: 'Unknown Product',
-                    selectedVariantItemIds: item.selectedVariantItemIds,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    installationOption: item.installationOption,
-                });
-            }
-        }
-
-        const totalAmountCalculated = sourceItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-        const convertedTotal = convertPrice(totalAmountCalculated, targetCurrencyCode, rates);
-
-        // Create the PENDING order
-        const pendingOrder = await createOrder({
-            sessionId,
-            paymentProvider: 'tabby',
-            items: orderItems,
-            totalAmount: convertedTotal,
-            currency: targetCurrencyCode.toLowerCase(),
-            status: 'pending',
-            billingDetails: billingDetails,
-        });
-
         // Validate stock
         const { validateStockAvailability } = await import('@/lib/product/product.service-stock');
         const stockValidation = await validateStockAvailability(itemsToValidate);
 
         if (!stockValidation.available) {
+            // For availability check, we might want to return this info but not block strict technical availability check
+            // But if stock is out, payment is not available effectively.
             return NextResponse.json({
                 error: 'Insufficient stock',
                 insufficientItems: stockValidation.insufficientItems
@@ -247,9 +164,13 @@ export async function POST(req: NextRequest) {
         const origin = req.headers.get('origin') || 'http://localhost:3000';
 
         // Prepare Tabby Payload
+        // use a temporary reference ID since we are not creating an order yet
+        const tempRefId = `check_${Date.now()}_${sessionId.substring(0, 8)}`;
+
         const meta: any = {
             sessionId: sessionId,
             billingDetails: JSON.stringify(billingDetails),
+            isCheck: 'true'
         };
 
         if (processedBuyNowItems.length > 0) {
@@ -290,7 +211,6 @@ export async function POST(req: NextRequest) {
                 }
             } catch (err) {
                 console.error("Failed to fetch user history for Tabby:", err);
-                // Continue without history rather than failing the whole request
             }
         }
 
@@ -298,12 +218,12 @@ export async function POST(req: NextRequest) {
             payment: {
                 amount: totalAmount.toFixed(2),
                 currency: targetCurrencyCode,
-                description: `Order for ${billingDetails.email}`,
+                description: `Availability Check for ${billingDetails.email}`,
                 buyer: {
                     name: `${billingDetails.firstName} ${billingDetails.lastName}`.trim(),
                     email: billingDetails.email,
                     phone: billingDetails.phone,
-                    dob: undefined, // Optional
+                    dob: undefined,
                 },
                 shipping_address: {
                     city: billingDetails.city,
@@ -313,13 +233,13 @@ export async function POST(req: NextRequest) {
                 buyer_history: buyerHistory,
                 order_history: orderHistory,
                 order: {
-                    reference_id: pendingOrder.id,
+                    reference_id: tempRefId,
                     items: [
                         {
-                            title: `Order #${pendingOrder.id}`,
+                            title: `Availability Check`,
                             quantity: 1,
                             unit_price: totalAmount.toFixed(2),
-                            reference_id: pendingOrder.id,
+                            reference_id: tempRefId,
                             category: 'General',
                         }
                     ],
@@ -346,27 +266,27 @@ export async function POST(req: NextRequest) {
 
         const responseData = await response.json();
 
+        // Interpret result
+        // If rejected, status is 'rejected'
+        // If created, status is 'created' (and needs redirect to be finalized)
+
+        const isRejected = responseData.status === 'rejected';
+        const rejectionReason = responseData.configuration?.products?.installments?.rejection_reason || responseData.rejection_reason;
+
+        if (isRejected) {
+            return NextResponse.json({ available: false, reason: rejectionReason });
+        }
+
         if (!response.ok) {
-            console.error('Tabby API Error:', responseData);
-            return NextResponse.json({ error: 'Failed to create Tabby session', details: responseData }, { status: response.status });
+            // Some other error
+            return NextResponse.json({ available: false, reason: 'Tabby API Error', details: responseData }, { status: response.status });
         }
 
-        // Extract web_url
-        // Response struct: { configuration: { available_products: { installments: [ { web_url: ... } ] } } }
-        const webUrl = responseData.configuration?.available_products?.installments?.[0]?.web_url;
-
-        if (!webUrl) {
-            // Maybe rejected?
-            if (responseData.status === 'rejected') {
-                return NextResponse.json({ error: 'Tabby rejected the payment session', reason: responseData.configuration?.products?.installments?.rejection_reason }, { status: 400 });
-            }
-            return NextResponse.json({ error: 'Tabby session created but no web_url found' }, { status: 500 });
-        }
-
-        return NextResponse.json({ url: webUrl });
+        // If not rejected and OK, it is available
+        return NextResponse.json({ available: true, status: responseData.status });
 
     } catch (err: any) {
-        console.error('Error creating Tabby checkout session:', err);
+        console.error('Error checking Tabby availability:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
