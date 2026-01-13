@@ -303,8 +303,7 @@ export function BuyNowButton({
                               className="w-4 h-4 text-[#3EEDBF] focus:ring-[#3EEDBF]"
                             />
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm text-[var(--storefront-text-primary)]">Tabby</span>
-                              <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-4 w-auto" />
+                              <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-6 w-auto" />
                             </div>
                           </div>
                           {tabbyStatus === 'available' && (
