@@ -217,7 +217,10 @@ export function CheckoutPageContent({
                         <div className="text-sm text-[var(--storefront-text-secondary)]">
                             <p className="font-medium text-[var(--storefront-text-primary)]">{currentBillingDetails?.firstName} {currentBillingDetails?.lastName}</p>
                             <p>{currentBillingDetails?.streetAddress1}</p>
-                            <p>{currentBillingDetails?.city}, {currentBillingDetails?.country}</p>
+                            <p>
+                                {currentBillingDetails?.city}, {currentBillingDetails?.country}
+                                {currentBillingDetails?.zip ? ` ${currentBillingDetails.zip}` : ""}
+                            </p>
                             <p>{currentBillingDetails?.phone}</p>
                             <p>{currentBillingDetails?.email}</p>
                         </div>

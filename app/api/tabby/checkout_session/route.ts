@@ -276,9 +276,17 @@ export async function POST(req: NextRequest) {
                         amount: o.totalAmount.toFixed(2),
                         status: o.status === 'paid' || o.status === 'completed' ? 'complete' : 'unknown',
                         buyer: {
-                            name: `${billingDetails.firstName} ${billingDetails.lastName}`.trim(),
-                            email: billingDetails.email,
-                            phone: billingDetails.phone,
+                            name: `${o.billingDetails?.firstName || billingDetails.firstName} ${o.billingDetails?.lastName || billingDetails.lastName}`.trim(),
+                            email: o.billingDetails?.email || billingDetails.email,
+                            phone: o.billingDetails?.phone || billingDetails.phone,
+                        },
+                        shipping_address: {
+                            city: o.billingDetails?.city || billingDetails.city,
+                            address: [
+                                o.billingDetails?.streetAddress1 || billingDetails.streetAddress1,
+                                o.billingDetails?.streetAddress2 || billingDetails.streetAddress2
+                            ].filter(Boolean).join(', '),
+                            zip: (o.billingDetails as any)?.zip || (billingDetails as any).zip || '00000',
                         },
                         items: o.items.map(i => ({
                             title: i.productName,
@@ -308,7 +316,7 @@ export async function POST(req: NextRequest) {
                 shipping_address: {
                     city: billingDetails.city,
                     address: [billingDetails.streetAddress1, billingDetails.streetAddress2].filter(Boolean).join(', '),
-                    zip: '00000',
+                    zip: (billingDetails as any).zip || '00000',
                 },
                 buyer_history: buyerHistory,
                 order_history: orderHistory,

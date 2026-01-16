@@ -294,7 +294,8 @@ export function BuyNowButton({
                     {billingDetails.streetAddress2 && <p>{billingDetails.streetAddress2}</p>}
                     <p>
                       {billingDetails.city}
-                      {billingDetails.stateOrCounty ? `, ${billingDetails.stateOrCounty}` : ''}, {billingDetails.country}
+                      {billingDetails.stateOrCounty ? `, ${billingDetails.stateOrCounty}` : ''}
+                      {billingDetails.zip ? ` ${billingDetails.zip}` : ''}, {billingDetails.country}
                     </p>
                   </div>
                   {billingDetails.orderNotes && (

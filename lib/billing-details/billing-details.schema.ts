@@ -14,6 +14,7 @@ export const BillingDetailsSchema = z.object({
     city: z.string().min(1),
     stateOrCounty: z.string().optional(),
     phone: z.string().min(1),
+    zip: z.string().optional(),
     orderNotes: z.string().optional(),
 });
 

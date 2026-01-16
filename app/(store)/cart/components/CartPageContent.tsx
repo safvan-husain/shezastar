@@ -297,7 +297,8 @@ export function CartPageContent({
               {currentBillingDetails.streetAddress2 && <p>{currentBillingDetails.streetAddress2}</p>}
               <p>
                 {currentBillingDetails.city}
-                {currentBillingDetails.stateOrCounty ? `, ${currentBillingDetails.stateOrCounty}` : ""},{" "}
+                {currentBillingDetails.stateOrCounty ? `, ${currentBillingDetails.stateOrCounty}` : ""}
+                {currentBillingDetails.zip ? ` ${currentBillingDetails.zip}` : ""},{" "}
                 {currentBillingDetails.country}
               </p>
             </div>

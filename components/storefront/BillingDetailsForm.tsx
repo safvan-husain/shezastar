@@ -13,6 +13,7 @@ export type BillingDetailsFormValue = {
     city: string;
     stateOrCounty: string;
     phone: string;
+    zip: string;
     orderNotes: string;
 };
 
@@ -26,6 +27,7 @@ export const EMPTY_BILLING_DETAILS: BillingDetailsFormValue = {
     city: '',
     stateOrCounty: '',
     phone: '',
+    zip: '',
     orderNotes: '',
 };
 
@@ -43,6 +45,7 @@ export function mapBillingDetailsToFormValue(details?: BillingDetails | null): B
         city: details.city ?? '',
         stateOrCounty: details.stateOrCounty ?? '',
         phone: details.phone ?? '',
+        zip: details.zip ?? '',
         orderNotes: details.orderNotes ?? '',
     };
 }
@@ -57,6 +60,7 @@ export function toBillingDetailsPayload(value: BillingDetailsFormValue): Billing
         streetAddress1: trimmed(value.streetAddress1),
         city: trimmed(value.city),
         phone: trimmed(value.phone),
+        zip: trimmed(value.zip),
     };
 
     if (value.streetAddress2.trim()) {
@@ -177,6 +181,15 @@ export function BillingDetailsForm({ value, errors = {}, onChange }: BillingDeta
                     error={errors.stateOrCounty}
                     onChange={handleChange('stateOrCounty')}
                 />
+                <FormField
+                    label="Zip Code (Optional)"
+                    value={value.zip}
+                    error={errors.zip}
+                    onChange={handleChange('zip')}
+                    placeholder="e.g. 00000"
+                />
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                     <label className="text-sm font-medium text-[var(--storefront-text-secondary)] mb-2">
                         Order notes
