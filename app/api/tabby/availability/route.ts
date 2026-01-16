@@ -186,13 +186,18 @@ export async function POST(req: NextRequest) {
             try {
                 const user = await getUserById(session.userId);
                 if (user) {
+                    const pastOrders = await getOrdersByEmail(billingDetails.email, 50);
+                    const successfulOrders = pastOrders.filter(o => o.status === 'paid' || o.status === 'completed');
+                    const totalPaidAmount = successfulOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+
                     buyerHistory = {
                         registered_since: user.createdAt,
-                        loyalty_level: 0,
+                        loyalty_level: successfulOrders.length,
+                        wishlist_count: Math.round(totalPaidAmount),
+                        is_social_networks_connected: false,
                     };
 
-                    const pastOrders = await getOrdersByEmail(billingDetails.email, 10);
-                    orderHistory = pastOrders.map(o => ({
+                    orderHistory = successfulOrders.slice(0, 10).map(o => ({
                         purchased_at: o.createdAt,
                         amount: o.totalAmount.toFixed(2),
                         status: o.status === 'paid' || o.status === 'completed' ? 'complete' : 'unknown',
