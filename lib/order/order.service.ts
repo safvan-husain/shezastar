@@ -13,6 +13,7 @@ async function getOrderCollection() {
     if (!indexesEnsured) {
         await Promise.all([
             collection.createIndex({ sessionId: 1 }),
+            collection.createIndex({ userId: 1 }),
             collection.createIndex({ stripeSessionId: 1 }, { unique: true, sparse: true }),
             collection.createIndex({ paymentProviderSessionId: 1 }, { unique: true, sparse: true }),
             collection.createIndex({ paymentProviderOrderId: 1 }, { unique: true, sparse: true }),
@@ -190,6 +191,18 @@ export async function getOrdersByEmail(email: string, limit: number = 10): Promi
     const collection = await getOrderCollection();
     const docs = await collection.find({
         "billingDetails.email": email,
+        status: { $in: ['paid', 'completed'] }
+    })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .toArray();
+    return docs.map(toOrder);
+}
+export async function getOrdersByUserId(userId: string, limit: number = 10): Promise<Order[]> {
+    const { ObjectId } = await import('mongodb');
+    const collection = await getOrderCollection();
+    const docs = await collection.find({
+        userId: new ObjectId(userId),
         status: { $in: ['paid', 'completed'] }
     })
         .sort({ createdAt: -1 })

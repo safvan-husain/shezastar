@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { computeCartItemPricing, getCartForCurrentSession } from '@/lib/cart/cart.service';
 import type { InstallationOption } from '@/lib/cart/cart.schema';
-import { getStorefrontSessionId } from '@/lib/storefront-session';
+import { getStorefrontSession } from '@/lib/storefront-session';
 import { convertPrice, getExchangeRates } from '@/lib/currency/currency.service';
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
 import { createOrder } from '@/lib/order/order.service';
 import { OrderItemDocument } from '@/lib/order/model/order.model';
 import { getProduct } from '@/lib/product/product.service';
 import { filterImagesByVariants } from '@/lib/product/model/product.model';
+import { ObjectId } from '@/lib/db/mongo-client';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {})
@@ -21,10 +22,11 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const sessionId = await getStorefrontSessionId();
-        if (!sessionId) {
+        const storefrontSession = await getStorefrontSession();
+        if (!storefrontSession) {
             return NextResponse.json({ error: 'No active session' }, { status: 401 });
         }
+        const sessionId = storefrontSession.sessionId;
 
         const cart = await getCartForCurrentSession();
         if (!cart || !cart.billingDetails) {
@@ -280,6 +282,7 @@ export async function POST(req: NextRequest) {
             currency: targetCurrencyCode.toLowerCase(),
             status: 'pending',
             billingDetails: billingDetails,
+            userId: storefrontSession.userId ? new ObjectId(storefrontSession.userId) : undefined,
         });
 
         metadata.orderId = pendingOrder.id;

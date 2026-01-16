@@ -4,11 +4,12 @@ import type { InstallationOption } from '@/lib/cart/cart.schema';
 import { getStorefrontSession } from '@/lib/storefront-session';
 import { convertPrice, getExchangeRates } from '@/lib/currency/currency.service';
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
-import { createOrder, getOrdersByEmail } from '@/lib/order/order.service';
+import { createOrder, getOrdersBySessionId, getOrdersByUserId } from '@/lib/order/order.service';
 import { OrderDocument, OrderItemDocument } from '@/lib/order/model/order.model';
 import { getProduct } from '@/lib/product/product.service';
 import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { getUserById } from '@/lib/auth/auth.service';
+import { ObjectId } from '@/lib/db/mongo-client';
 
 const TABBY_API_URL = 'https://api.tabby.ai/api/v2/checkout';
 
@@ -231,6 +232,7 @@ export async function POST(req: NextRequest) {
             currency: targetCurrencyCode.toLowerCase(),
             status: 'pending',
             billingDetails: billingDetails,
+            userId: session.userId ? new ObjectId(session.userId) : undefined,
         });
 
         // Validate stock
@@ -257,54 +259,61 @@ export async function POST(req: NextRequest) {
             meta.buyNowItems = JSON.stringify(processedBuyNowItems);
         }
 
-        // Fetch Buyer History & Order History if registered
+        // Fetch Buyer History & Order History
         let buyerHistory: any = undefined;
         let orderHistory: any = undefined;
 
-        if (session.userId) {
-            try {
+        try {
+            let pastOrders = [];
+            let registeredSince = session.createdAt;
+
+            if (session.userId) {
+                pastOrders = await getOrdersByUserId(session.userId);
                 const user = await getUserById(session.userId);
                 if (user) {
-                    const pastOrders = await getOrdersByEmail(billingDetails.email, 50);
-                    const successfulOrders = pastOrders.filter(o => o.status === 'paid' || o.status === 'completed');
-                    const totalPaidAmount = successfulOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-
-                    buyerHistory = {
-                        registered_since: user.createdAt,
-                        loyalty_level: successfulOrders.length,
-                        wishlist_count: Math.round(totalPaidAmount),
-                        is_social_networks_connected: false,
-                    };
-
-                    orderHistory = successfulOrders.slice(0, 10).map(o => ({
-                        purchased_at: o.createdAt,
-                        amount: o.totalAmount.toFixed(2),
-                        status: o.status === 'paid' || o.status === 'completed' ? 'complete' : 'unknown',
-                        buyer: {
-                            name: `${o.billingDetails?.firstName || billingDetails.firstName} ${o.billingDetails?.lastName || billingDetails.lastName}`.trim(),
-                            email: o.billingDetails?.email || billingDetails.email,
-                            phone: o.billingDetails?.phone || billingDetails.phone,
-                        },
-                        shipping_address: {
-                            city: o.billingDetails?.city || billingDetails.city,
-                            address: [
-                                o.billingDetails?.streetAddress1 || billingDetails.streetAddress1,
-                                o.billingDetails?.streetAddress2 || billingDetails.streetAddress2
-                            ].filter(Boolean).join(', '),
-                            zip: (o.billingDetails as any)?.zip || (billingDetails as any).zip || '00000',
-                        },
-                        items: o.items.map(i => ({
-                            title: i.productName,
-                            quantity: i.quantity,
-                            unit_price: i.unitPrice.toFixed(2),
-                            category: 'General',
-                        }))
-                    }));
+                    registeredSince = user.createdAt;
                 }
-            } catch (err) {
-                console.error("Failed to fetch user history for Tabby:", err);
-                // Continue without history rather than failing the whole request
+            } else {
+                pastOrders = await getOrdersBySessionId(sessionId);
             }
+
+            const successfulOrders = pastOrders.filter(o => o.status === 'paid' || o.status === 'completed');
+            const totalPaidAmount = successfulOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+
+            buyerHistory = {
+                registered_since: registeredSince,
+                loyalty_level: successfulOrders.length,
+                wishlist_count: Math.round(totalPaidAmount),
+                is_social_networks_connected: false,
+            };
+
+            orderHistory = successfulOrders.slice(0, 10).map(o => ({
+                purchased_at: o.createdAt,
+                amount: o.totalAmount.toFixed(2),
+                status: 'complete',
+                buyer: {
+                    name: `${o.billingDetails?.firstName || billingDetails.firstName} ${o.billingDetails?.lastName || billingDetails.lastName}`.trim(),
+                    email: o.billingDetails?.email || billingDetails.email,
+                    phone: o.billingDetails?.phone || billingDetails.phone,
+                },
+                shipping_address: {
+                    city: o.billingDetails?.city || billingDetails.city,
+                    address: [
+                        o.billingDetails?.streetAddress1 || billingDetails.streetAddress1,
+                        o.billingDetails?.streetAddress2 || billingDetails.streetAddress2
+                    ].filter(Boolean).join(', '),
+                    zip: (o.billingDetails as any)?.zip || (billingDetails as any).zip || '00000',
+                },
+                items: o.items.map(i => ({
+                    title: i.productName,
+                    quantity: i.quantity,
+                    unit_price: i.unitPrice.toFixed(2),
+                    category: 'General',
+                }))
+            }));
+        } catch (err) {
+            console.error("Failed to fetch order history for Tabby:", err);
+            // Continue without history rather than failing the whole request
         }
 
         const tabbyPayload = {

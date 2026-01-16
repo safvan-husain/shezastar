@@ -31,6 +31,7 @@ export interface OrderDocument {
     currency: string;
     status: OrderStatus;
     billingDetails?: BillingDetails;
+    userId?: ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -62,6 +63,7 @@ export interface Order {
     currency: string;
     status: OrderStatus;
     billingDetails?: BillingDetails;
+    userId?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -92,6 +94,7 @@ export function toOrder(doc: OrderDocument): Order {
         currency: doc.currency,
         status: doc.status,
         billingDetails: doc.billingDetails,
+        userId: doc.userId?.toHexString(),
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };
