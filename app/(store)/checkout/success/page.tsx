@@ -4,8 +4,8 @@ import Link from 'next/link';
 
 export default function SuccessPage() {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center mt-12 animate-in fade-in duration-700">
-            <div className="mb-8 relative">
+        <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center mt-12 animate-in fade-in duration-700 mb-22">
+            <div className="mb-8 relative mt-22">
                 <div className="absolute inset-0 bg-green-100 rounded-full scale-150 blur-2xl opacity-50 animate-pulse"></div>
                 <svg
                     width="80"
