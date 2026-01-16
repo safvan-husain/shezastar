@@ -1,50 +1,39 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useCurrency } from '@/lib/currency/CurrencyContext';
+import { useEffect } from 'react';
 
-interface TabbyPromoProps {
+interface TabbyCheckoutCardProps {
     price: number;
     currency: string;
     publicKey: string;
     merchantCode: string;
-    source?: 'product' | 'cart';
     lang?: 'en' | 'ar';
 }
 
 declare global {
     interface Window {
-        TabbyPromo: any;
+        TabbyCard: any;
     }
 }
 
-
-export function TabbyPromo({
+export function TabbyCheckoutCard({
     price,
     currency,
     publicKey,
     merchantCode,
-    source = 'product',
     lang = 'en',
-}: TabbyPromoProps) {
-    const { currency: currentCurrency } = useCurrency();
-
-    // Tabby promo snippet is only for AED, SAR, KWD.
-    if (currentCurrency !== 'AED' || currency !== 'AED') {
-        return null;
-    }
-
+}: TabbyCheckoutCardProps) {
     useEffect(() => {
-        const scriptId = 'tabby-promo-script';
+        const scriptId = 'tabby-card-script';
 
         const initTabby = () => {
-            if (window.TabbyPromo) {
-                new window.TabbyPromo({
-                    selector: '#tabby-promo-container',
-                    currency: currency,
-                    price: price.toFixed(2),
+            if (window.TabbyCard) {
+                new window.TabbyCard({
+                    selector: '#tabby-checkout-card-container',
+                    currency: currency.toUpperCase(),
+                    price: price.toFixed(currency === 'KWD' ? 3 : 2),
                     lang: lang,
-                    source: source,
+                    shouldInheritBg: false,
                     publicKey: publicKey,
                     merchantCode: merchantCode,
                 });
@@ -55,24 +44,24 @@ export function TabbyPromo({
 
         if (!script) {
             const newScript = document.createElement('script');
-            newScript.src = 'https://checkout.tabby.ai/tabby-promo.js';
+            newScript.src = 'https://checkout.tabby.ai/tabby-card.js';
             newScript.id = scriptId;
             newScript.async = true;
             newScript.onload = initTabby;
             document.body.appendChild(newScript);
         } else {
-            if (window.TabbyPromo) {
+            if (window.TabbyCard) {
                 initTabby();
             } else {
                 script.addEventListener('load', initTabby);
                 return () => script.removeEventListener('load', initTabby);
             }
         }
-    }, [price, currency, publicKey, merchantCode, source, lang]);
+    }, [price, currency, publicKey, merchantCode, lang]);
 
     return (
-        <div className="my-4">
-            <div id="tabby-promo-container" />
+        <div className="my-2">
+            <div id="tabby-checkout-card-container" />
         </div>
     );
 }

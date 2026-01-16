@@ -19,6 +19,7 @@ import {
     toBillingDetailsPayload
 } from "@/components/storefront/BillingDetailsForm";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
+import { TabbyCheckoutCard } from "@/components/storefront/TabbyCheckoutCard";
 
 interface CheckoutPageContentProps {
     initialCart: Cart | null;
@@ -268,10 +269,22 @@ export function CheckoutPageContent({
 
                                             {/* Status Messages */}
                                             {tabbyStatus === 'loading' && <p className="text-sm text-gray-500">Checking availability...</p>}
-                                            {tabbyStatus === 'available' && <p className="text-sm text-[#3EEDBF] font-medium">Available</p>}
                                             {tabbyStatus === 'rejected' && (
                                                 <div className="mt-2 text-sm text-red-500 bg-red-50 p-2 rounded">
                                                     {tabbyRejectionReason}
+                                                </div>
+                                            )}
+
+                                            {/* Tabby Checkout Card - Show when available or selected */}
+                                            {tabbyStatus === 'available' && tabbyConfig && (
+                                                <div className="mt-3">
+                                                    <TabbyCheckoutCard
+                                                        price={totalOrderValue}
+                                                        currency={currency}
+                                                        publicKey={tabbyConfig.publicKey}
+                                                        merchantCode={tabbyConfig.merchantCode}
+                                                        lang="en"
+                                                    />
                                                 </div>
                                             )}
                                         </div>

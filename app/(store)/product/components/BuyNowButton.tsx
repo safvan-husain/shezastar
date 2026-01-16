@@ -16,6 +16,8 @@ import {
   toBillingDetailsPayload,
   validateBillingDetailsForm,
 } from '@/components/storefront/BillingDetailsForm';
+import { TabbyCheckoutCard } from '@/components/storefront/TabbyCheckoutCard';
+import { getVariantCombinationKey } from '@/lib/product/product.utils';
 
 interface BuyNowButtonProps {
   product: Product;
@@ -31,7 +33,6 @@ interface BuyNowButtonProps {
   };
 }
 
-
 export function BuyNowButton({
   product,
   quantity,
@@ -45,7 +46,7 @@ export function BuyNowButton({
 
   const { showToast } = useToast();
   const { billingDetails, saveBillingDetails } = useStorefrontCart();
-  const { currency } = useCurrency();
+  const { currency, formatPrice } = useCurrency();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditingBilling, setIsEditingBilling] = useState(!billingDetails);
   const [billingForm, setBillingForm] = useState<BillingDetailsFormValue>(() => mapBillingDetailsToFormValue(billingDetails));
@@ -83,19 +84,51 @@ export function BuyNowButton({
     [product.id, quantity, selectedVariantItemIds, installationOption, installationLocationId]
   );
 
+  // Price Calculation for TabbyCard
+  const totalPrice = useMemo(() => {
+    // 1. Get Base Product Price (Variant or Base)
+    let productPrice = product.basePrice;
+    if (product.variantStock && product.variantStock.length > 0 && selectedVariantItemIds.length > 0) {
+      const key = getVariantCombinationKey(selectedVariantItemIds);
+      const entry = product.variantStock.find(vs => vs.variantCombinationKey === key);
+      if (entry?.price && entry.price > 0) {
+        productPrice = entry.price;
+      }
+    }
+
+    // 2. Apply Discount
+    if (product.offerPercentage && product.offerPercentage > 0) {
+      productPrice = productPrice * (1 - product.offerPercentage / 100);
+    }
+
+    // 3. Add Installation Price
+    let addOnPrice = 0;
+    if (installationOption !== 'none' && product.installationService) {
+      if (installationOption === 'store') {
+        addOnPrice = product.installationService.inStorePrice ?? 0;
+      } else if (installationOption === 'home') {
+        const baseAtHome = product.installationService.atHomePrice ?? 0;
+        const availableLocations = product.installationService.availableLocations?.filter(l => l.enabled) ?? [];
+        const location = availableLocations.find(l => l.locationId === installationLocationId);
+        addOnPrice = baseAtHome + (location?.priceDelta ?? 0);
+      }
+    }
+
+    return (productPrice + addOnPrice) * quantity;
+  }, [product, quantity, selectedVariantItemIds, installationOption, installationLocationId]);
+
   const checkTabbyAvailability = async () => {
     if (currency !== 'AED' || !tabbyConfig) return;
 
     setTabbyStatus('loading');
     setTabbyRejectionReason(null);
     try {
-      // Use the availability endpoint
       const response = await fetch('/api/tabby/availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currency,
-          items: itemPayload // Pass items to check limits if needed
+          items: itemPayload
         }),
       });
       const data = await response.json();
@@ -149,7 +182,6 @@ export function BuyNowButton({
       const body = await response.json().catch(() => null);
 
       if (!response.ok || !body?.url) {
-        // Handle Tabby rejection reason specifically if available
         let errorMessage = body?.reason || body?.message || body?.error || 'Failed to start checkout';
 
         if (selectedProvider === 'tabby') {
@@ -166,7 +198,6 @@ export function BuyNowButton({
           url,
           method,
         });
-        // eslint-disable-next-line no-console
         console.error('Failed to start checkout:', body);
         return;
       }
@@ -183,7 +214,6 @@ export function BuyNowButton({
         url,
         method,
       });
-      // eslint-disable-next-line no-console
       console.error('Error during buy now:', error);
     } finally {
       setIsProcessingCheckout(false);
@@ -306,11 +336,21 @@ export function BuyNowButton({
                               <img src="https://cdn.tabby.ai/assets/logo.svg" alt="Tabby" className="h-6 w-auto" />
                             </div>
                           </div>
-                          {tabbyStatus === 'available' && (
-                            <span className="text-xs font-semibold text-[#3EEDBF] border border-[#3EEDBF] px-2 py-0.5 rounded">Available</span>
-                          )}
-                          {tabbyStatus === 'loading' && <span className="text-xs text-gray-500">Checking...</span>}
                         </div>
+
+                        {/* Tabby Checkout Card */}
+                        {tabbyStatus === 'available' && tabbyConfig && (
+                          <div className="mt-3 ml-7">
+                            <TabbyCheckoutCard
+                              price={totalPrice}
+                              currency={currency}
+                              publicKey={tabbyConfig.publicKey}
+                              merchantCode={tabbyConfig.merchantCode}
+                              lang="en"
+                            />
+                          </div>
+                        )}
+
                         {tabbyStatus === 'rejected' && tabbyRejectionReason && (
                           <p className="text-xs text-red-500 mt-2 ml-7">{tabbyRejectionReason?.replaceAll("_", " ")}</p>
                         )}
@@ -370,10 +410,10 @@ export function BuyNowButton({
                 </p>
                 <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={(field, value) => {
                   setBillingForm((prev) => ({ ...prev, [field]: value }));
-                  if (billingErrors[field]) {
+                  if (billingErrors[field as keyof BillingDetailsFormValue]) {
                     setBillingErrors((prev) => {
                       const next = { ...prev };
-                      delete next[field];
+                      delete next[field as keyof BillingDetailsFormValue];
                       return next;
                     });
                   }
