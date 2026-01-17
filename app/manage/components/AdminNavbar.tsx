@@ -13,6 +13,7 @@ const NAV_ITEMS: NavItem[] = [
     { href: '/manage', label: 'Dashboard' },
     { href: '/manage/products', label: 'Products' },
     { href: '/manage/categories', label: 'Categories' },
+    { href: '/manage/brands', label: 'Brands' },
     { href: '/manage/variant-types', label: 'Variant Types' },
     { href: '/manage/orders', label: 'Orders' },
     { href: '/manage/settings', label: 'Settings' },
@@ -82,11 +83,10 @@ export default function AdminNavbar() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`${linkBase} ${
-                                        active
+                                    className={`${linkBase} ${active
                                             ? 'bg-[var(--bg-subtle)] text-[var(--text-primary)]'
                                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]'
-                                    }`}
+                                        }`}
                                     aria-current={active ? 'page' : undefined}
                                     onClick={() => setIsOpen(false)}
                                 >
@@ -98,11 +98,10 @@ export default function AdminNavbar() {
                 </div>
 
                 <div
-                    className={`md:hidden overflow-hidden transition-all duration-200 ${
-                        isOpen
+                    className={`md:hidden overflow-hidden transition-all duration-200 ${isOpen
                             ? 'max-h-96 opacity-100 pb-3'
                             : 'max-h-0 opacity-0'
-                    }`}
+                        }`}
                 >
                     <div className="flex flex-col gap-1 pt-1">
                         {NAV_ITEMS.map((item) => {
@@ -111,11 +110,10 @@ export default function AdminNavbar() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`${linkBase} ${
-                                        active
+                                    className={`${linkBase} ${active
                                             ? 'bg-[var(--bg-subtle)] text-[var(--text-primary)]'
                                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]'
-                                    }`}
+                                        }`}
                                     aria-current={active ? 'page' : undefined}
                                 >
                                     {item.label}
