@@ -20,6 +20,9 @@ interface BasicInfoStepProps {
     onBasePriceChange: (value: string) => void;
     onOfferPercentageChange: (value: string) => void;
     onSpecificationsChange: (value: Array<{ title: string; items: string[] }>) => void;
+    brandId?: string;
+    onBrandIdChange: (value: string) => void;
+    brands: any[];
 }
 
 export function BasicInfoStep({
@@ -35,6 +38,9 @@ export function BasicInfoStep({
     onBasePriceChange,
     onOfferPercentageChange,
     onSpecificationsChange,
+    brandId,
+    onBrandIdChange,
+    brands,
 }: BasicInfoStepProps) {
     const [newSpecTitle, setNewSpecTitle] = useState('');
 
@@ -62,6 +68,21 @@ export function BasicInfoStep({
                     onChange={(e) => onSubtitleChange(e.target.value)}
                     placeholder="e.g., 4K Ultra HD Dual Camera with Night Vision"
                 />
+                <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[var(--foreground)]">Brand (optional)</label>
+                    <select
+                        value={brandId}
+                        onChange={(e) => onBrandIdChange(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg border-2 border-[var(--border)] bg-transparent focus:border-[var(--primary)] outline-none transition-colors"
+                    >
+                        <option value="">No Brand</option>
+                        {brands.map((brand: any) => (
+                            <option key={brand.id} value={brand.id}>
+                                {brand.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
                 <div>
                     <RichTextEditor
                         label="Description (optional)"

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ProductForm } from '../../components/ProductForm';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 import { getInstallationLocations } from '@/lib/app-settings/app-settings.service';
+import { handleGetAllBrands } from '@/lib/brand/brand.controller';
 
 type ProductFormData = NonNullable<Parameters<typeof ProductForm>[0]['initialData']>;
 
@@ -57,6 +58,8 @@ export default async function EditProductPage({
     const { id } = await params;
     const { product, error } = await getProduct(id);
     const globalInstallationLocations = await getInstallationLocations();
+    const { body: brandsBody } = await handleGetAllBrands();
+    const brands = Array.isArray(brandsBody) ? brandsBody : [];
 
     return (
         <div className="min-h-screen bg-[var(--background)]">
@@ -95,7 +98,7 @@ export default async function EditProductPage({
 
                 {/* Form */}
                 {product ? (
-                    <ProductForm initialData={product} globalInstallationLocations={globalInstallationLocations} />
+                    <ProductForm initialData={product} globalInstallationLocations={globalInstallationLocations} brands={brands} />
                 ) : (
                     <div className="rounded-xl border-2 border-[var(--border-subtle)] p-4 text-[var(--muted-foreground)]">
                         Unable to load this product. Try again later and copy the toast details for debugging.

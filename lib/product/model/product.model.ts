@@ -15,6 +15,7 @@ export interface ProductDocument {
     installationService?: InstallationService;
     variantStock: VariantStock[];
     specifications?: ProductSpecification[];
+    brandId?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -32,6 +33,11 @@ export interface Product {
     installationService?: InstallationService;
     variantStock: VariantStock[];
     specifications: ProductSpecification[];
+    brandId?: string;
+    brand?: {
+        name: string;
+        imageUrl: string;
+    };
     createdAt: string;
     updatedAt: string;
 }
@@ -50,6 +56,7 @@ export function toProduct(doc: ProductDocument): Product {
         installationService: doc.installationService,
         variantStock: doc.variantStock || [],
         specifications: doc.specifications ?? [],
+        brandId: doc.brandId,
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };

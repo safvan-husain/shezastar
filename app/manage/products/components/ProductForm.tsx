@@ -42,9 +42,10 @@ interface ProductVariant {
 interface ProductFormProps {
     initialData?: any;
     globalInstallationLocations?: InstallationLocation[];
+    brands?: any[];
 }
 
-export function ProductForm({ initialData, globalInstallationLocations = [] }: ProductFormProps) {
+export function ProductForm({ initialData, globalInstallationLocations = [], brands = [] }: ProductFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
@@ -74,6 +75,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
     const [availableLocations, setAvailableLocations] = useState<ProductInstallationLocation[]>(
         initialData?.installationService?.availableLocations || []
     );
+    const [brandId, setBrandId] = useState(initialData?.brandId || '');
 
     const [imageMappings, setImageMappings] = useState<Record<string, string[]>>(
         initialData?.images?.reduce((acc: any, img: any) => {
@@ -86,6 +88,30 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
 
     const handleSubmit = async () => {
         setError('');
+
+        // Explicit validation checks
+        if (!name.trim()) {
+            const msg = 'Product name is required';
+            setError(msg);
+            showToast(msg, 'error');
+            return;
+        }
+
+        const price = parseFloat(basePrice);
+        if (!basePrice || isNaN(price) || price <= 0) {
+            const msg = 'Base price must be greater than zero';
+            setError(msg);
+            showToast(msg, 'error');
+            return;
+        }
+
+        if (images.length === 0) {
+            const msg = 'At least one product image is required';
+            setError(msg);
+            showToast(msg, 'error');
+            return;
+        }
+
         const requestUrl = initialData?.id ? `/api/products/${initialData.id}` : '/api/products';
         const requestMethod = initialData?.id ? 'PUT' : 'POST';
         setLoading(true);
@@ -132,6 +158,9 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
 
             formData.append('variantStock', JSON.stringify(finalVariantStock));
             formData.append('subCategoryIds', JSON.stringify(subCategoryIds));
+            if (brandId) {
+                formData.append('brandId', brandId);
+            }
 
             // Add installation service data
             const installationService = {
@@ -255,9 +284,6 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
         }
     };
 
-    const canProceed = () => {
-        return name.trim() && basePrice && parseFloat(basePrice) > 0 && images.length > 0;
-    };
 
     return (
         <div className="space-y-6">
@@ -288,6 +314,9 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
                     onBasePriceChange={setBasePrice}
                     onOfferPercentageChange={setOfferPercentage}
                     onSpecificationsChange={setSpecifications}
+                    brands={brands}
+                    brandId={brandId}
+                    onBrandIdChange={setBrandId}
                 />
 
                 <ImagesStep
@@ -369,7 +398,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [] }: P
                                     Delete Product
                                 </Button>
                             )}
-                            <Button size="lg" onClick={handleSubmit} disabled={!canProceed() || loading}>
+                            <Button size="lg" onClick={handleSubmit} disabled={loading}>
                                 {loading ? (
                                     <>
                                         <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">

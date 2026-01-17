@@ -215,6 +215,21 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
 
         <div className="space-y-6 min-w-0">
 
+
+          {product.brand && (
+            <div className="flex items-center gap-3 mb-2">
+              <div
+                className="w-12 h-12 rounded-lg bg-[var(--storefront-bg-hover)] border border-[var(--storefront-border)] bg-contain bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${product.brand.imageUrl})` }}
+                role="img"
+                aria-label={product.brand.name}
+              />
+              <span className="text-sm font-semibold text-[var(--storefront-text-secondary)] uppercase tracking-wider">
+                {product.brand.name}
+              </span>
+            </div>
+          )}
+
           <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)] break-words">{displayTitle}</h1>
 
           <div className="flex items-baseline gap-3">

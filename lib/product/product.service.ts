@@ -41,6 +41,7 @@ export async function createProduct(input: CreateProductInput) {
         installationService: input.installationService,
         variantStock: input.variantStock || [],
         specifications: input.specifications || [],
+        brandId: input.brandId,
         createdAt: now,
         updatedAt: now,
     };
@@ -70,7 +71,24 @@ export async function getProduct(id: string) {
         throw new AppError(404, 'PRODUCT_NOT_FOUND');
     }
 
-    return toProduct(doc);
+    const product = toProduct(doc);
+
+    if (product.brandId) {
+        try {
+            const brandCollection = await getCollection('brands');
+            const brandDoc = await brandCollection.findOne({ _id: new ObjectId(product.brandId) });
+            if (brandDoc) {
+                product.brand = {
+                    name: (brandDoc as any).name,
+                    imageUrl: (brandDoc as any).imageUrl,
+                };
+            }
+        } catch (e) {
+            console.error('Failed to populate brand:', e);
+        }
+    }
+
+    return product;
 }
 
 export async function getAllProducts(page = 1, limit = 20, categoryId?: string | string[], originId?: string) {
@@ -203,6 +221,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     if (input.variants) updateDoc.variants = input.variants;
     if (input.subCategoryIds !== undefined) updateDoc.subCategoryIds = input.subCategoryIds;
     if (input.installationService !== undefined) updateDoc.installationService = input.installationService;
+    if (input.brandId !== undefined) updateDoc.brandId = input.brandId;
 
     await collection.updateOne({ _id: objectId }, { $set: updateDoc });
 

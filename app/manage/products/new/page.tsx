@@ -2,9 +2,12 @@
 import Link from 'next/link';
 import { ProductForm } from '../components/ProductForm';
 import { getInstallationLocations } from '@/lib/app-settings/app-settings.service';
+import { handleGetAllBrands } from '@/lib/brand/brand.controller';
 
 export default async function NewProductPage() {
     const globalInstallationLocations = await getInstallationLocations();
+    const { body: brandsBody } = await handleGetAllBrands();
+    const brands = Array.isArray(brandsBody) ? brandsBody : [];
 
     return (
         <div className="min-h-screen bg-[var(--background)]">
@@ -41,7 +44,7 @@ export default async function NewProductPage() {
                 </div>
 
                 {/* Form */}
-                <ProductForm globalInstallationLocations={globalInstallationLocations} />
+                <ProductForm globalInstallationLocations={globalInstallationLocations} brands={brands} />
             </div>
         </div>
     );
