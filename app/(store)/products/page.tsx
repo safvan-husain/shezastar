@@ -63,7 +63,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     const { products, pagination, error } = await fetchProducts(currentPage, 24);
 
     return (
-        <div className="min-h-screen pt-24 pb-12">
+        <div className="min-h-screen pt-24 md:pt-34 pb-12">
             <section className="container mx-auto px-4 space-y-8">
                 {error && <ErrorToastHandler error={error} />}
 
