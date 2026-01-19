@@ -14,7 +14,8 @@ type ErrorBody = {
 };
 
 async function fetchHeroBanners(): Promise<{ banners: HeroBannerWithId[]; error: ToastErrorPayload | null }> {
-  const url = `/api/admin/settings/hero-banners`;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const url = `${baseUrl}/api/admin/settings/hero-banners`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -54,7 +55,8 @@ async function fetchHeroBanners(): Promise<{ banners: HeroBannerWithId[]; error:
 }
 
 async function fetchProducts(page = 1, limit = 24): Promise<{ products: Product[]; pagination?: { totalPages: number; total: number }; error: ToastErrorPayload | null }> {
-  const url = `/api/products?page=${page}&limit=${limit}`;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const url = `${baseUrl}/api/products?page=${page}&limit=${limit}`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -94,7 +96,8 @@ async function fetchProducts(page = 1, limit = 24): Promise<{ products: Product[
 }
 
 async function fetchCustomCards(): Promise<{ cards: CustomCard[]; error: ToastErrorPayload | null }> {
-  const url = `/api/admin/settings/custom-cards`;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const url = `${baseUrl}/api/admin/settings/custom-cards`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });

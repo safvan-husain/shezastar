@@ -12,7 +12,8 @@ async function fetchProducts(page = 1, limit = 24): Promise<{
     pagination?: { total: number; totalPages: number; page: number; limit: number };
     error: ToastErrorPayload | null
 }> {
-    const url = `/api/products?page=${page}&limit=${limit}`;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const url = `${baseUrl}/api/products?page=${page}&limit=${limit}`;
 
     try {
         const res = await fetch(url, { cache: "no-store" });
