@@ -5,6 +5,7 @@ import { HeroCarousel } from "@/components/HeroCarousel";
 import { CardView } from "@/components/CardView";
 import type { HeroBannerWithId, CustomCard } from "@/lib/app-settings/app-settings.schema";
 import { getFeaturedProducts } from "@/lib/app-settings/app-settings.service";
+import { Pagination } from "@/components/storefront/Pagination";
 
 type ErrorBody = {
   message?: string;
@@ -13,8 +14,7 @@ type ErrorBody = {
 };
 
 async function fetchHeroBanners(): Promise<{ banners: HeroBannerWithId[]; error: ToastErrorPayload | null }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const url = `${baseUrl}/api/admin/settings/hero-banners`;
+  const url = `/api/admin/settings/hero-banners`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -53,9 +53,8 @@ async function fetchHeroBanners(): Promise<{ banners: HeroBannerWithId[]; error:
   }
 }
 
-async function fetchProducts(): Promise<{ products: Product[]; error: ToastErrorPayload | null }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const url = `${baseUrl}/api/products?limit=200`;
+async function fetchProducts(page = 1, limit = 24): Promise<{ products: Product[]; pagination?: { totalPages: number; total: number }; error: ToastErrorPayload | null }> {
+  const url = `/api/products?page=${page}&limit=${limit}`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -80,7 +79,7 @@ async function fetchProducts(): Promise<{ products: Product[]; error: ToastError
     }
 
     const data = await res.json();
-    return { products: data.products ?? [], error: null };
+    return { products: data.products ?? [], pagination: data.pagination, error: null };
   } catch (error) {
     return {
       products: [],
@@ -95,8 +94,7 @@ async function fetchProducts(): Promise<{ products: Product[]; error: ToastError
 }
 
 async function fetchCustomCards(): Promise<{ cards: CustomCard[]; error: ToastErrorPayload | null }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const url = `${baseUrl}/api/admin/settings/custom-cards`;
+  const url = `/api/admin/settings/custom-cards`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -140,9 +138,9 @@ async function fetchCustomCards(): Promise<{ cards: CustomCard[]; error: ToastEr
 export default async function Home() {
   const [
     { banners, error: heroBannersError },
-    { products, error: productsError },
+    { products, pagination, error: productsError },
     { cards, error: customCardsError },
-  ] = await Promise.all([fetchHeroBanners(), fetchProducts(), fetchCustomCards()]);
+  ] = await Promise.all([fetchHeroBanners(), fetchProducts(1, 24), fetchCustomCards()]);
 
   // Fetch featured products
   let featuredProducts: Product[] = [];
@@ -249,7 +247,7 @@ export default async function Home() {
                 {isUsingGeneralCatalog ? "More to Explore" : "All products"}
               </p>
             </div>
-            <div className="text-sm text-[var(--text-muted)]">{mainCatalog.length} items</div>
+            <div className="text-sm text-[var(--text-muted)]">{pagination?.total || mainCatalog.length} items</div>
           </div>
 
           {productsError ? (
@@ -260,10 +258,17 @@ export default async function Home() {
               </p>
             </div>
           ) : (
-            <ProductGrid
-              products={mainCatalog}
-              emptyMessage="No more products to show."
-            />
+            <div className="space-y-12">
+              <ProductGrid
+                products={mainCatalog}
+                emptyMessage="No more products to show."
+              />
+              <Pagination
+                currentPage={1}
+                totalPages={pagination?.totalPages || 1}
+                baseUrl="/products"
+              />
+            </div>
           )}
         </section>
       )}
