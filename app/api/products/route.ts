@@ -6,11 +6,38 @@ import {
 } from '@/lib/product/product.controller';
 import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
+import { searchProducts } from '@/lib/product/product.service';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search');
+
+    // If search query is provided, use search endpoint
+    if (search) {
+        try {
+            const products = await searchProducts(search, 100); // Get more results for search
+            const total = products.length;
+            const skip = (page - 1) * limit;
+            const paginatedProducts = products.slice(skip, skip + limit);
+
+            return NextResponse.json({
+                products: paginatedProducts,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                },
+            });
+        } catch (error: any) {
+            return NextResponse.json(
+                { error: error.message || 'Failed to search products' },
+                { status: 500 }
+            );
+        }
+    }
 
     // Support multiple categoryId parameters
     const categoryIds = searchParams.getAll('categoryId');
