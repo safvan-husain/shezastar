@@ -40,7 +40,6 @@ export default function ProductsClient() {
         setLoading(true);
         setError(null);
 
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
         const params = new URLSearchParams({
             page: page.toString(),
             limit: '20',
@@ -50,7 +49,7 @@ export default function ProductsClient() {
             params.append('search', search);
         }
 
-        const url = `${baseUrl}/api/products?${params.toString()}`;
+        const url = `/api/products?${params.toString()}`;
 
         try {
             const res = await fetch(url, {
