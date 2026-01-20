@@ -75,7 +75,7 @@ export async function POST(req: Request) {
             const subCategoryIds = JSON.parse(formData.get('subCategoryIds') as string || '[]');
             const installationService = formData.get('installationService') ? JSON.parse(formData.get('installationService') as string) : undefined;
             const existingImages = JSON.parse(formData.get('existingImages') as string || '[]');
-            const brandId = formData.get('brandId') as string | undefined;
+            const brandId = (formData.get('brandId') as string) || undefined;
 
             // Handle new image uploads
             const newImagesCount = parseInt(formData.get('newImagesCount') as string || '0');
