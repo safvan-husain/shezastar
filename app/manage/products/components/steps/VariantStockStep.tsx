@@ -41,8 +41,8 @@ interface VariantStockStepProps {
 
 export function VariantStockStep({ variants, variantStock, basePrice, offerPercentage, onVariantStockChange }: VariantStockStepProps) {
     const [combinations, setCombinations] = useState<Array<{ key: string; label: string; itemIds: string[] }>>([]);
-    const [stockValues, setStockValues] = useState<Record<string, number>>({});
-    const [priceValues, setPriceValues] = useState<Record<string, number>>({});
+    const [stockValues, setStockValues] = useState<Record<string, string>>({});
+    const [priceValues, setPriceValues] = useState<Record<string, string>>({});
 
     // State for modal
     const [editingVariantKey, setEditingVariantKey] = useState<string | null>(null);
@@ -53,27 +53,27 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
         setCombinations(allCombinations);
 
         // Initialize stock and price values from existing variantStock or default to base/offer price
-        const initialStockValues: Record<string, number> = {};
-        const initialPriceValues: Record<string, number> = {};
+        const initialStockValues: Record<string, string> = {};
+        const initialPriceValues: Record<string, string> = {};
         const defaultPrice = basePrice || 0;
 
         allCombinations.forEach(combo => {
             const existing = variantStock.find(vs => vs.variantCombinationKey === combo.key);
-            initialStockValues[combo.key] = existing?.stockCount ?? 0;
+            initialStockValues[combo.key] = existing?.stockCount.toString() ?? '0';
 
             // Logic: prefer 'price', fallback to defaultPrice.
             if (existing?.price !== undefined) {
-                initialPriceValues[combo.key] = existing.price;
+                initialPriceValues[combo.key] = existing.price.toString();
             } else {
-                initialPriceValues[combo.key] = defaultPrice;
+                initialPriceValues[combo.key] = defaultPrice.toString();
             }
         });
         setStockValues(initialStockValues);
         setPriceValues(initialPriceValues);
     }, [variants, variantStock, basePrice]);
 
-    const rebuildVariantStock = (stocks: Record<string, number>, prices: Record<string, number>, updatedDetails?: { key: string, title?: string, subtitle?: string, description?: string }) => {
-        const newVariantStock: VariantStock[] = Object.entries(stocks).map(([key, stockCount]) => {
+    const rebuildVariantStock = (stocks: Record<string, string>, prices: Record<string, string>, updatedDetails?: { key: string, title?: string, subtitle?: string, description?: string }) => {
+        const newVariantStock: VariantStock[] = Object.entries(stocks).map(([key, stockCountStr]) => {
             // Check if we are updating this specific variant's details
             let title: string | undefined;
             let subtitle: string | undefined;
@@ -91,10 +91,13 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
                 description = existing?.variantDescription;
             }
 
+            const stockCount = parseInt(stockCountStr, 10) || 0;
+            const price = parseFloat(prices[key]) || 0;
+
             return {
                 variantCombinationKey: key,
                 stockCount,
-                price: prices[key] ?? 0,
+                price,
                 priceDelta: undefined,
                 variantTitle: title,
                 variantSubtitle: subtitle,
@@ -104,13 +107,13 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
         onVariantStockChange(newVariantStock);
     };
 
-    const handleStockChange = (key: string, value: number) => {
+    const handleStockChange = (key: string, value: string) => {
         const newStockValues = { ...stockValues, [key]: value };
         setStockValues(newStockValues);
         rebuildVariantStock(newStockValues, priceValues);
     };
 
-    const handlePriceChange = (key: string, value: number) => {
+    const handlePriceChange = (key: string, value: string) => {
         const newPriceValues = { ...priceValues, [key]: value };
         setPriceValues(newPriceValues);
         rebuildVariantStock(stockValues, newPriceValues);
@@ -132,16 +135,16 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
             return;
         }
 
-        const newStockValues: Record<string, number> = {};
+        const newStockValues: Record<string, string> = {};
         combinations.forEach(combo => {
-            newStockValues[combo.key] = numValue;
+            newStockValues[combo.key] = numValue.toString();
         });
         setStockValues(newStockValues);
 
         rebuildVariantStock(newStockValues, priceValues);
     };
 
-    const totalStock = Object.values(stockValues).reduce((sum, val) => sum + val, 0);
+    const totalStock = Object.values(stockValues).reduce((sum, val) => sum + (parseInt(val || '0', 10) || 0), 0);
 
     const activeEditingVariant = editingVariantKey
         ? combinations.find(c => c.key === editingVariantKey)
@@ -185,8 +188,8 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
             ) : (
                 <div className="space-y-3">
                     {combinations.map((combo) => {
-                        const stock = stockValues[combo.key] ?? 0;
-                        const price = priceValues[combo.key] ?? 0;
+                        const stock = stockValues[combo.key] ?? '0';
+                        const price = priceValues[combo.key] ?? '0';
                         const existing = getExistingDetails(combo.key);
                         const hasCustomDetails = existing?.variantTitle || existing?.variantSubtitle || existing?.variantDescription;
 
@@ -211,10 +214,15 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
                                         </label>
                                         <input
                                             id={`stock-${combo.key}`}
-                                            type="number"
-                                            min="0"
+                                            type="text"
+                                            inputMode="decimal"
                                             value={stock}
-                                            onChange={(e) => handleStockChange(combo.key, parseInt(e.target.value, 10) || 0)}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === '' || /^\d+$/.test(val)) {
+                                                    handleStockChange(combo.key, val);
+                                                }
+                                            }}
                                             className="w-24 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                                         />
                                         <span className="text-sm text-[var(--muted-foreground)]">units</span>
@@ -227,16 +235,21 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
                                             </label>
                                             <input
                                                 id={`price-${combo.key}`}
-                                                type="number"
-                                                step="0.01"
+                                                type="text"
+                                                inputMode="decimal"
                                                 value={price}
-                                                onChange={(e) => handlePriceChange(combo.key, parseFloat(e.target.value) || 0)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                        handlePriceChange(combo.key, val);
+                                                    }
+                                                }}
                                                 className="w-28 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                                             />
                                         </div>
                                         {offerPercentage > 0 && (
                                             <div className="text-[10px] text-[var(--success)] font-medium">
-                                                Calculated Offer: AED {(price * (1 - offerPercentage / 100)).toFixed(2)} ({offerPercentage}% off)
+                                                Calculated Offer: AED {((parseFloat(price) || 0) * (1 - offerPercentage / 100)).toFixed(2)} ({offerPercentage}% off)
                                             </div>
                                         )}
                                     </div>

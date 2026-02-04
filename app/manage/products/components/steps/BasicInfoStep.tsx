@@ -93,23 +93,27 @@ export function BasicInfoStep({
                 </div>
                 <div className="grid md:grid-cols-2 gap-5">
                     <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         label="Price *"
                         value={basePrice}
-                        onChange={(e) => onBasePriceChange(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d*\.?\d*$/.test(val)) onBasePriceChange(val);
+                        }}
                         placeholder="0.00"
-                        step="0.01"
-                        min="0"
                         required
                     />
                     <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         label="Offer Percentage (0-100)"
                         value={offerPercentage}
-                        onChange={(e) => onOfferPercentageChange(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d*\.?\d*$/.test(val)) onOfferPercentageChange(val);
+                        }}
                         placeholder="0"
-                        min="0"
-                        max="100"
                     />
                 </div>
                 <div>

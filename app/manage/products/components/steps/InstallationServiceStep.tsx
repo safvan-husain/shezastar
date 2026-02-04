@@ -124,12 +124,15 @@ export function InstallationServiceStep({
                                         $
                                     </span>
                                     <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={inStorePrice}
-                                        onChange={(e) => onInStorePriceChange(e.target.value)}
-                                        onWheel={(e) => e.preventDefault()}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                                onInStorePriceChange(value);
+                                            }
+                                        }}
                                         placeholder="0.00"
                                         className="w-full pl-8 pr-4 py-3 bg-[var(--bg-subtle)] border-2 border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent transition-all text-[var(--text-primary)]"
                                     />
@@ -149,12 +152,15 @@ export function InstallationServiceStep({
                                         $
                                     </span>
                                     <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={atHomePrice}
-                                        onChange={(e) => onAtHomePriceChange(e.target.value)}
-                                        onWheel={(e) => e.preventDefault()}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                                onAtHomePriceChange(value);
+                                            }
+                                        }}
                                         placeholder="0.00"
                                         className="w-full pl-8 pr-4 py-3 bg-[var(--background)] border-2 border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent transition-all text-[var(--foreground)]"
                                     />
@@ -188,13 +194,16 @@ export function InstallationServiceStep({
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm text-[var(--muted-foreground)] whitespace-nowrap">Delta Price (+$):</span>
                                                 <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
+                                                    type="text"
+                                                    inputMode="decimal"
                                                     className="w-24 px-2 py-1 border border-[var(--border-subtle)] rounded bg-[var(--background)] text-right"
                                                     value={currentDelta}
-                                                    onChange={(e) => handleDeltaChange(loc, parseFloat(e.target.value) || 0)}
-                                                    onWheel={(e) => e.preventDefault()}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                            handleDeltaChange(loc, parseFloat(val) || 0);
+                                                        }
+                                                    }}
                                                 // Disable delta input if location is not enabled? User said "even here can modify". So keep enabled.
                                                 />
                                             </div>
