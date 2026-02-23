@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { updateOrderStatus, createOrder, getOrderByStripeSessionId, getOrderById, updateOrderStatusById } from '@/lib/order/order.service';
-import { clearCart, getCartBySessionId, getCart } from '@/lib/cart/cart.service';
-import { OrderDocument, OrderItemDocument } from '@/lib/order/model/order.model';
-import { getProduct } from '@/lib/product/product.service';
-import { filterImagesByVariants } from '@/lib/product/model/product.model';
+import { clearCart } from '@/lib/cart/cart.service';
+import { getCollection } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
+import { getOrderById, updateOrderStatusById } from '@/lib/order/order.service';
 import { getStorefrontSessionBySessionId } from '@/lib/storefront-session';
-import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -17,14 +14,23 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+function webhookError(
+    status: number,
+    code: string,
+    message: string,
+    context: Record<string, unknown> = {}
+) {
+    return NextResponse.json({ error: message, code, context }, { status });
+}
+
 export async function POST(req: NextRequest) {
     if (!endpointSecret || !stripe) {
-        return NextResponse.json({ error: 'Webhook secret or Stripe key not configured' }, { status: 500 });
+        return webhookError(500, 'WEBHOOK_CONFIG_MISSING', 'Webhook secret or Stripe key not configured');
     }
 
     const sig = req.headers.get('stripe-signature');
     if (!sig) {
-        return NextResponse.json({ error: 'No signature' }, { status: 400 });
+        return webhookError(400, 'MISSING_STRIPE_SIGNATURE', 'No stripe-signature header');
     }
 
     let event: Stripe.Event;
@@ -33,325 +39,163 @@ export async function POST(req: NextRequest) {
         const body = await req.text();
         event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
     } catch (err: any) {
-        console.error(`Webhook signature verification failed: ${err.message}`);
-        return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+        console.error('Webhook signature verification failed', { message: err?.message });
+        return webhookError(400, 'INVALID_STRIPE_SIGNATURE', `Webhook Error: ${err?.message ?? 'Invalid signature'}`);
     }
 
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const storefrontSessionId = session.metadata?.sessionId;
+    if (event.type !== 'checkout.session.completed') {
+        return NextResponse.json({ received: true });
+    }
 
-        if (storefrontSessionId) {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const orderId = session.client_reference_id;
+
+    if (!orderId) {
+        console.error('Stripe checkout webhook missing client_reference_id', {
+            eventId: event.id,
+            sessionId: session.id,
+        });
+        return webhookError(
+            400,
+            'MISSING_CLIENT_REFERENCE_ID',
+            'checkout.session.completed is missing client_reference_id',
+            { eventId: event.id, sessionId: session.id }
+        );
+    }
+
+    let order: Awaited<ReturnType<typeof getOrderById>>;
+
+    try {
+        order = await getOrderById(orderId);
+    } catch (error) {
+        if (error instanceof AppError && error.code === 'ORDER_NOT_FOUND') {
+            console.error('Stripe webhook order not found', {
+                eventId: event.id,
+                sessionId: session.id,
+                orderId,
+            });
+            return webhookError(
+                404,
+                'ORDER_NOT_FOUND',
+                'Pre-created order not found for checkout.session.completed',
+                { eventId: event.id, sessionId: session.id, orderId }
+            );
+        }
+
+        if (error instanceof AppError && error.code === 'INVALID_ORDER_ID') {
+            console.error('Stripe webhook has invalid client_reference_id', {
+                eventId: event.id,
+                sessionId: session.id,
+                orderId,
+            });
+            return webhookError(
+                400,
+                'INVALID_CLIENT_REFERENCE_ID',
+                'checkout.session.completed has invalid client_reference_id',
+                { eventId: event.id, sessionId: session.id, orderId }
+            );
+        }
+
+        console.error('Unexpected error fetching order for Stripe webhook', {
+            eventId: event.id,
+            sessionId: session.id,
+            orderId,
+            error,
+        });
+        return webhookError(
+            500,
+            'ORDER_LOOKUP_FAILED',
+            'Failed to load order for checkout.session.completed',
+            { eventId: event.id, sessionId: session.id, orderId }
+        );
+    }
+
+    try {
+        const status = session.payment_status === 'paid' ? 'paid' : 'pending';
+        const wasAlreadyPaid = order.status === 'paid' || order.status === 'completed';
+
+        await updateOrderStatusById(order.id, status);
+
+        const updateData: Record<string, unknown> = {
+            paymentProviderSessionId: session.id,
+            updatedAt: new Date(),
+        };
+
+        if (!order.billingDetails && session.metadata?.billingDetails) {
             try {
-                // Determine status based on payment_status
-                const status = session.payment_status === 'paid' ? 'paid' : 'pending';
-
-                const isBuyNow = session.metadata?.type === 'buy_now';
-                const shouldClearCart = !isBuyNow;
-
-                const storefrontSession = await getStorefrontSessionBySessionId(storefrontSessionId);
-                const cartLookupSession = storefrontSession?.userId
-                    ? ({ sessionId: storefrontSessionId, userId: storefrontSession.userId } as any)
-                    : ({ sessionId: storefrontSessionId } as any);
-
-                const cart = storefrontSession?.userId
-                    ? await getCart(cartLookupSession)
-                    : await getCartBySessionId(storefrontSessionId);
-
-                // NEW: Priority Lookup by client_reference_id (Order ID)
-                let order: any = null;
-                if (session.client_reference_id) {
-                    try {
-                        order = await getOrderById(session.client_reference_id);
-                    } catch (e) {
-                        console.warn(`Order not found for client_reference_id: ${session.client_reference_id}`);
-                    }
-                }
-
-                // Fallback to legacy lookup by Stripe Session ID
-                if (!order) {
-                    order = await getOrderByStripeSessionId(session.id);
-                }
-
-                if (order) {
-                    // Update existing order
-                    const updateData: any = {
-                        status: status,
-                        paymentProviderSessionId: session.id, // Store Stripe Session ID
-                    };
-
-                    // If it was a legacy order that didn't have billing details, try to sync them
-                    if (!order.billingDetails && session.metadata?.billingDetails) {
-                        try {
-                            updateData.billingDetails = JSON.parse(session.metadata.billingDetails);
-                        } catch (e) { }
-                    }
-
-                    await updateOrderStatus(session.id, status); // Legacy helper still works due to $or lookup
-
-                    // Specific update for new fields
-                    const { getCollection } = await import('@/lib/db/mongo-client');
-                    const collection = await getCollection<any>('orders');
-                    await collection.updateOne(
-                        { _id: order.id ? new (await import('@/lib/db/mongo-client')).ObjectId(order.id) : order._id },
-                        { $set: { paymentProviderSessionId: session.id, updatedAt: new Date() } }
-                    );
-
-                    // Re-fetch enriched order for stock reduction
-                    const updatedOrder = await getOrderById(order.id || order._id.toHexString());
-
-                    // Stock reduction
-                    for (const item of updatedOrder.items) {
-                        try {
-                            const { reduceVariantStock } = await import('@/lib/product/product.service-stock');
-                            await reduceVariantStock(item.productId, item.selectedVariantItemIds, item.quantity);
-                        } catch (stockError) {
-                            console.error(`Failed to reduce stock for product ${item.productId}:`, stockError);
-                        }
-                    }
-
-                    if (shouldClearCart) {
-                        const minimalSession = {
-                            sessionId: storefrontSessionId,
-                            status: 'active' as const,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString(),
-                            expiresAt: new Date().toISOString(),
-                            lastActiveAt: new Date().toISOString(),
-                            userId: storefrontSession?.userId,
-                        };
-                        try {
-                            await clearCart(minimalSession);
-                        } catch (e) { }
-                    }
-
-                    return NextResponse.json({ received: true });
-                }
-
-                // LEGACY FALLBACK: If order still not found, create it (should be rare now)
-                const orderItems: OrderItemDocument[] = [];
-                // ... existing item reconstruction logic ...
-
-                if (session.metadata?.type === 'buy_now' && session.metadata?.buyNowItems) {
-                    try {
-                        const buyNowItems = JSON.parse(session.metadata.buyNowItems);
-                        // Loop through Buy Now items
-                        if (Array.isArray(buyNowItems)) {
-                            for (const item of buyNowItems) {
-                                try {
-                                    const product = await getProduct(item.productId);
-
-                                    // Resolve Product Image
-                                    let productImage = product.images.length > 0 ? product.images[0].url : undefined;
-                                    if (item.selectedVariantItemIds && item.selectedVariantItemIds.length > 0) {
-                                        const matchedImages = filterImagesByVariants(product.images, item.selectedVariantItemIds);
-                                        if (matchedImages.length > 0) {
-                                            productImage = matchedImages[0].url;
-                                        }
-                                    }
-
-                                    // Resolve Variant Name
-                                    let variantNames: string[] = [];
-                                    if (item.selectedVariantItemIds && item.selectedVariantItemIds.length > 0) {
-                                        for (const variant of product.variants) {
-                                            for (const vItem of variant.selectedItems) {
-                                                if (item.selectedVariantItemIds.includes(vItem.id)) {
-                                                    variantNames.push(`${variant.variantTypeName}: ${vItem.name}`);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
-
-                                    // Resolve Installation Location Name
-                                    let installationLocationName: string | undefined;
-                                    if (item.installationLocationId && product.installationService?.availableLocations) {
-                                        const loc = product.installationService.availableLocations.find(l => l.locationId === item.installationLocationId);
-                                        if (loc) {
-                                            installationLocationName = loc.name;
-                                        }
-                                    }
-
-                                    orderItems.push({
-                                        productId: item.productId,
-                                        productName: product.name,
-                                        productImage: productImage,
-                                        variantName: variantName,
-                                        selectedVariantItemIds: item.selectedVariantItemIds || [],
-                                        quantity: item.quantity,
-                                        unitPrice: item.unitPrice,
-                                        installationOption: item.installationOption ?? 'none',
-                                        installationAddOnPrice: item.installationAddOnPrice ?? 0,
-                                        installationLocationId: item.installationLocationId,
-                                        installationLocationName: installationLocationName,
-                                        installationLocationDelta: item.installationLocationDelta ?? 0,
-                                    });
-                                } catch (err) {
-                                    console.error(`Failed to fetch product details for buy now product ${item.productId}`, err);
-                                    orderItems.push({
-                                        productId: item.productId,
-                                        productName: 'Unknown Product',
-                                        selectedVariantItemIds: item.selectedVariantItemIds || [],
-                                        quantity: item.quantity,
-                                        unitPrice: item.unitPrice,
-                                        installationOption: item.installationOption ?? 'none',
-                                        installationAddOnPrice: item.installationAddOnPrice ?? 0,
-                                    });
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Failed to parse buy now items', e);
-                    }
-                } else {
-                    // Standard Cart Flow
-                    if (cart && cart.items.length > 0) {
-                        // Loop through ALL items in the cart
-                        for (const cartItem of cart.items) {
-                            try {
-                                const product = await getProduct(cartItem.productId);
-
-                                // Resolve Product Image
-                                // Use the first image that matches the variant or default to first product image
-                                let productImage = product.images.length > 0 ? product.images[0].url : undefined;
-                                if (cartItem.selectedVariantItemIds.length > 0) {
-                                    const matchedImages = filterImagesByVariants(product.images, cartItem.selectedVariantItemIds);
-                                    if (matchedImages.length > 0) {
-                                        productImage = matchedImages[0].url;
-                                    }
-                                }
-
-                                // Resolve Variant Name
-                                let variantNames: string[] = [];
-                                if (cartItem.selectedVariantItemIds.length > 0) {
-                                    for (const variant of product.variants) {
-                                        for (const item of variant.selectedItems) {
-                                            if (cartItem.selectedVariantItemIds.includes(item.id)) {
-                                                variantNames.push(`${variant.variantTypeName}: ${item.name}`);
-                                            }
-                                        }
-                                    }
-                                }
-                                const variantName = variantNames.length > 0 ? variantNames.join(', ') : undefined;
-
-                                // Resolve Installation Location Name
-                                let installationLocationName: string | undefined;
-                                if (cartItem.installationLocationId && product.installationService?.availableLocations) {
-                                    const loc = product.installationService.availableLocations.find(l => l.locationId === cartItem.installationLocationId);
-                                    if (loc) {
-                                        installationLocationName = loc.name;
-                                    }
-                                }
-
-                                orderItems.push({
-                                    productId: cartItem.productId,
-                                    productName: product.name,
-                                    productImage: productImage,
-                                    variantName: variantName,
-                                    selectedVariantItemIds: cartItem.selectedVariantItemIds,
-                                    quantity: cartItem.quantity,
-                                    unitPrice: cartItem.unitPrice,
-                                    installationOption: cartItem.installationOption ?? 'none',
-                                    installationAddOnPrice: cartItem.installationAddOnPrice ?? 0,
-                                    installationLocationId: cartItem.installationLocationId,
-                                    installationLocationName: installationLocationName,
-                                    installationLocationDelta: cartItem.installationLocationDelta ?? 0,
-                                });
-                            } catch (err) {
-                                console.error(`Failed to fetch product details for product ${cartItem.productId} in session ${storefrontSessionId}`, err);
-                                // Fallback if product not found (should be rare)
-                                orderItems.push({
-                                    productId: cartItem.productId,
-                                    productName: 'Unknown Product', // Placeholder
-                                    selectedVariantItemIds: cartItem.selectedVariantItemIds,
-                                    quantity: cartItem.quantity,
-                                    unitPrice: cartItem.unitPrice,
-                                });
-                            }
-                        }
-                    }
-                }
-
-                // Fallback: if we couldn't build order items from cart/metadata, fetch Stripe line items.
-                if (orderItems.length === 0) {
-                    try {
-                        const lineItemsResponse = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
-                        for (const lineItem of lineItemsResponse.data) {
-                            const productIdFromStripe =
-                                typeof lineItem.description === 'string' && lineItem.description.length > 0
-                                    ? lineItem.description
-                                    : lineItem.price?.product?.toString() ?? 'unknown';
-                            const unitAmount = lineItem.price?.unit_amount ?? 0;
-                            orderItems.push({
-                                productId: productIdFromStripe,
-                                productName: productIdFromStripe,
-                                selectedVariantItemIds: [],
-                                quantity: lineItem.quantity ?? 1,
-                                unitPrice: unitAmount / 100,
-                                installationOption: 'none',
-                                installationAddOnPrice: 0,
-                            });
-                        }
-                    } catch (err) {
-                        console.error('Failed to fetch Stripe line items for fallback', err);
-                    }
-                }
-
-                if (orderItems.length === 0) {
-                    throw new Error(`ORDER_ITEMS_EMPTY:${session.id}`);
-                }
-
-                let orderBillingDetails = cart?.billingDetails;
-                if (!orderBillingDetails && session.metadata?.billingDetails) {
-                    try {
-                        orderBillingDetails = JSON.parse(session.metadata.billingDetails);
-                    } catch (err) {
-                        console.error('Failed to parse billing details metadata', err);
-                    }
-                }
-
-                const currencyConfig = SUPPORTED_CURRENCIES.find(c => c.code === (session.currency?.toUpperCase() as CurrencyCode));
-                const divider = currencyConfig?.decimals === 3 ? 1000 : 100;
-
-                const orderData: Omit<OrderDocument, '_id' | 'createdAt' | 'updatedAt'> = {
-                    sessionId: storefrontSessionId,
-                    stripeSessionId: session.id,
-                    items: orderItems,
-                    totalAmount: session.amount_total ? session.amount_total / divider : 0,
-                    currency: session.currency || 'usd',
-                    status: status,
-                    billingDetails: orderBillingDetails,
-                };
-
-                // Note: The new logic above handles stock reduction and cart clearing for existing orders.
-                // This block is only reached if LEGACY FALLBACK creation occurs.
-                await createOrder(orderData);
-
-                // Reduce stock for fallback
-                for (const item of orderItems) {
-                    try {
-                        const { reduceVariantStock } = await import('@/lib/product/product.service-stock');
-                        await reduceVariantStock(item.productId, item.selectedVariantItemIds, item.quantity);
-                    } catch (e) { }
-                }
-
-                if (shouldClearCart) {
-                    const minimalSession = {
-                        sessionId: storefrontSessionId,
-                        status: 'active' as const,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        expiresAt: new Date().toISOString(),
-                        lastActiveAt: new Date().toISOString(),
-                        userId: storefrontSession?.userId,
-                    };
-                    try { await clearCart(minimalSession); } catch (e) { }
-                }
-            } catch (error) {
-                console.error('Error processing checkout.session.completed:', error);
-                return NextResponse.json({ error: 'Error processing webhook' }, { status: 500 });
+                updateData.billingDetails = JSON.parse(session.metadata.billingDetails);
+            } catch (parseError) {
+                console.error('Failed to parse billing details metadata from Stripe webhook', {
+                    eventId: event.id,
+                    sessionId: session.id,
+                    orderId,
+                    parseError,
+                });
             }
         }
+
+        const collection = await getCollection<any>('orders');
+        await collection.updateOne(
+            { _id: new (await import('@/lib/db/mongo-client')).ObjectId(order.id) },
+            { $set: updateData }
+        );
+
+        const updatedOrder = await getOrderById(order.id);
+
+        if (!wasAlreadyPaid && status === 'paid') {
+            for (const item of updatedOrder.items) {
+                try {
+                    const { reduceVariantStock } = await import('@/lib/product/product.service-stock');
+                    await reduceVariantStock(item.productId, item.selectedVariantItemIds, item.quantity);
+                } catch (stockError) {
+                    console.error('Failed to reduce stock for paid Stripe webhook order item', {
+                        eventId: event.id,
+                        sessionId: session.id,
+                        orderId,
+                        productId: item.productId,
+                        stockError,
+                    });
+                }
+            }
+        }
+
+        if (session.metadata?.type !== 'buy_now') {
+            const storefrontSession = await getStorefrontSessionBySessionId(order.sessionId);
+            const minimalSession = {
+                sessionId: order.sessionId,
+                status: 'active' as const,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                expiresAt: new Date().toISOString(),
+                lastActiveAt: new Date().toISOString(),
+                userId: storefrontSession?.userId,
+            };
+
+            try {
+                await clearCart(minimalSession);
+            } catch (clearError) {
+                console.error('Failed to clear cart after Stripe webhook order payment', {
+                    eventId: event.id,
+                    sessionId: session.id,
+                    orderId,
+                    storefrontSessionId: order.sessionId,
+                    clearError,
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error processing checkout.session.completed', {
+            eventId: event.id,
+            sessionId: session.id,
+            orderId,
+            error,
+        });
+        return webhookError(
+            500,
+            'CHECKOUT_SESSION_COMPLETED_PROCESSING_FAILED',
+            'Error processing checkout.session.completed webhook',
+            { eventId: event.id, sessionId: session.id, orderId }
+        );
     }
 
     return NextResponse.json({ received: true });
