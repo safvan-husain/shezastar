@@ -390,24 +390,51 @@ export async function mapImageToVariants(id: string, mappings: ImageMappingInput
 
 export async function searchProducts(query: string, limit = 10) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+        return [];
+    }
 
-    // Escape special characters for regex
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(escapedQuery, 'i');
+    const searchableFields = ['name', 'subtitle', 'description', 'specifications.items'] as const;
+    const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const createOrFilter = (regex: RegExp) => ({
+        $or: searchableFields.map((field) => ({ [field]: { $regex: regex } })),
+    });
 
-    const filter = {
-        $or: [
-            { name: { $regex: regex } },
-            { subtitle: { $regex: regex } },
-            { description: { $regex: regex } },
-            { 'specifications.items': { $regex: regex } }
-        ]
+    const words = trimmedQuery.split(/\s+/).filter(Boolean);
+
+    if (words.length === 1) {
+        const wordRegex = new RegExp(`\\b${escapeRegex(words[0])}\\b`, 'i');
+        const docs = await collection.find(createOrFilter(wordRegex)).limit(limit).toArray();
+        return toProducts(docs);
+    }
+
+    const escapedPhrase = words.map(escapeRegex).join('\\s+');
+    const phraseRegex = new RegExp(`\\b${escapedPhrase}\\b`, 'i');
+    const phraseDocs = await collection.find(createOrFilter(phraseRegex)).limit(limit).toArray();
+
+    if (phraseDocs.length >= limit) {
+        return toProducts(phraseDocs);
+    }
+
+    const wordClauses = words.map((word) => {
+        const wordRegex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+        return createOrFilter(wordRegex);
+    });
+
+    const phraseIds = phraseDocs.map((doc) => doc._id);
+    const fallbackFilter: Record<string, any> = {
+        $and: wordClauses,
     };
 
-    const docs = await collection
-        .find(filter)
-        .limit(limit)
-        .toArray();
+    if (phraseIds.length > 0) {
+        fallbackFilter._id = { $nin: phraseIds };
+    }
 
-    return toProducts(docs);
+    const fallbackLimit = limit - phraseDocs.length;
+    const fallbackDocs = fallbackLimit > 0
+        ? await collection.find(fallbackFilter).limit(fallbackLimit).toArray()
+        : [];
+
+    return toProducts([...phraseDocs, ...fallbackDocs]);
 }

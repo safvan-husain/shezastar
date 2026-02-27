@@ -257,6 +257,54 @@ describe('Product Service - Search', () => {
             variantStock: [],
             specifications: [],
         });
+
+        await createProduct({
+            name: 'Audi Sport Wheel',
+            subtitle: 'Performance line',
+            description: 'Premium wheel for Audi models.',
+            basePrice: 299,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
+        });
+
+        await createProduct({
+            name: 'Audible Premium Sound',
+            subtitle: 'Audio books',
+            description: 'High quality spoken word platform.',
+            basePrice: 129,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
+        });
+
+        await createProduct({
+            name: 'Galaxy AI Pro Device',
+            subtitle: 'Future ready',
+            description: 'Phrase appears exactly in the product name.',
+            basePrice: 1099,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
+        });
+
+        await createProduct({
+            name: 'Galaxy Smart Hub',
+            subtitle: 'Titanium finish',
+            description: 'AI features for home automation.',
+            basePrice: 499,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
+        });
     });
 
     afterAll(async () => {
@@ -272,14 +320,17 @@ describe('Product Service - Search', () => {
 
     it('should search by subtitle', async () => {
         const result = await searchProducts('Titanium');
-        expect(result.length).toBe(1);
-        expect(result[0].name).toBe('iPhone 15 Pro');
+        expect(result.length).toBe(2);
+        expect(result.map((product) => product.name)).toEqual(
+            expect.arrayContaining(['iPhone 15 Pro', 'Galaxy Smart Hub'])
+        );
     });
 
     it('should search by description', async () => {
         const result = await searchProducts('Galaxy AI');
-        expect(result.length).toBe(1);
+        expect(result.length).toBeGreaterThanOrEqual(2);
         expect(result[0].name).toBe('Samsung Galaxy S24');
+        expect(result.map((product) => product.name)).toContain('Galaxy AI Pro Device');
     });
 
     it('should search by specifications', async () => {
@@ -296,5 +347,34 @@ describe('Product Service - Search', () => {
     it('should be case insensitive', async () => {
         const result = await searchProducts('iphone');
         expect(result.length).toBe(1);
+    });
+
+    it('should not match partial words', async () => {
+        const result = await searchProducts('Audi');
+        expect(result.length).toBe(1);
+        expect(result[0].name).toBe('Audi Sport Wheel');
+    });
+
+    it('should prioritize exact phrase matches for multi-word queries', async () => {
+        const result = await searchProducts('galaxy ai');
+        expect(result.length).toBeGreaterThanOrEqual(2);
+        expect(result[0].name).toBe('Samsung Galaxy S24');
+    });
+
+    it('should include all-words fallback matches when exact phrase is absent', async () => {
+        const result = await searchProducts('galaxy titanium');
+        expect(result.length).toBe(1);
+        expect(result[0].name).toBe('Galaxy Smart Hub');
+    });
+
+    it('should avoid duplicate documents between exact phrase and fallback results', async () => {
+        const result = await searchProducts('A17 Pro');
+        const uniqueIds = new Set(result.map((product) => product.id));
+        expect(uniqueIds.size).toBe(result.length);
+    });
+
+    it('should return empty array for whitespace-only query', async () => {
+        const result = await searchProducts('    ');
+        expect(result).toEqual([]);
     });
 });
