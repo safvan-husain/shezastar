@@ -367,7 +367,7 @@ export function CartPageContent({
             <div
               key={lineKey}
               className={[
-                "flex gap-4 border-b pb-4 rounded-md",
+                "flex flex-col gap-4 border-b pb-4 rounded-md sm:flex-row",
                 isOutOfStock
                   ? "border-[var(--storefront-sale)] bg-[var(--storefront-sale-bg)]"
                   : "border-[var(--storefront-border-light)]",
@@ -390,8 +390,8 @@ export function CartPageContent({
                 )}
               </div>
 
-              <div className="flex-1 flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1 flex flex-col gap-2">
+                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-[var(--storefront-text-primary)] truncate">
                       {product?.name ?? "Product unavailable"}
@@ -422,7 +422,7 @@ export function CartPageContent({
                       )}
 
                       {/* Line item price breakdown */}
-                      <div className="bg-[var(--storefront-bg-subtle)] p-2 rounded border border-[var(--storefront-border-light)] inline-block">
+                      <div className="inline-block max-w-full rounded border border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-2">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] items-center">
                           <span className="text-[var(--storefront-text-muted)]">Product (x{item.quantity}):</span>
                           <span className="text-right text-[var(--storefront-text-secondary)]">{formatPrice((item.unitPrice - item.installationAddOnPrice) * item.quantity)}</span>
@@ -454,7 +454,7 @@ export function CartPageContent({
                     )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-2">
+                  <div className="flex w-full flex-row items-center justify-between gap-2 sm:w-auto sm:flex-col sm:items-end sm:justify-start">
                     <button
                       type="button"
                       className="text-xs text-[var(--storefront-text-muted)] hover:text-[var(--storefront-text-primary)] transition-colors"
@@ -479,7 +479,7 @@ export function CartPageContent({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-[var(--storefront-text-secondary)]">
                       Quantity
@@ -526,7 +526,7 @@ export function CartPageContent({
                     </div>
                   </div>
 
-                  <div className="text-right space-y-1">
+                  <div className="space-y-1 text-left sm:text-right">
                     <p className="text-sm text-[var(--storefront-text-secondary)]">
                       Unit price
                     </p>
