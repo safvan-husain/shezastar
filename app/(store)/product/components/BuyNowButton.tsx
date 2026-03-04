@@ -58,7 +58,7 @@ export function BuyNowButton({
   const { showToast } = useToast();
   const { billingDetails, saveBillingDetails } = useStorefrontCart();
   const { currency, formatPrice } = useCurrency();
-  const { countries } = useCountry();
+  const { countries, countryCode } = useCountry();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditingBilling, setIsEditingBilling] = useState(!billingDetails);
   const [billingForm, setBillingForm] = useState<BillingDetailsFormValue>(() => mapBillingDetailsToFormValue(billingDetails));
@@ -72,6 +72,15 @@ export function BuyNowButton({
   // Tabby Check State
   const [tabbyStatus, setTabbyStatus] = useState<'idle' | 'loading' | 'available' | 'rejected'>('idle');
   const [tabbyRejectionReason, setTabbyRejectionReason] = useState<string | null>(null);
+  const billingCountryCode = (billingDetails?.country || '').trim().toUpperCase();
+  const selectedCountryCode = (countryCode || '').trim().toUpperCase();
+  const billingCountryExists = billingCountryCode
+    ? countries.some((entry) => entry.code.toUpperCase() === billingCountryCode)
+    : false;
+  const countryActionRequired = !billingCountryCode || !billingCountryExists || billingCountryCode !== selectedCountryCode;
+  const countryActionMessage = countryActionRequired
+    ? 'Please edit the address to update the country.'
+    : null;
 
   useEffect(() => {
     setBillingForm(mapBillingDetailsToFormValue(billingDetails));
@@ -152,6 +161,7 @@ export function BuyNowButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currency,
+          country: billingDetails?.country,
           items: itemPayload
         }),
       });
@@ -176,7 +186,7 @@ export function BuyNowButton({
   };
 
   const fetchCheckoutPreview = async () => {
-    if (!billingDetails?.country) {
+    if (countryActionRequired || !billingDetails?.country) {
       setCheckoutPreview(null);
       return null;
     }
@@ -222,13 +232,13 @@ export function BuyNowButton({
   };
 
   useEffect(() => {
-    if (isDialogOpen && billingDetails && currency === 'AED' && tabbyConfig) {
+    if (isDialogOpen && billingDetails && currency === 'AED' && tabbyConfig && !countryActionRequired) {
       checkTabbyAvailability();
     } else {
       setTabbyStatus('idle');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDialogOpen, billingDetails, currency, tabbyConfig]);
+  }, [isDialogOpen, billingDetails, currency, tabbyConfig, countryActionRequired]);
 
   useEffect(() => {
     if (!isDialogOpen || !billingDetails) {
@@ -237,7 +247,7 @@ export function BuyNowButton({
     }
     void fetchCheckoutPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDialogOpen, billingDetails?.country, currency, quantity, installationOption, installationLocationId, selectedVariantItemIds.join('|')]);
+  }, [isDialogOpen, countryActionRequired, billingDetails?.country, currency, quantity, installationOption, installationLocationId, selectedVariantItemIds.join('|')]);
 
 
   const startCheckout = async () => {
@@ -252,6 +262,9 @@ export function BuyNowButton({
     try {
       const preview = await fetchCheckoutPreview();
       if (!preview) {
+        if (countryActionMessage) {
+          showToast(countryActionMessage, 'error');
+        }
         return;
       }
 
@@ -260,7 +273,7 @@ export function BuyNowButton({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ items: itemPayload, currency }),
+        body: JSON.stringify({ items: itemPayload, currency, country: billingDetails?.country }),
       });
 
       const body = await response.json().catch(() => null);
@@ -445,6 +458,11 @@ export function BuyNowButton({
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--storefront-border-light)] pt-4">
+                  {countryActionMessage && (
+                    <div className="w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {countryActionMessage}
+                    </div>
+                  )}
                   <div className="w-full rounded-md border border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-3 text-sm text-[var(--storefront-text-secondary)] space-y-1">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
@@ -490,7 +508,7 @@ export function BuyNowButton({
                   <button
                     type="button"
                     onClick={startCheckout}
-                    disabled={isProcessingCheckout || isPreviewLoading || !checkoutPreview || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
+                    disabled={isProcessingCheckout || isPreviewLoading || !checkoutPreview || Boolean(countryActionMessage) || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
                     className={`inline-flex items-center justify-center rounded-md px-6 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 gap-2 ${selectedProvider === 'tabby' ? 'bg-[#3EEDBF] text-black hover:bg-[#35d8ae]' : 'bg-[var(--storefront-button-primary)]'}`}
                   >
                     {isProcessingCheckout ? (

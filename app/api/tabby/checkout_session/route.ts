@@ -50,6 +50,25 @@ export async function POST(req: NextRequest) {
         const body = await req.json().catch(() => ({}));
         const rawCurrency = (typeof body.currency === 'string' && body.currency ? body.currency : 'AED'); // Default to AED for Tabby usually
         const targetCurrencyCode = rawCurrency.toUpperCase() as CurrencyCode;
+        const billingCountryForPricing =
+            typeof body.country === 'string' && body.country.trim()
+                ? body.country.trim()
+                : billingDetails.country;
+        if (
+            typeof body.country === 'string' &&
+            body.country.trim() &&
+            billingDetails.country?.trim() &&
+            body.country.trim().toUpperCase() !== billingDetails.country.trim().toUpperCase()
+        ) {
+            return NextResponse.json(
+                {
+                    error: 'BILLING_COUNTRY_MISMATCH',
+                    code: 'BILLING_COUNTRY_MISMATCH',
+                    message: 'Billing address country does not match selected country. Please edit the address to update the country.',
+                },
+                { status: 400 }
+            );
+        }
 
         console.log(`[Tabby Checkout] Initiating session with currency: ${targetCurrencyCode}`);
 
@@ -226,7 +245,7 @@ export async function POST(req: NextRequest) {
         }
 
         const totalAmountCalculated = sourceItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-        const countryPricing = await resolveCountryPricingForCheckout(billingDetails.country);
+        const countryPricing = await resolveCountryPricingForCheckout(billingCountryForPricing);
         const pricingBreakdown = computeCheckoutPricingBreakdown({
             subtotalAed: totalAmountCalculated,
             currency: targetCurrencyCode,

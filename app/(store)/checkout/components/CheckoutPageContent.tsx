@@ -62,7 +62,7 @@ export function CheckoutPageContent({
     } = useStorefrontCart();
 
     const { formatPrice, currency } = useCurrency();
-    const { countries } = useCountry();
+    const { countries, countryCode } = useCountry();
     const { showToast } = useToast();
     const router = useRouter();
 
@@ -72,6 +72,15 @@ export function CheckoutPageContent({
 
     const currentBillingDetails = billingDetails ?? effectiveCart?.billingDetails ?? null;
     const hasBillingDetails = Boolean(currentBillingDetails);
+    const billingCountryCode = (currentBillingDetails?.country || '').trim().toUpperCase();
+    const selectedCountryCode = (countryCode || '').trim().toUpperCase();
+    const billingCountryExists = billingCountryCode
+        ? countries.some((entry) => entry.code.toUpperCase() === billingCountryCode)
+        : false;
+    const countryActionRequired = !billingCountryCode || !billingCountryExists || billingCountryCode !== selectedCountryCode;
+    const countryActionMessage = countryActionRequired
+        ? 'Please edit the address to update the country.'
+        : null;
 
     // Address Form State
     const [isEditingBilling, setIsEditingBilling] = useState(() => !currentBillingDetails);
@@ -90,13 +99,13 @@ export function CheckoutPageContent({
 
     // Check Tabby Availability
     useEffect(() => {
-        if (currency === 'AED' && hasBillingDetails && tabbyConfig) {
+        if (currency === 'AED' && hasBillingDetails && tabbyConfig && !countryActionRequired) {
             checkTabbyAvailability();
         } else {
             setTabbyStatus('idle');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currency, hasBillingDetails, tabbyConfig]); // Re-check if details change? Maybe debounce or only on mount/valid
+    }, [currency, hasBillingDetails, tabbyConfig, countryActionRequired]); // Re-check if details change? Maybe debounce or only on mount/valid
 
     const checkTabbyAvailability = async () => {
         setTabbyStatus('loading');
@@ -105,7 +114,7 @@ export function CheckoutPageContent({
             const response = await fetch('/api/tabby/availability', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currency }), // Optional body if needed
+                body: JSON.stringify({ currency, country: currentBillingDetails?.country }),
             });
             const data = await response.json();
             if (data.available) {
@@ -135,7 +144,7 @@ export function CheckoutPageContent({
     };
 
     const fetchCheckoutPreview = async () => {
-        if (!currentBillingDetails?.country) {
+        if (countryActionRequired || !currentBillingDetails?.country) {
             setCheckoutPreview(null);
             return null;
         }
@@ -187,7 +196,7 @@ export function CheckoutPageContent({
         }
         void fetchCheckoutPreview();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasBillingDetails, isEditingBilling, currency, currentBillingDetails?.country, totalOrderValue]);
+    }, [hasBillingDetails, isEditingBilling, currency, countryActionRequired, currentBillingDetails?.country, totalOrderValue]);
 
     // Address Handlers
     const handleBillingSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -227,6 +236,9 @@ export function CheckoutPageContent({
         try {
             const preview = await fetchCheckoutPreview();
             if (!preview) {
+                if (countryActionMessage) {
+                    showToast(countryActionMessage, 'error');
+                }
                 setIsProcessingOrder(false);
                 return;
             }
@@ -234,7 +246,7 @@ export function CheckoutPageContent({
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currency }),
+                body: JSON.stringify({ currency, country: currentBillingDetails?.country }),
             });
             const body = await response.json();
 
@@ -421,6 +433,12 @@ export function CheckoutPageContent({
                         </div>
                     </div>
 
+                    {countryActionMessage && (
+                        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                            {countryActionMessage}
+                        </div>
+                    )}
+
                     {tabbyConfig && currency === 'AED' && (
                         <div className="flex items-center gap-2 mb-4 p-2 bg-[#3EEDBF]/10 rounded-lg w-full justify-center">
                             <div className="bg-[#3EEDBF] rounded-full p-1">
@@ -433,7 +451,7 @@ export function CheckoutPageContent({
 
                     <button
                         onClick={handlePlaceOrder}
-                        disabled={isProcessingOrder || isPreviewLoading || (!hasBillingDetails) || !checkoutPreview || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
+                        disabled={isProcessingOrder || isPreviewLoading || (!hasBillingDetails) || !checkoutPreview || Boolean(countryActionMessage) || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
                         className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isProcessingOrder ? "Processing..." : isPreviewLoading ? 'Calculating...' : "Place Order"}
