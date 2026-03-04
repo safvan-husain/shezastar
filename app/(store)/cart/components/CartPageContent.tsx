@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -43,26 +43,30 @@ interface CartPageContentProps {
   };
 }
 
-
-
 function getInstallationOptionLabel(option: string) {
-  if (option === 'store') {
-    return 'At store';
+  if (option === "store") {
+    return "At store";
   }
-  if (option === 'home') {
-    return 'At home';
+  if (option === "home") {
+    return "At home";
   }
-  return 'None';
+  return "None";
 }
 
-function computeAvailableStock(product: Product | null, selectedVariantItemIds: string[]): number | null {
+function computeAvailableStock(
+  product: Product | null,
+  selectedVariantItemIds: string[],
+): number | null {
   if (!product) return null;
 
-  const hasVariantStock = Array.isArray(product.variantStock) && product.variantStock.length > 0;
+  const hasVariantStock =
+    Array.isArray(product.variantStock) && product.variantStock.length > 0;
 
   if (hasVariantStock) {
     const key = getVariantCombinationKey(selectedVariantItemIds);
-    const entry = product.variantStock.find((vs) => vs.variantCombinationKey === key);
+    const entry = product.variantStock.find(
+      (vs) => vs.variantCombinationKey === key,
+    );
     if (typeof entry?.stockCount === "number") {
       return entry.stockCount;
     }
@@ -95,18 +99,25 @@ export function CartPageContent({
   const { countries } = useCountry();
 
   const effectiveCart = cart ?? initialCart;
-  const effectiveItems = items.length > 0 ? items : effectiveCart?.items ?? [];
+  const effectiveItems =
+    items.length > 0 ? items : (effectiveCart?.items ?? []);
   const { showToast } = useToast();
   const billingSectionRef = useRef<HTMLDivElement>(null);
-  const currentBillingDetails = billingDetails ?? effectiveCart?.billingDetails ?? null;
-  const [isEditingBilling, setIsEditingBilling] = useState(() => !currentBillingDetails);
-  const [billingForm, setBillingForm] = useState<BillingDetailsFormValue>(() =>
-    mapBillingDetailsToFormValue(currentBillingDetails)
+  const currentBillingDetails =
+    billingDetails ?? effectiveCart?.billingDetails ?? null;
+  const [isEditingBilling, setIsEditingBilling] = useState(
+    () => !currentBillingDetails,
   );
-  const [billingErrors, setBillingErrors] = useState<BillingDetailsFormErrors>({});
+  const [billingForm, setBillingForm] = useState<BillingDetailsFormValue>(() =>
+    mapBillingDetailsToFormValue(currentBillingDetails),
+  );
+  const [billingErrors, setBillingErrors] = useState<BillingDetailsFormErrors>(
+    {},
+  );
 
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedItemForDetails, setSelectedItemForDetails] = useState<CartItem | null>(null);
+  const [selectedItemForDetails, setSelectedItemForDetails] =
+    useState<CartItem | null>(null);
 
   const openDetailsModal = (item: CartItem) => {
     setSelectedItemForDetails(item);
@@ -121,7 +132,10 @@ export function CartPageContent({
     }
   }, [currentBillingDetails]);
 
-  const handleBillingFieldChange = (field: keyof BillingDetailsFormValue, value: string) => {
+  const handleBillingFieldChange = (
+    field: keyof BillingDetailsFormValue,
+    value: string,
+  ) => {
     setBillingForm((prev) => ({
       ...prev,
       [field]: value,
@@ -140,8 +154,14 @@ export function CartPageContent({
     const validationErrors = validateBillingDetailsForm(billingForm);
     if (Object.keys(validationErrors).length > 0) {
       setBillingErrors(validationErrors);
-      showToast("Please complete the building address before checkout.", "error");
-      billingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      showToast(
+        "Please complete the building address before checkout.",
+        "error",
+      );
+      billingSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
       return;
     }
 
@@ -160,7 +180,10 @@ export function CartPageContent({
       method: "POST",
     });
     setIsEditingBilling(true);
-    billingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    billingSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   const startNewAddress = () => {
@@ -180,7 +203,10 @@ export function CartPageContent({
 
   const { hasStockIssues, firstIssueAvailable } = useMemo(() => {
     if (!effectiveItems.length) {
-      return { hasStockIssues: false, firstIssueAvailable: null as number | null };
+      return {
+        hasStockIssues: false,
+        firstIssueAvailable: null as number | null,
+      };
     }
 
     let hasIssue = false;
@@ -192,7 +218,10 @@ export function CartPageContent({
       const lineKey = `${item.productId}|${variantKey}`;
       const stockIssue = stockIssuesByLineKey[lineKey];
 
-      const stockFromProduct = computeAvailableStock(product, item.selectedVariantItemIds);
+      const stockFromProduct = computeAvailableStock(
+        product,
+        item.selectedVariantItemIds,
+      );
       const availableForLine =
         stockIssue && typeof stockIssue.available === "number"
           ? stockIssue.available
@@ -243,7 +272,8 @@ export function CartPageContent({
               Building address
             </h2>
             <p className="text-sm text-[var(--storefront-text-secondary)]">
-              We’ll use this information for billing and delivery coordination before payment.
+              We’ll use this information for billing and delivery coordination
+              before payment.
             </p>
           </div>
           {hasBillingDetails && !isEditingBilling ? (
@@ -252,7 +282,9 @@ export function CartPageContent({
                 type="button"
                 className="text-sm text-[var(--storefront-button-primary)] hover:underline"
                 onClick={() => {
-                  setBillingForm(mapBillingDetailsToFormValue(currentBillingDetails));
+                  setBillingForm(
+                    mapBillingDetailsToFormValue(currentBillingDetails),
+                  );
                   setIsEditingBilling(true);
                 }}
               >
@@ -284,7 +316,8 @@ export function CartPageContent({
                 Contact
               </p>
               <p className="font-medium text-[var(--storefront-text-primary)]">
-                {currentBillingDetails.firstName} {currentBillingDetails.lastName}
+                {currentBillingDetails.firstName}{" "}
+                {currentBillingDetails.lastName}
               </p>
               <p>{currentBillingDetails.email}</p>
               <p>{currentBillingDetails.phone}</p>
@@ -296,12 +329,18 @@ export function CartPageContent({
               <p className="text-[var(--storefront-text-primary)] font-medium">
                 {currentBillingDetails.streetAddress1}
               </p>
-              {currentBillingDetails.streetAddress2 && <p>{currentBillingDetails.streetAddress2}</p>}
+              {currentBillingDetails.streetAddress2 && (
+                <p>{currentBillingDetails.streetAddress2}</p>
+              )}
               <p>
                 {currentBillingDetails.city}
-                {currentBillingDetails.stateOrCounty ? `, ${currentBillingDetails.stateOrCounty}` : ""}
-                {currentBillingDetails.zip ? ` ${currentBillingDetails.zip}` : ""},{" "}
-                {currentBillingDetails.country}
+                {currentBillingDetails.stateOrCounty
+                  ? `, ${currentBillingDetails.stateOrCounty}`
+                  : ""}
+                {currentBillingDetails.zip
+                  ? ` ${currentBillingDetails.zip}`
+                  : ""}
+                , {currentBillingDetails.country}
               </p>
             </div>
             {currentBillingDetails.orderNotes && (
@@ -309,7 +348,9 @@ export function CartPageContent({
                 <p className="text-[var(--storefront-text-muted)] text-xs uppercase tracking-wide">
                   Notes
                 </p>
-                <p className="text-[var(--storefront-text-primary)]">{currentBillingDetails.orderNotes}</p>
+                <p className="text-[var(--storefront-text-primary)]">
+                  {currentBillingDetails.orderNotes}
+                </p>
               </div>
             )}
           </div>
@@ -317,13 +358,19 @@ export function CartPageContent({
 
         {!hasBillingDetails && !isEditingBilling && (
           <div className="rounded-md border border-dashed border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-4 text-sm text-[var(--storefront-text-secondary)]">
-            Building address is required to continue. Add your email, phone, and location details so we can prepare your order.
+            Building address is required to continue. Add your email, phone, and
+            location details so we can prepare your order.
           </div>
         )}
 
         {isEditingBilling && (
           <form onSubmit={handleBillingSubmit} className="space-y-4">
-            <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={handleBillingFieldChange} countries={countries} />
+            <BillingDetailsForm
+              value={billingForm}
+              errors={billingErrors}
+              onChange={handleBillingFieldChange}
+              countries={countries}
+            />
             <div className="flex justify-end gap-2">
               {hasBillingDetails && (
                 <button
@@ -352,10 +399,15 @@ export function CartPageContent({
           const imageUrl = product?.images?.[0]?.url;
 
           const lineTotal = item.unitPrice * item.quantity;
-          const variantKey = getVariantCombinationKey(item.selectedVariantItemIds);
+          const variantKey = getVariantCombinationKey(
+            item.selectedVariantItemIds,
+          );
           const lineKey = `${item.productId}|${variantKey}`;
           const stockIssue = stockIssuesByLineKey[lineKey];
-          const stockFromProduct = computeAvailableStock(product, item.selectedVariantItemIds);
+          const stockFromProduct = computeAvailableStock(
+            product,
+            item.selectedVariantItemIds,
+          );
           const availableForLine =
             stockIssue && typeof stockIssue.available === "number"
               ? stockIssue.available
@@ -390,7 +442,7 @@ export function CartPageContent({
                 )}
               </div>
 
-              <div className="min-w-0 flex-1 flex flex-col gap-2">
+              <div className="min-w-0 w-full flex-1 flex flex-col gap-2 overflow-hidden">
                 <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-[var(--storefront-text-primary)] truncate">
@@ -406,37 +458,64 @@ export function CartPageContent({
                       </p>
                     )}
 
-                    <div className="mt-2 space-y-1.5">
-                      {item.installationOption && item.installationOption !== 'none' && (
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-medium text-[var(--storefront-text-secondary)]">
-                            Installation: {getInstallationOptionLabel(item.installationOption)} (
-                            +{formatPrice(item.installationAddOnPrice)})
-                          </p>
-                          {item.installationOption === 'home' && item.installationLocationId && (
-                            <p className="text-xs text-[var(--storefront-text-muted)] italic">
-                              Location: {product?.installationService?.availableLocations?.find(l => l.locationId === item.installationLocationId)?.name || 'Standard'}
+                    <div className="mt-2 min-w-0 space-y-1.5">
+                      {item.installationOption &&
+                        item.installationOption !== "none" && (
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-medium text-[var(--storefront-text-secondary)] break-words">
+                              Installation:{" "}
+                              {getInstallationOptionLabel(
+                                item.installationOption,
+                              )}{" "}
+                              ( +{formatPrice(item.installationAddOnPrice)})
                             </p>
-                          )}
-                        </div>
-                      )}
+                            {item.installationOption === "home" &&
+                              item.installationLocationId && (
+                                <p className="text-xs text-[var(--storefront-text-muted)] italic break-words">
+                                  Location:{" "}
+                                  {product?.installationService?.availableLocations?.find(
+                                    (l) =>
+                                      l.locationId ===
+                                      item.installationLocationId,
+                                  )?.name || "Standard"}
+                                </p>
+                              )}
+                          </div>
+                        )}
 
                       {/* Line item price breakdown */}
-                      <div className="inline-block max-w-full rounded border border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-2">
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] items-center">
-                          <span className="text-[var(--storefront-text-muted)]">Product (x{item.quantity}):</span>
-                          <span className="text-right text-[var(--storefront-text-secondary)]">{formatPrice((item.unitPrice - item.installationAddOnPrice) * item.quantity)}</span>
+                      <div className="w-full max-w-full rounded border border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-2">
+                        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 text-[10px] items-center">
+                          <span className="min-w-0 break-words text-[var(--storefront-text-muted)]">
+                            Product (x{item.quantity}):
+                          </span>
+                          <span className="text-right text-[var(--storefront-text-secondary)]">
+                            {formatPrice(
+                              (item.unitPrice - item.installationAddOnPrice) *
+                                item.quantity,
+                            )}
+                          </span>
 
-                          {item.installationOption !== 'none' && (
+                          {item.installationOption !== "none" && (
                             <>
-                              <span className="text-[var(--storefront-text-muted)]">Installation (x{item.quantity}):</span>
-                              <span className="text-right text-[var(--storefront-text-secondary)]">{formatPrice(item.installationAddOnPrice * item.quantity)}</span>
+                              <span className="min-w-0 break-words text-[var(--storefront-text-muted)]">
+                                Installation (x{item.quantity}):
+                              </span>
+                              <span className="text-right text-[var(--storefront-text-secondary)]">
+                                {formatPrice(
+                                  item.installationAddOnPrice * item.quantity,
+                                )}
+                              </span>
                             </>
                           )}
 
                           <div className="col-span-2 border-t border-[var(--storefront-border-light)] mt-0.5 pt-0.5 flex justify-between font-bold">
-                            <span className="text-[var(--storefront-text-primary)]">Line Total:</span>
-                            <span className="text-[var(--storefront-text-primary)]">{formatPrice(lineTotal)}</span>
+                            <span className="text-[var(--storefront-text-primary)]">
+                              Line Total:
+                            </span>
+                            <span className="text-[var(--storefront-text-primary)]">
+                              {formatPrice(lineTotal)}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -445,9 +524,7 @@ export function CartPageContent({
                       <p className="mt-2 text-xs text-[var(--storefront-sale-text)]">
                         This product has not this much count.{" "}
                         {availableForLine != null && (
-                          <>
-                            There is only {availableForLine} left.{" "}
-                          </>
+                          <>There is only {availableForLine} left. </>
                         )}
                         Please adjust the count.
                       </p>
@@ -463,7 +540,7 @@ export function CartPageContent({
                         await removeItem(
                           item.productId,
                           item.selectedVariantItemIds,
-                          item.installationOption
+                          item.installationOption,
                         );
                       }}
                     >
@@ -494,7 +571,7 @@ export function CartPageContent({
                             item.productId,
                             item.selectedVariantItemIds,
                             item.quantity - 1,
-                            item.installationOption
+                            item.installationOption,
                           );
                         }}
                         aria-label="Decrease quantity"
@@ -509,14 +586,15 @@ export function CartPageContent({
                         className="px-2 text-sm text-[var(--storefront-text-primary)] disabled:opacity-50"
                         disabled={
                           isLoading ||
-                          (availableForLine != null && item.quantity >= availableForLine)
+                          (availableForLine != null &&
+                            item.quantity >= availableForLine)
                         }
                         onClick={async () => {
                           await updateItem(
                             item.productId,
                             item.selectedVariantItemIds,
                             item.quantity + 1,
-                            item.installationOption
+                            item.installationOption,
                           );
                         }}
                         aria-label="Increase quantity"
@@ -562,7 +640,8 @@ export function CartPageContent({
               Items:
             </span>
             <span className="text-base font-semibold text-[var(--storefront-text-primary)]">
-              {totalItems || effectiveItems.reduce((acc, item) => acc + item.quantity, 0)}
+              {totalItems ||
+                effectiveItems.reduce((acc, item) => acc + item.quantity, 0)}
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -570,14 +649,26 @@ export function CartPageContent({
               Subtotal:
             </span>
             <span className="text-xl font-bold text-[var(--storefront-text-primary)]">
-              {formatPrice(subtotal || effectiveItems.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0))}
+              {formatPrice(
+                subtotal ||
+                  effectiveItems.reduce(
+                    (acc, item) => acc + item.unitPrice * item.quantity,
+                    0,
+                  ),
+              )}
             </span>
           </div>
 
           {tabbyConfig && (
             <div className="w-full">
               <TabbyPromo
-                price={subtotal || effectiveItems.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0)}
+                price={
+                  subtotal ||
+                  effectiveItems.reduce(
+                    (acc, item) => acc + item.unitPrice * item.quantity,
+                    0,
+                  )
+                }
                 currency="AED"
                 publicKey={tabbyConfig.publicKey}
                 merchantCode={tabbyConfig.merchantCode}
@@ -591,7 +682,8 @@ export function CartPageContent({
           </p>
           {hasStockIssues && (
             <p className="text-xs text-[var(--storefront-sale-text)] text-right">
-              Some items exceed available stock. Please adjust quantities before checkout.
+              Some items exceed available stock. Please adjust quantities before
+              checkout.
             </p>
           )}
           <div className="mt-4 w-full md:w-auto">
@@ -607,7 +699,11 @@ export function CartPageContent({
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         item={selectedItemForDetails!}
-        product={selectedItemForDetails ? productsById[selectedItemForDetails.productId] : null}
+        product={
+          selectedItemForDetails
+            ? productsById[selectedItemForDetails.productId]
+            : null
+        }
       />
     </div>
   );
