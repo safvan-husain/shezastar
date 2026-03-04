@@ -448,16 +448,6 @@ export function CartPageContent({
                     <p className="font-semibold text-[var(--storefront-text-primary)] break-words whitespace-normal">
                       {product?.name ?? "Product unavailable"}
                     </p>
-                    {product ? (
-                      <p className="text-sm text-[var(--storefront-text-secondary)] break-words whitespace-normal">
-                        {stripHtml(product.description)}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-[var(--storefront-text-muted)]">
-                        This product is no longer available.
-                      </p>
-                    )}
-
                     <div className="mt-2 min-w-0 space-y-1.5">
                       {item.installationOption &&
                         item.installationOption !== "none" && (
