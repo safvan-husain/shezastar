@@ -445,11 +445,11 @@ export function CartPageContent({
               <div className="min-w-0 w-full flex-1 flex flex-col gap-2 overflow-hidden">
                 <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-[var(--storefront-text-primary)] truncate">
+                    <p className="font-semibold text-[var(--storefront-text-primary)] break-words whitespace-normal">
                       {product?.name ?? "Product unavailable"}
                     </p>
                     {product ? (
-                      <p className="text-sm text-[var(--storefront-text-secondary)] line-clamp-2">
+                      <p className="text-sm text-[var(--storefront-text-secondary)] break-words whitespace-normal">
                         {stripHtml(product.description)}
                       </p>
                     ) : (
