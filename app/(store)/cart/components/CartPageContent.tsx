@@ -96,7 +96,7 @@ export function CartPageContent({
   } = useStorefrontCart();
 
   const { formatPrice, currency } = useCurrency();
-  const { countries } = useCountry();
+  const { countries, selectedCountry } = useCountry();
 
   const effectiveCart = cart ?? initialCart;
   const effectiveItems =
@@ -258,6 +258,11 @@ export function CartPageContent({
   }
 
   const hasBillingDetails = Boolean(currentBillingDetails);
+  const totalCartQuantity =
+    totalItems || effectiveItems.reduce((acc, item) => acc + item.quantity, 0);
+  const vatRatePercent = selectedCountry?.vatRatePercent ?? 0;
+  const shippingChargeAed = selectedCountry?.shippingChargeAed ?? 0;
+  const vatIncludedInPrice = selectedCountry?.vatIncludedInPrice ?? false;
 
   return (
     <div className="space-y-8">
@@ -399,6 +404,11 @@ export function CartPageContent({
           const imageUrl = product?.images?.[0]?.url;
 
           const lineTotal = item.unitPrice * item.quantity;
+          const lineVatAmountAed = (lineTotal * vatRatePercent) / 100;
+          const shippingPerUnitAed =
+            totalCartQuantity > 0 ? shippingChargeAed / totalCartQuantity : 0;
+          const lineShippingShareAed =
+            shippingPerUnitAed * item.quantity;
           const variantKey = getVariantCombinationKey(
             item.selectedVariantItemIds,
           );
@@ -498,6 +508,20 @@ export function CartPageContent({
                               </span>
                             </>
                           )}
+
+                          <span className="min-w-0 break-words text-[var(--storefront-text-muted)]">
+                            Shipping (estimated):
+                          </span>
+                          <span className="text-right text-[var(--storefront-text-secondary)]">
+                            {formatPrice(lineShippingShareAed)}
+                          </span>
+
+                          <span className="min-w-0 break-words text-[var(--storefront-text-muted)]">
+                            VAT ({vatRatePercent}%){vatIncludedInPrice ? " included" : ""}:
+                          </span>
+                          <span className="text-right text-[var(--storefront-text-secondary)]">
+                            {formatPrice(lineVatAmountAed)}
+                          </span>
 
                           <div className="col-span-2 border-t border-[var(--storefront-border-light)] mt-0.5 pt-0.5 flex justify-between font-bold">
                             <span className="text-[var(--storefront-text-primary)]">
