@@ -10,6 +10,7 @@ export function CountrySelector() {
   const { currency, setCurrency } = useCurrency();
   const [isOpen, setIsOpen] = useState(false);
   const [pendingCountryCode, setPendingCountryCode] = useState<string | null>(null);
+  const [currencySnapshot, setCurrencySnapshot] = useState<CurrencyCode | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function CountrySelector() {
     }
 
     setPendingCountryCode(nextCountryCode);
+    setCurrencySnapshot(currency);
     setIsOpen(false);
   };
 
@@ -48,16 +50,13 @@ export function CountrySelector() {
       return;
     }
 
-    const currentCurrency = currency;
     setCountryCode(country.code);
     if (switchCurrency) {
       setCurrency(country.defaultCurrency as CurrencyCode);
-    } else {
-      // Explicitly keep the user's current currency selection.
-      setCurrency(currentCurrency);
     }
 
     setPendingCountryCode(null);
+    setCurrencySnapshot(null);
   };
 
   return (
@@ -112,11 +111,17 @@ export function CountrySelector() {
 
       {pendingCountryCode && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setPendingCountryCode(null)} />
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setPendingCountryCode(null);
+              setCurrencySnapshot(null);
+            }}
+          />
           <div className="relative w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Change country</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Your selected currency is <span className="font-semibold">{currency}</span>. Do you want to switch to the selected country's default currency?
+              Your selected currency is <span className="font-semibold">{currencySnapshot ?? currency}</span>. Do you want to switch to the selected country's default currency?
             </p>
             <div className="flex justify-end gap-2">
               <button
