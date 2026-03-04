@@ -113,9 +113,9 @@ export function ProductGrid({
     );
   }, [variantModalProduct, allVariantsSelected, selectedVariantItemIds]);
 
-  const variantSelectionOutOfStock =
-    Boolean(selectedVariantStockEntry) &&
-    selectedVariantStockEntry.stockCount <= 0;
+  const variantSelectionOutOfStock = Boolean(
+    selectedVariantStockEntry && selectedVariantStockEntry.stockCount <= 0,
+  );
 
   const variantSelectionUnknown =
     Boolean(variantModalProduct?.variantStock?.length) &&
@@ -354,7 +354,7 @@ export function ProductGrid({
                       {item.name}
                     </button>
                   );
-                })()}
+                })}
               </div>
             </div>
           ))}
