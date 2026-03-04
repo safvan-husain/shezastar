@@ -543,6 +543,12 @@ export function CartPageContent({
                     >
                       View Details
                     </button>
+                    <Link
+                      href={`/product/${encodeURIComponent(item.productId)}`}
+                      className="text-xs font-semibold text-[var(--storefront-button-primary)] hover:underline"
+                    >
+                      View product
+                    </Link>
                   </div>
                 </div>
 
