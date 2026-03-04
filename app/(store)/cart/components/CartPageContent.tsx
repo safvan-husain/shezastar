@@ -24,6 +24,7 @@ import {
 import type { CartItem } from "@/lib/cart/model/cart.model";
 import { CartItemDetailsModal } from "@/components/storefront/CartItemDetailsModal";
 import { TabbyPromo } from "@/components/storefront/TabbyPromo";
+import { useCountry } from "@/lib/country/CountryContext";
 
 interface CartPageContentProps {
   initialCart: Cart | null;
@@ -91,6 +92,7 @@ export function CartPageContent({
   } = useStorefrontCart();
 
   const { formatPrice, currency } = useCurrency();
+  const { countries } = useCountry();
 
   const effectiveCart = cart ?? initialCart;
   const effectiveItems = items.length > 0 ? items : effectiveCart?.items ?? [];
@@ -321,7 +323,7 @@ export function CartPageContent({
 
         {isEditingBilling && (
           <form onSubmit={handleBillingSubmit} className="space-y-4">
-            <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={handleBillingFieldChange} />
+            <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={handleBillingFieldChange} countries={countries} />
             <div className="flex justify-end gap-2">
               {hasBillingDetails && (
                 <button
@@ -610,4 +612,3 @@ export function CartPageContent({
     </div>
   );
 }
-

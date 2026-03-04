@@ -27,6 +27,12 @@ export interface OrderDocument {
     paymentProviderOrderId?: string;
     stripeSessionId?: string;
     items: OrderItemDocument[];
+    subtotalAmount?: number;
+    shippingAmount?: number;
+    vatAmount?: number;
+    vatRatePercent?: number;
+    vatIncludedInPrice?: boolean;
+    countryCode?: string;
     totalAmount: number;
     currency: string;
     status: OrderStatus;
@@ -59,6 +65,12 @@ export interface Order {
     paymentProviderOrderId?: string;
     stripeSessionId?: string;
     items: OrderItem[];
+    subtotalAmount?: number;
+    shippingAmount?: number;
+    vatAmount?: number;
+    vatRatePercent?: number;
+    vatIncludedInPrice?: boolean;
+    countryCode?: string;
     totalAmount: number;
     currency: string;
     status: OrderStatus;
@@ -90,6 +102,12 @@ export function toOrder(doc: OrderDocument): Order {
             installationLocationName: item.installationLocationName,
             installationLocationDelta: item.installationLocationDelta,
         })),
+        subtotalAmount: doc.subtotalAmount,
+        shippingAmount: doc.shippingAmount,
+        vatAmount: doc.vatAmount,
+        vatRatePercent: doc.vatRatePercent,
+        vatIncludedInPrice: doc.vatIncludedInPrice,
+        countryCode: doc.countryCode,
         totalAmount: doc.totalAmount,
         currency: doc.currency,
         status: doc.status,

@@ -7,9 +7,14 @@ import { convertPrice, getExchangeRates } from '@/lib/currency/currency.service'
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
 import { createOrder } from '@/lib/order/order.service';
 import { OrderItemDocument } from '@/lib/order/model/order.model';
+import {
+    computeCheckoutPricingBreakdown,
+    resolveCountryPricingForCheckout,
+} from '@/lib/checkout/country-pricing.service';
 import { getProduct } from '@/lib/product/product.service';
 import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { ObjectId } from '@/lib/db/mongo-client';
+import { AppError } from '@/lib/errors/app-error';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {})
@@ -271,14 +276,52 @@ export async function POST(req: NextRequest) {
         }
 
         const totalAmountCalculated = sourceItems.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
-        const convertedTotal = convertPrice(totalAmountCalculated, targetCurrencyCode, rates);
+        const countryPricing = await resolveCountryPricingForCheckout(billingDetails.country);
+        const pricingBreakdown = computeCheckoutPricingBreakdown({
+            subtotalAed: totalAmountCalculated,
+            currency: targetCurrencyCode,
+            rates,
+            countryPricing,
+        });
+
+        if (pricingBreakdown.shipping > 0) {
+            lineItems.push({
+                price_data: {
+                    currency: targetCurrencyCode.toLowerCase(),
+                    product_data: {
+                        name: `Shipping (${countryPricing.code})`,
+                    },
+                    unit_amount: Math.round(pricingBreakdown.shipping * multiplier),
+                },
+                quantity: 1,
+            });
+        }
+
+        if (pricingBreakdown.vat > 0) {
+            lineItems.push({
+                price_data: {
+                    currency: targetCurrencyCode.toLowerCase(),
+                    product_data: {
+                        name: `VAT (${pricingBreakdown.vatRatePercent}%)`,
+                    },
+                    unit_amount: Math.round(pricingBreakdown.vat * multiplier),
+                },
+                quantity: 1,
+            });
+        }
 
         // Create the PENDING order
         const pendingOrder = await createOrder({
             sessionId,
             paymentProvider: 'stripe',
             items: orderItems,
-            totalAmount: convertedTotal,
+            subtotalAmount: pricingBreakdown.subtotal,
+            shippingAmount: pricingBreakdown.shipping,
+            vatAmount: pricingBreakdown.vat,
+            vatRatePercent: pricingBreakdown.vatRatePercent,
+            vatIncludedInPrice: pricingBreakdown.vatIncludedInPrice,
+            countryCode: pricingBreakdown.countryCode,
+            totalAmount: pricingBreakdown.total,
             currency: targetCurrencyCode.toLowerCase(),
             status: 'pending',
             billingDetails: billingDetails,
@@ -286,6 +329,12 @@ export async function POST(req: NextRequest) {
         });
 
         metadata.orderId = pendingOrder.id;
+        metadata.countryCode = pricingBreakdown.countryCode;
+        metadata.subtotalAmount = pricingBreakdown.subtotal.toString();
+        metadata.shippingAmount = pricingBreakdown.shipping.toString();
+        metadata.vatAmount = pricingBreakdown.vat.toString();
+        metadata.vatRatePercent = pricingBreakdown.vatRatePercent.toString();
+        metadata.vatIncludedInPrice = String(pricingBreakdown.vatIncludedInPrice);
 
         // Validate stock availability before creating checkout session
         const { validateStockAvailability } = await import('@/lib/product/product.service-stock');
@@ -313,6 +362,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ url: session.url });
     } catch (err: any) {
         console.error('Error creating checkout session:', err);
+        if (err instanceof AppError) {
+            return NextResponse.json(
+                { error: err.code, code: err.code, message: err.details?.message || err.message, details: err.details },
+                { status: err.status }
+            );
+        }
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }

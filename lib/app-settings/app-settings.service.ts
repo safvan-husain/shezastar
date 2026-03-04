@@ -1,7 +1,17 @@
 import { getCollection } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { AppSettingsDocument, toAppSettings, getDefaultSettings } from './model/app-settings.model';
-import { CreateHeroBannerInput, UpdateHeroBannerInput, CreateCustomCardInput, UpdateCustomCardInput, CustomCard, InstallationLocation } from './app-settings.schema';
+import {
+    CreateHeroBannerInput,
+    UpdateHeroBannerInput,
+    CreateCustomCardInput,
+    UpdateCustomCardInput,
+    CustomCard,
+    InstallationLocation,
+    CountryPricing,
+    CreateCountryPricingInput,
+    UpdateCountryPricingInput,
+} from './app-settings.schema';
 import { nanoid } from 'nanoid';
 import { getProduct } from '@/lib/product/product.service';
 import { Product } from '@/lib/product/model/product.model';
@@ -496,6 +506,145 @@ export async function removeInstallationLocation(id: string) {
         {
             $pull: {
                 installationLocations: { id },
+            },
+            $set: {
+                updatedAt: now,
+            },
+        },
+        {
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        return getAppSettings();
+    }
+
+    return toAppSettings(updatedDoc);
+}
+
+// Country Pricing Service Methods
+
+function normalizeCountryCode(code: string) {
+    return code.trim().toUpperCase();
+}
+
+export async function getCountryPricings() {
+    const settings = await getAppSettings();
+    return settings.countryPricings || [];
+}
+
+export async function getActiveCountryPricings() {
+    const countries = await getCountryPricings();
+    return countries.filter(country => country.isActive);
+}
+
+export async function createCountryPricing(input: CreateCountryPricingInput) {
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+    const code = normalizeCountryCode(input.code);
+    const existing = await collection.findOne({
+        countryPricings: { $elemMatch: { code } },
+    });
+
+    if (existing) {
+        throw new AppError(400, 'COUNTRY_CODE_ALREADY_EXISTS', {
+            message: `Country code "${code}" already exists`,
+        });
+    }
+
+    const newCountry: CountryPricing = {
+        ...input,
+        id: nanoid(),
+        code,
+    };
+
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $push: {
+                countryPricings: newCountry,
+            },
+            $set: {
+                updatedAt: now,
+            },
+            $setOnInsert: {
+                createdAt: now,
+                homeHeroBanners: [],
+                customCards: getDefaultSettings().customCards,
+                featuredProductIds: [],
+                installationLocations: [],
+            },
+        },
+        {
+            upsert: true,
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        throw new AppError(500, 'FAILED_TO_ADD_COUNTRY');
+    }
+
+    return toAppSettings(updatedDoc);
+}
+
+export async function updateCountryPricing(id: string, input: UpdateCountryPricingInput) {
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+    const code = normalizeCountryCode(input.code);
+    const duplicateCode = await collection.findOne({
+        countryPricings: { $elemMatch: { code, id: { $ne: id } } },
+    });
+
+    if (duplicateCode) {
+        throw new AppError(400, 'COUNTRY_CODE_ALREADY_EXISTS', {
+            message: `Country code "${code}" already exists`,
+        });
+    }
+
+    const result = await collection.findOneAndUpdate(
+        { 'countryPricings.id': id },
+        {
+            $set: {
+                'countryPricings.$[country]': {
+                    ...input,
+                    code,
+                    id,
+                },
+                updatedAt: now,
+            },
+        },
+        {
+            arrayFilters: [{ 'country.id': id }],
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        throw new AppError(404, 'COUNTRY_NOT_FOUND', {
+            message: 'Country pricing not found',
+        });
+    }
+
+    return toAppSettings(updatedDoc);
+}
+
+export async function removeCountryPricing(id: string) {
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $pull: {
+                countryPricings: { id },
             },
             $set: {
                 updatedAt: now,

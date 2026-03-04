@@ -1,6 +1,7 @@
 import { seedCategories } from './seed-categories';
 import { seedAdmin } from './seed-admin';
 import { seedProducts } from './seed-products';
+import { seedCountries } from './seed-countries';
 
 async function main() {
     console.log('--- Starting Database Seeding ---');
@@ -12,7 +13,10 @@ async function main() {
         console.log('\n[2/3] Seeding Categories...');
         await seedCategories();
 
-        console.log('\n[3/3] Seeding Products...');
+        console.log('\n[3/4] Seeding Countries...');
+        await seedCountries();
+
+        console.log('\n[4/4] Seeding Products...');
         await seedProducts();
 
         console.log('\n--- Seeding Completed Successfully ---');

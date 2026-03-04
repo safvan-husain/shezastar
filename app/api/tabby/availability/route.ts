@@ -8,6 +8,11 @@ import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.conf
 import { getOrdersBySessionId, getOrdersByUserId } from '@/lib/order/order.service';
 import { getProduct } from '@/lib/product/product.service';
 import { getUserById } from '@/lib/auth/auth.service';
+import {
+    computeCheckoutPricingBreakdown,
+    resolveCountryPricingForCheckout,
+} from '@/lib/checkout/country-pricing.service';
+import { AppError } from '@/lib/errors/app-error';
 
 const TABBY_API_URL = 'https://api.tabby.ai/api/v2/checkout';
 
@@ -50,6 +55,7 @@ export async function POST(req: NextRequest) {
 
         let itemsToValidate: Array<{ productId: string; selectedVariantItemIds: string[]; quantity: number }> = [];
         let totalAmount = 0;
+        let subtotalAed = 0;
         let processedBuyNowItems: Array<{
             productId: string;
             selectedVariantItemIds: string[];
@@ -111,6 +117,7 @@ export async function POST(req: NextRequest) {
                 const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
                 return sum + (convertedPrice * item.quantity);
             }, 0);
+            subtotalAed = processedBuyNowItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
 
         } else {
             // Standard Cart Flow
@@ -146,7 +153,17 @@ export async function POST(req: NextRequest) {
                 const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
                 return sum + (convertedPrice * item.quantity);
             }, 0);
+            subtotalAed = freshCartItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
         }
+
+        const countryPricing = await resolveCountryPricingForCheckout(billingDetails.country);
+        const pricingBreakdown = computeCheckoutPricingBreakdown({
+            subtotalAed,
+            currency: targetCurrencyCode,
+            rates,
+            countryPricing,
+        });
+        totalAmount = pricingBreakdown.total;
 
         // Validate stock
         const { validateStockAvailability } = await import('@/lib/product/product.service-stock');
@@ -170,7 +187,13 @@ export async function POST(req: NextRequest) {
         const meta: any = {
             sessionId: sessionId,
             billingDetails: JSON.stringify(billingDetails),
-            isCheck: 'true'
+            isCheck: 'true',
+            countryCode: pricingBreakdown.countryCode,
+            subtotalAmount: pricingBreakdown.subtotal,
+            shippingAmount: pricingBreakdown.shipping,
+            vatAmount: pricingBreakdown.vat,
+            vatRatePercent: pricingBreakdown.vatRatePercent,
+            vatIncludedInPrice: pricingBreakdown.vatIncludedInPrice,
         };
 
         if (processedBuyNowItems.length > 0) {
@@ -308,6 +331,12 @@ export async function POST(req: NextRequest) {
 
     } catch (err: any) {
         console.error('Error checking Tabby availability:', err);
+        if (err instanceof AppError) {
+            return NextResponse.json(
+                { error: err.code, code: err.code, message: err.details?.message || err.message, details: err.details },
+                { status: err.status }
+            );
+        }
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }

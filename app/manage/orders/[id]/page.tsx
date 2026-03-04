@@ -146,10 +146,29 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                         Payment
                                     </h2>
                                     <p className="text-[var(--text-primary)]">
+                                        Subtotal:{' '}
+                                        <span className="font-semibold">
+                                            {(order.subtotalAmount ?? order.totalAmount).toFixed(2)} {order.currency.toUpperCase()}
+                                        </span>
+                                    </p>
+                                    <p className="text-[var(--text-primary)] mt-1">
+                                        Shipping:{' '}
+                                        <span className="font-semibold">
+                                            {(order.shippingAmount ?? 0).toFixed(2)} {order.currency.toUpperCase()}
+                                        </span>
+                                    </p>
+                                    <p className="text-[var(--text-primary)] mt-1">
+                                        VAT:{' '}
+                                        <span className="font-semibold">
+                                            {(order.vatAmount ?? 0).toFixed(2)} {order.currency.toUpperCase()}
+                                            {order.vatRatePercent != null ? ` (${order.vatRatePercent}%)` : ''}
+                                            {order.vatIncludedInPrice ? ' included' : ''}
+                                        </span>
+                                    </p>
+                                    <p className="text-[var(--text-primary)] mt-1">
                                         Total:{' '}
                                         <span className="font-semibold">
-                                            {order.totalAmount.toFixed(2)}{' '}
-                                            {order.currency.toUpperCase()}
+                                            {order.totalAmount.toFixed(2)} {order.currency.toUpperCase()}
                                         </span>
                                     </p>
                                     <p className="text-[var(--text-primary)] mt-1">
@@ -158,6 +177,11 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                             {order.paymentProvider || 'N/A'}
                                         </span>
                                     </p>
+                                    {order.countryCode && (
+                                        <p className="text-[var(--text-primary)] mt-1">
+                                            Country: <span className="font-semibold">{order.countryCode}</span>
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">

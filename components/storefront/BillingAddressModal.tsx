@@ -12,6 +12,7 @@ import {
 } from './BillingDetailsForm';
 import { useStorefrontCart } from './StorefrontCartProvider';
 import { useToast } from '@/components/ui/Toast';
+import { useCountry } from '@/lib/country/CountryContext';
 
 interface BillingAddressModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ interface BillingAddressModalProps {
 
 export function BillingAddressModal({ isOpen, onClose }: BillingAddressModalProps) {
     const { billingDetails, saveBillingDetails, isLoading } = useStorefrontCart();
+    const { countries } = useCountry();
     const { showToast } = useToast();
     const [form, setForm] = useState<BillingDetailsFormValue>(() =>
         mapBillingDetailsToFormValue(billingDetails)
@@ -64,7 +66,7 @@ export function BillingAddressModal({ isOpen, onClose }: BillingAddressModalProp
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Manage Building Address" containerClassName="bg-white">
             <form onSubmit={handleSubmit} className="space-y-6">
-                <BillingDetailsForm value={form} errors={errors} onChange={handleChange} />
+                <BillingDetailsForm value={form} errors={errors} onChange={handleChange} countries={countries} />
                 <div className="flex justify-end gap-3 pt-4 border-t border-[var(--storefront-border-light)]">
                     <button
                         type="button"

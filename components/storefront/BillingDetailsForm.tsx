@@ -2,6 +2,7 @@
 
 import type { ChangeEvent, InputHTMLAttributes } from 'react';
 import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
+import type { StorefrontCountry } from '@/lib/country/country.config';
 
 export type BillingDetailsFormValue = {
     email: string;
@@ -107,9 +108,10 @@ interface BillingDetailsFormProps {
     value: BillingDetailsFormValue;
     errors?: BillingDetailsFormErrors;
     onChange: (field: keyof BillingDetailsFormValue, value: string) => void;
+    countries?: StorefrontCountry[];
 }
 
-export function BillingDetailsForm({ value, errors = {}, onChange }: BillingDetailsFormProps) {
+export function BillingDetailsForm({ value, errors = {}, onChange, countries = [] }: BillingDetailsFormProps) {
     const handleChange = (field: keyof BillingDetailsFormValue) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         onChange(field, event.target.value);
     };
@@ -146,12 +148,26 @@ export function BillingDetailsForm({ value, errors = {}, onChange }: BillingDeta
                 />
             </div>
             <div className="grid md:grid-cols-2 gap-4">
-                <FormField
-                    label="Country"
-                    value={value.country}
-                    error={errors.country}
-                    onChange={handleChange('country')}
-                />
+                <div className="flex flex-col">
+                    <label className="text-sm font-medium text-[var(--storefront-text-secondary)] mb-2">
+                        Country
+                    </label>
+                    <select
+                        value={value.country}
+                        onChange={(event) => onChange('country', event.target.value)}
+                        className={`w-full rounded-lg border bg-[var(--storefront-bg)] border-[var(--storefront-border)] px-3 py-2 text-sm text-[var(--storefront-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--storefront-button-primary)] ${errors.country ? 'border-[var(--storefront-sale)]' : ''}`}
+                    >
+                        <option value="">Select country</option>
+                        {countries.map((country) => (
+                            <option key={country.id} value={country.code}>
+                                {country.name} ({country.code})
+                            </option>
+                        ))}
+                    </select>
+                    {errors.country && (
+                        <p className="mt-1 text-xs text-[var(--storefront-sale-text)]">{errors.country}</p>
+                    )}
+                </div>
                 <FormField
                     label="City"
                     value={value.city}

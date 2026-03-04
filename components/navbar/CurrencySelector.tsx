@@ -3,9 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useCurrency } from '@/lib/currency/CurrencyContext';
 import { SUPPORTED_CURRENCIES } from '@/lib/currency/currency.config';
+import { useCountry } from '@/lib/country/CountryContext';
 
 export function CurrencySelector() {
     const { currency, setCurrency } = useCurrency();
+    const { selectedCountry } = useCountry();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -29,9 +31,9 @@ export function CurrencySelector() {
                 aria-label="Select currency"
             >
                 <div className="flex flex-col items-start leading-none">
-                    <span className="text-xs text-gray-400 font-medium">Delivering to</span>
+                    <span className="text-xs text-gray-400 font-medium">Currency</span>
                     <div className="flex items-center gap-1">
-                        <span className="text-sm font-bold text-white uppercase">{activeConfig?.countryName}</span>
+                        <span className="text-sm font-bold text-white uppercase">{selectedCountry?.name ?? 'Select'}</span>
                         <span className="text-[10px] text-amber-400 font-bold tracking-wider bg-amber-400/10 px-1 rounded">{currency}</span>
                     </div>
                 </div>
@@ -49,7 +51,7 @@ export function CurrencySelector() {
                 <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
                     <div className="py-2 max-h-[calc(100vh-200px)] overflow-y-auto">
                         <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-1">
-                            Select Country
+                            Select Currency
                         </div>
                         {SUPPORTED_CURRENCIES.map((c) => (
                             <button
@@ -64,9 +66,9 @@ export function CurrencySelector() {
                                     <div className={`w-1 h-8 rounded-full transition-colors ${currency === c.code ? 'bg-amber-500' : 'bg-transparent group-hover:bg-gray-200'}`} />
                                     <div className="flex flex-col">
                                         <span className={`font-medium ${currency === c.code ? 'text-black' : 'text-gray-700'}`}>
-                                            {c.countryName}
+                                            {c.name}
                                         </span>
-                                        <span className="text-xs text-gray-500">{c.name}</span>
+                                        <span className="text-xs text-gray-500">{c.code}</span>
                                     </div>
                                 </div>
                                 <span className={`font-mono text-xs font-bold px-1.5 py-0.5 rounded ${currency === c.code ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>

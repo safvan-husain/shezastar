@@ -6,10 +6,15 @@ import { convertPrice, getExchangeRates } from '@/lib/currency/currency.service'
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
 import { createOrder, getOrdersBySessionId, getOrdersByUserId } from '@/lib/order/order.service';
 import { OrderDocument, OrderItemDocument } from '@/lib/order/model/order.model';
+import {
+    computeCheckoutPricingBreakdown,
+    resolveCountryPricingForCheckout,
+} from '@/lib/checkout/country-pricing.service';
 import { getProduct } from '@/lib/product/product.service';
 import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { getUserById } from '@/lib/auth/auth.service';
 import { ObjectId } from '@/lib/db/mongo-client';
+import { AppError } from '@/lib/errors/app-error';
 
 const TABBY_API_URL = 'https://api.tabby.ai/api/v2/checkout';
 
@@ -221,14 +226,27 @@ export async function POST(req: NextRequest) {
         }
 
         const totalAmountCalculated = sourceItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-        const convertedTotal = convertPrice(totalAmountCalculated, targetCurrencyCode, rates);
+        const countryPricing = await resolveCountryPricingForCheckout(billingDetails.country);
+        const pricingBreakdown = computeCheckoutPricingBreakdown({
+            subtotalAed: totalAmountCalculated,
+            currency: targetCurrencyCode,
+            rates,
+            countryPricing,
+        });
+        totalAmount = pricingBreakdown.total;
 
         // Create the PENDING order
         const pendingOrder = await createOrder({
             sessionId,
             paymentProvider: 'tabby',
             items: orderItems,
-            totalAmount: convertedTotal,
+            subtotalAmount: pricingBreakdown.subtotal,
+            shippingAmount: pricingBreakdown.shipping,
+            vatAmount: pricingBreakdown.vat,
+            vatRatePercent: pricingBreakdown.vatRatePercent,
+            vatIncludedInPrice: pricingBreakdown.vatIncludedInPrice,
+            countryCode: pricingBreakdown.countryCode,
+            totalAmount: pricingBreakdown.total,
             currency: targetCurrencyCode.toLowerCase(),
             status: 'pending',
             billingDetails: billingDetails,
@@ -252,6 +270,12 @@ export async function POST(req: NextRequest) {
         const meta: any = {
             sessionId: sessionId,
             billingDetails: JSON.stringify(billingDetails),
+            countryCode: pricingBreakdown.countryCode,
+            subtotalAmount: pricingBreakdown.subtotal,
+            shippingAmount: pricingBreakdown.shipping,
+            vatAmount: pricingBreakdown.vat,
+            vatRatePercent: pricingBreakdown.vatRatePercent,
+            vatIncludedInPrice: pricingBreakdown.vatIncludedInPrice,
         };
 
         if (processedBuyNowItems.length > 0) {
@@ -389,6 +413,12 @@ export async function POST(req: NextRequest) {
 
     } catch (err: any) {
         console.error('Error creating Tabby checkout session:', err);
+        if (err instanceof AppError) {
+            return NextResponse.json(
+                { error: err.code, code: err.code, message: err.details?.message || err.message, details: err.details },
+                { status: err.status }
+            );
+        }
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }

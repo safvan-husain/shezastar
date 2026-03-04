@@ -7,6 +7,7 @@ import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlis
 import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
 import { useCurrency } from '@/lib/currency/CurrencyContext';
 import { CurrencySelector } from './CurrencySelector';
+import { CountrySelector } from './CountrySelector';
 import { UserMenu } from './UserMenu';
 
 interface MobileMenuProps {
@@ -61,7 +62,10 @@ export function MobileMenu({ isOpen, onClose, categories }: MobileMenuProps) {
                 </div>
 
                 <div className="p-4 border-b border-gray-800 flex justify-center">
-                    <CurrencySelector />
+                    <div className="flex flex-col items-center gap-3">
+                        <CountrySelector />
+                        <CurrencySelector />
+                    </div>
                 </div>
 
                 <div className="py-2 border-b border-gray-800">

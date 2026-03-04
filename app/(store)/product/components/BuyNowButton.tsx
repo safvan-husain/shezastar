@@ -18,6 +18,8 @@ import {
 } from '@/components/storefront/BillingDetailsForm';
 import { TabbyCheckoutCard } from '@/components/storefront/TabbyCheckoutCard';
 import { getVariantCombinationKey } from '@/lib/product/product.utils';
+import { useCountry } from '@/lib/country/CountryContext';
+import { SUPPORTED_CURRENCIES } from '@/lib/currency/currency.config';
 
 interface BuyNowButtonProps {
   product: Product;
@@ -31,6 +33,15 @@ interface BuyNowButtonProps {
     publicKey: string;
     merchantCode: string;
   };
+}
+
+interface CheckoutPreviewBreakdown {
+  subtotal: number;
+  shipping: number;
+  vat: number;
+  vatRatePercent: number;
+  vatIncludedInPrice: boolean;
+  total: number;
 }
 
 export function BuyNowButton({
@@ -47,6 +58,7 @@ export function BuyNowButton({
   const { showToast } = useToast();
   const { billingDetails, saveBillingDetails } = useStorefrontCart();
   const { currency, formatPrice } = useCurrency();
+  const { countries } = useCountry();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditingBilling, setIsEditingBilling] = useState(!billingDetails);
   const [billingForm, setBillingForm] = useState<BillingDetailsFormValue>(() => mapBillingDetailsToFormValue(billingDetails));
@@ -54,6 +66,8 @@ export function BuyNowButton({
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<'stripe' | 'tabby'>('stripe');
+  const [checkoutPreview, setCheckoutPreview] = useState<CheckoutPreviewBreakdown | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   // Tabby Check State
   const [tabbyStatus, setTabbyStatus] = useState<'idle' | 'loading' | 'available' | 'rejected'>('idle');
@@ -117,6 +131,16 @@ export function BuyNowButton({
     return (productPrice + addOnPrice) * quantity;
   }, [product, quantity, selectedVariantItemIds, installationOption, installationLocationId]);
 
+  const formatConvertedAmount = (amount: number) => {
+    const decimals = SUPPORTED_CURRENCIES.find((entry) => entry.code === currency)?.decimals ?? 2;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(amount);
+  };
+
   const checkTabbyAvailability = async () => {
     if (currency !== 'AED' || !tabbyConfig) return;
 
@@ -151,6 +175,52 @@ export function BuyNowButton({
     }
   };
 
+  const fetchCheckoutPreview = async () => {
+    if (!billingDetails?.country) {
+      setCheckoutPreview(null);
+      return null;
+    }
+
+    setIsPreviewLoading(true);
+    try {
+      const response = await fetch('/api/storefront/checkout-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currency,
+          country: billingDetails.country,
+          items: itemPayload,
+        }),
+      });
+
+      const body = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        showToast(body.message || body.error || 'Failed to load checkout totals', 'error', {
+          status: response.status,
+          body,
+          url: '/api/storefront/checkout-preview',
+          method: 'POST',
+        });
+        setCheckoutPreview(null);
+        return null;
+      }
+
+      setCheckoutPreview(body);
+      return body as CheckoutPreviewBreakdown;
+    } catch (error) {
+      showToast('Failed to load checkout totals', 'error', {
+        body: error,
+        url: '/api/storefront/checkout-preview',
+        method: 'POST',
+      });
+      setCheckoutPreview(null);
+      return null;
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isDialogOpen && billingDetails && currency === 'AED' && tabbyConfig) {
       checkTabbyAvailability();
@@ -159,6 +229,15 @@ export function BuyNowButton({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDialogOpen, billingDetails, currency, tabbyConfig]);
+
+  useEffect(() => {
+    if (!isDialogOpen || !billingDetails) {
+      setCheckoutPreview(null);
+      return;
+    }
+    void fetchCheckoutPreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDialogOpen, billingDetails?.country, currency, quantity, installationOption, installationLocationId, selectedVariantItemIds.join('|')]);
 
 
   const startCheckout = async () => {
@@ -171,6 +250,11 @@ export function BuyNowButton({
     const method = 'POST';
     setIsProcessingCheckout(true);
     try {
+      const preview = await fetchCheckoutPreview();
+      if (!preview) {
+        return;
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -343,7 +427,7 @@ export function BuyNowButton({
                         {tabbyStatus === 'available' && tabbyConfig && (
                           <div className="mt-3 ml-7">
                             <TabbyCheckoutCard
-                              price={totalPrice}
+                              price={checkoutPreview?.total ?? totalPrice}
                               currency={currency}
                               publicKey={tabbyConfig.publicKey}
                               merchantCode={tabbyConfig.merchantCode}
@@ -361,6 +445,28 @@ export function BuyNowButton({
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--storefront-border-light)] pt-4">
+                  <div className="w-full rounded-md border border-[var(--storefront-border-light)] bg-[var(--storefront-bg-subtle)] p-3 text-sm text-[var(--storefront-text-secondary)] space-y-1">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.subtotal) : formatPrice(totalPrice)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Shipping</span>
+                      <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.shipping) : formatPrice(0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>
+                        VAT
+                        {checkoutPreview ? ` (${checkoutPreview.vatRatePercent}%)` : ''}
+                        {checkoutPreview?.vatIncludedInPrice ? ' (included)' : ''}
+                      </span>
+                      <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.vat) : formatPrice(0)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-[var(--storefront-text-primary)] pt-1 border-t border-[var(--storefront-border-light)]">
+                      <span>Total</span>
+                      <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.total) : formatPrice(totalPrice)}</span>
+                    </div>
+                  </div>
                   <div className="flex gap-2 text-sm">
                     <button
                       type="button"
@@ -384,11 +490,13 @@ export function BuyNowButton({
                   <button
                     type="button"
                     onClick={startCheckout}
-                    disabled={isProcessingCheckout || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
+                    disabled={isProcessingCheckout || isPreviewLoading || !checkoutPreview || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
                     className={`inline-flex items-center justify-center rounded-md px-6 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 gap-2 ${selectedProvider === 'tabby' ? 'bg-[#3EEDBF] text-black hover:bg-[#35d8ae]' : 'bg-[var(--storefront-button-primary)]'}`}
                   >
                     {isProcessingCheckout ? (
                       'Redirecting…'
+                    ) : isPreviewLoading ? (
+                      'Calculating...'
                     ) : (
                       <>
                         {selectedProvider === 'tabby' ? (
@@ -409,7 +517,7 @@ export function BuyNowButton({
                 <p className="text-sm text-[var(--storefront-text-secondary)]">
                   We need your billing address before we redirect you to payment.
                 </p>
-                <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={(field, value) => {
+                <BillingDetailsForm value={billingForm} errors={billingErrors} countries={countries} onChange={(field, value) => {
                   setBillingForm((prev) => ({ ...prev, [field]: value }));
                   if (billingErrors[field as keyof BillingDetailsFormValue]) {
                     setBillingErrors((prev) => {

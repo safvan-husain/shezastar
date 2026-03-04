@@ -66,3 +66,26 @@ export const InstallationLocationSchema = z.object({
 
 export const InstallationLocationsSchema = z.array(InstallationLocationSchema);
 export type InstallationLocation = z.infer<typeof InstallationLocationSchema>;
+
+// Country Pricing Schema
+export const CountryCodeSchema = z.string().trim().min(2).max(8).transform((value) => value.toUpperCase());
+export const CountryDefaultCurrencySchema = z.enum(['AED', 'USD', 'SAR', 'QAR', 'KWD', 'BHD', 'OMR']);
+
+export const CountryPricingSchema = z.object({
+    id: z.string().min(1),
+    code: CountryCodeSchema,
+    name: z.string().trim().min(1, 'Country name is required'),
+    defaultCurrency: CountryDefaultCurrencySchema,
+    vatRatePercent: z.number().min(0, 'VAT must be >= 0'),
+    vatIncludedInPrice: z.boolean().default(false),
+    shippingChargeAed: z.number().min(0, 'Shipping must be >= 0'),
+    isActive: z.boolean().default(true),
+});
+
+export const CountryPricingsSchema = z.array(CountryPricingSchema);
+export const CreateCountryPricingSchema = CountryPricingSchema.omit({ id: true });
+export const UpdateCountryPricingSchema = CountryPricingSchema.omit({ id: true });
+
+export type CountryPricing = z.infer<typeof CountryPricingSchema>;
+export type CreateCountryPricingInput = z.infer<typeof CreateCountryPricingSchema>;
+export type UpdateCountryPricingInput = z.infer<typeof UpdateCountryPricingSchema>;

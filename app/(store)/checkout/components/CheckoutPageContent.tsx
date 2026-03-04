@@ -20,6 +20,8 @@ import {
 } from "@/components/storefront/BillingDetailsForm";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
 import { TabbyCheckoutCard } from "@/components/storefront/TabbyCheckoutCard";
+import { useCountry } from "@/lib/country/CountryContext";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency/currency.config";
 
 interface CheckoutPageContentProps {
     initialCart: Cart | null;
@@ -30,6 +32,17 @@ interface CheckoutPageContentProps {
         publicKey: string;
         merchantCode: string;
     };
+}
+
+interface CheckoutPreviewBreakdown {
+    subtotal: number;
+    shipping: number;
+    vat: number;
+    vatRatePercent: number;
+    vatIncludedInPrice: boolean;
+    total: number;
+    currency: string;
+    countryCode: string;
 }
 
 export function CheckoutPageContent({
@@ -49,11 +62,13 @@ export function CheckoutPageContent({
     } = useStorefrontCart();
 
     const { formatPrice, currency } = useCurrency();
+    const { countries } = useCountry();
     const { showToast } = useToast();
     const router = useRouter();
 
     const effectiveCart = cart ?? initialCart;
     const effectiveItems = items.length > 0 ? items : effectiveCart?.items ?? [];
+    const totalOrderValue = subtotal || effectiveItems.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
 
     const currentBillingDetails = billingDetails ?? effectiveCart?.billingDetails ?? null;
     const hasBillingDetails = Boolean(currentBillingDetails);
@@ -70,6 +85,8 @@ export function CheckoutPageContent({
     const [tabbyStatus, setTabbyStatus] = useState<'idle' | 'loading' | 'available' | 'rejected'>('idle');
     const [tabbyRejectionReason, setTabbyRejectionReason] = useState<string | null>(null);
     const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+    const [checkoutPreview, setCheckoutPreview] = useState<CheckoutPreviewBreakdown | null>(null);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
     // Check Tabby Availability
     useEffect(() => {
@@ -107,6 +124,71 @@ export function CheckoutPageContent({
         }
     };
 
+    const formatConvertedAmount = (amount: number) => {
+        const decimals = SUPPORTED_CURRENCIES.find((entry) => entry.code === currency)?.decimals ?? 2;
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency,
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals,
+        }).format(amount);
+    };
+
+    const fetchCheckoutPreview = async () => {
+        if (!currentBillingDetails?.country) {
+            setCheckoutPreview(null);
+            return null;
+        }
+
+        setIsPreviewLoading(true);
+
+        try {
+            const response = await fetch('/api/storefront/checkout-preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currency,
+                    country: currentBillingDetails.country,
+                }),
+            });
+
+            const body = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                showToast(body.message || body.error || 'Failed to load checkout totals', 'error', {
+                    status: response.status,
+                    body,
+                    url: '/api/storefront/checkout-preview',
+                    method: 'POST',
+                });
+                setCheckoutPreview(null);
+                return null;
+            }
+
+            setCheckoutPreview(body);
+            return body as CheckoutPreviewBreakdown;
+        } catch (error) {
+            showToast('Failed to load checkout totals', 'error', {
+                body: error,
+                url: '/api/storefront/checkout-preview',
+                method: 'POST',
+            });
+            setCheckoutPreview(null);
+            return null;
+        } finally {
+            setIsPreviewLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!hasBillingDetails || isEditingBilling) {
+            setCheckoutPreview(null);
+            return;
+        }
+        void fetchCheckoutPreview();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasBillingDetails, isEditingBilling, currency, currentBillingDetails?.country, totalOrderValue]);
+
     // Address Handlers
     const handleBillingSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -143,6 +225,12 @@ export function CheckoutPageContent({
         const url = selectedProvider === 'tabby' ? "/api/tabby/checkout_session" : "/api/checkout_sessions";
 
         try {
+            const preview = await fetchCheckoutPreview();
+            if (!preview) {
+                setIsProcessingOrder(false);
+                return;
+            }
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -183,9 +271,6 @@ export function CheckoutPageContent({
         );
     }
 
-    // Order Summary Calculation
-    const totalOrderValue = subtotal || effectiveItems.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
-
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 my-10">
             {/* Left Column: Address & Payment */}
@@ -205,7 +290,7 @@ export function CheckoutPageContent({
 
                     {isEditingBilling ? (
                         <form onSubmit={handleBillingSubmit} className="space-y-4">
-                            <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={(f, v) => setBillingForm(p => ({ ...p, [f]: v }))} />
+                            <BillingDetailsForm value={billingForm} errors={billingErrors} onChange={(f, v) => setBillingForm(p => ({ ...p, [f]: v }))} countries={countries} />
                             <div className="flex justify-end gap-2 mt-4">
                                 {hasBillingDetails && (
                                     <button type="button" onClick={() => setIsEditingBilling(false)} className="px-4 py-2 border rounded-md">Cancel</button>
@@ -282,7 +367,7 @@ export function CheckoutPageContent({
                                             {tabbyStatus === 'available' && tabbyConfig && (
                                                 <div className="mt-3">
                                                     <TabbyCheckoutCard
-                                                        price={totalOrderValue}
+                                                        price={checkoutPreview?.total ?? totalOrderValue}
                                                         currency={currency}
                                                         publicKey={tabbyConfig.publicKey}
                                                         merchantCode={tabbyConfig.merchantCode}
@@ -314,7 +399,26 @@ export function CheckoutPageContent({
                     </div>
                     <div className="border-t pt-4 flex justify-between font-bold text-lg mb-6">
                         <span>Total</span>
-                        <span>{formatPrice(totalOrderValue)}</span>
+                        <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.total) : formatPrice(totalOrderValue)}</span>
+                    </div>
+
+                    <div className="mb-6 space-y-1 text-sm text-gray-600 border-t border-b py-3">
+                        <div className="flex justify-between">
+                            <span>Subtotal</span>
+                            <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.subtotal) : formatPrice(totalOrderValue)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Shipping</span>
+                            <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.shipping) : formatPrice(0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>
+                                VAT
+                                {checkoutPreview ? ` (${checkoutPreview.vatRatePercent}%)` : ''}
+                                {checkoutPreview?.vatIncludedInPrice ? ' (included)' : ''}
+                            </span>
+                            <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.vat) : formatPrice(0)}</span>
+                        </div>
                     </div>
 
                     {tabbyConfig && currency === 'AED' && (
@@ -329,10 +433,10 @@ export function CheckoutPageContent({
 
                     <button
                         onClick={handlePlaceOrder}
-                        disabled={isProcessingOrder || (!hasBillingDetails) || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
+                        disabled={isProcessingOrder || isPreviewLoading || (!hasBillingDetails) || !checkoutPreview || (selectedProvider === 'tabby' && tabbyStatus !== 'available')}
                         className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isProcessingOrder ? "Processing..." : "Place Order"}
+                        {isProcessingOrder ? "Processing..." : isPreviewLoading ? 'Calculating...' : "Place Order"}
                     </button>
 
                     <div className="mt-4 text-xs text-center text-gray-500">

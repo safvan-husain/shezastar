@@ -9,6 +9,7 @@ import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvide
 import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
 import { Search } from './navbar/Search';
 import { CurrencySelector } from './navbar/CurrencySelector';
+import { CountrySelector } from './navbar/CountrySelector';
 import { useCurrency } from '@/lib/currency/CurrencyContext';
 import { UserMenu } from './navbar/UserMenu';
 import { DesktopCategories } from './navbar/DesktopCategories';
@@ -73,7 +74,8 @@ export function Navbar({ categories }: NavbarProps) {
               </button>
 
               {/* Currency Selector (Desktop) */}
-              <div className="hidden lg:block">
+              <div className="hidden lg:flex items-center gap-2">
+                <CountrySelector />
                 <CurrencySelector />
               </div>
 

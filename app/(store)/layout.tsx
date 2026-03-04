@@ -10,6 +10,8 @@ import { StorefrontAuthSuggestionProvider } from "@/components/storefront/Storef
 import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
 import { getExchangeRates } from "@/lib/currency/currency.service";
 import { WhatsAppFloatingButton } from "@/components/storefront/WhatsAppFloatingButton";
+import { CountryProvider } from "@/lib/country/CountryContext";
+import { getActiveCountryPricings } from "@/lib/app-settings/app-settings.service";
 
 export const dynamic = "force-dynamic";
 
@@ -21,24 +23,27 @@ export default async function StorefrontLayout({
   const session = await getOrCreateStorefrontSession();
   const cart = await getCartForCurrentSession();
   const rates = await getExchangeRates();
+  const countries = await getActiveCountryPricings();
 
   return (
     <StorefrontSessionProvider initialSession={session}>
       <StorefrontAuthSuggestionProvider>
         <StorefrontWishlistProvider initialWishlist={await ensureWishlist(session)}>
           <StorefrontCartProvider initialCart={cart}>
-            <CurrencyProvider initialRates={rates}>
-              <div className="bg-white min-h-screen flex flex-col">
-                <div className="fixed top-0 left-0 right-0 z-[100]">
-                  <NavbarWrapper />
+            <CountryProvider initialCountries={countries}>
+              <CurrencyProvider initialRates={rates}>
+                <div className="bg-white min-h-screen flex flex-col">
+                  <div className="fixed top-0 left-0 right-0 z-[100]">
+                    <NavbarWrapper />
+                  </div>
+                  <main className="flex-1 lg:mt-10">
+                    {children}
+                  </main>
+                  <WhatsAppFloatingButton />
+                  <FooterWrapper />
                 </div>
-                <main className="flex-1 lg:mt-10">
-                  {children}
-                </main>
-                <WhatsAppFloatingButton />
-                <FooterWrapper />
-              </div>
-            </CurrencyProvider>
+              </CurrencyProvider>
+            </CountryProvider>
           </StorefrontCartProvider>
         </StorefrontWishlistProvider>
       </StorefrontAuthSuggestionProvider>

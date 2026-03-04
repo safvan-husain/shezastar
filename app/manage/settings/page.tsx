@@ -41,6 +41,15 @@ export default function SettingsPage() {
                         Configure locations and price deltas for installation services.
                     </p>
                 </Link>
+                <Link
+                    href="/manage/settings/countries"
+                    className="block p-6 bg-[var(--bg-elevated)] rounded-lg shadow-md hover:shadow-lg transition-shadow border border-[var(--border-subtle)]"
+                >
+                    <h2 className="text-xl font-semibold mb-2">Countries & Taxes</h2>
+                    <p className="text-[var(--text-secondary)]">
+                        Manage country-specific VAT and shipping charges.
+                    </p>
+                </Link>
             </div>
         </div>
     );

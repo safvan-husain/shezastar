@@ -1,5 +1,13 @@
 import { catchError } from '@/lib/errors/app-error';
-import { CreateHeroBannerSchema, UpdateHeroBannerSchema, CreateCustomCardSchema, UpdateCustomCardSchema, AddFeaturedProductSchema } from './app-settings.schema';
+import {
+    CreateHeroBannerSchema,
+    UpdateHeroBannerSchema,
+    CreateCustomCardSchema,
+    UpdateCustomCardSchema,
+    AddFeaturedProductSchema,
+    CreateCountryPricingSchema,
+    UpdateCountryPricingSchema,
+} from './app-settings.schema';
 import * as appSettingsService from './app-settings.service';
 
 export async function handleGetAppSettings() {
@@ -134,3 +142,49 @@ export async function handleRemoveFeaturedProduct(productId: string) {
     }
 }
 
+export async function handleGetCountryPricings() {
+    try {
+        const result = await appSettingsService.getCountryPricings();
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleGetActiveCountryPricings() {
+    try {
+        const result = await appSettingsService.getActiveCountryPricings();
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleCreateCountryPricing(input: unknown) {
+    try {
+        const parsed = CreateCountryPricingSchema.parse(input);
+        const result = await appSettingsService.createCountryPricing(parsed);
+        return { status: 201, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleUpdateCountryPricing(id: string, input: unknown) {
+    try {
+        const parsed = UpdateCountryPricingSchema.parse(input);
+        const result = await appSettingsService.updateCountryPricing(id, parsed);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleRemoveCountryPricing(id: string) {
+    try {
+        const result = await appSettingsService.removeCountryPricing(id);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
