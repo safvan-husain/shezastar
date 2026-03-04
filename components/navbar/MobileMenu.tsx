@@ -5,9 +5,7 @@ import Link from 'next/link';
 import { Category } from '@/lib/category/model/category.model';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
-import { useCurrency } from '@/lib/currency/CurrencyContext';
 import { CurrencySelector } from './CurrencySelector';
-import { CountrySelector } from './CountrySelector';
 import { UserMenu } from './UserMenu';
 
 interface MobileMenuProps {
@@ -20,7 +18,6 @@ export function MobileMenu({ isOpen, onClose, categories }: MobileMenuProps) {
     const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
     const { items } = useStorefrontWishlist();
     const wishlistCount = items.length;
-    const { currency } = useCurrency();
     const { session } = useStorefrontSession();
     const isAuthenticated = !!session?.userId;
 
@@ -62,10 +59,7 @@ export function MobileMenu({ isOpen, onClose, categories }: MobileMenuProps) {
                 </div>
 
                 <div className="p-4 border-b border-gray-800 flex justify-center">
-                    <div className="flex flex-col items-center gap-3">
-                        <CountrySelector />
-                        <CurrencySelector />
-                    </div>
+                    <CurrencySelector />
                 </div>
 
                 <div className="py-2 border-b border-gray-800">

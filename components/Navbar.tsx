@@ -9,8 +9,8 @@ import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvide
 import { useStorefrontSession } from '@/components/storefront/StorefrontSessionProvider';
 import { Search } from './navbar/Search';
 import { CurrencySelector } from './navbar/CurrencySelector';
-import { CountrySelector } from './navbar/CountrySelector';
 import { useCurrency } from '@/lib/currency/CurrencyContext';
+import { useCountry } from '@/lib/country/CountryContext';
 import { UserMenu } from './navbar/UserMenu';
 import { DesktopCategories } from './navbar/DesktopCategories';
 import { MobileMenu } from './navbar/MobileMenu';
@@ -26,6 +26,7 @@ export function Navbar({ categories }: NavbarProps) {
   const wishlistCount = items.length;
   const { totalItems } = useStorefrontCart();
   const { currency } = useCurrency();
+  const { selectedCountry } = useCountry();
   const { session } = useStorefrontSession();
   const isAuthenticated = !!session?.userId;
 
@@ -74,8 +75,7 @@ export function Navbar({ categories }: NavbarProps) {
               </button>
 
               {/* Currency Selector (Desktop) */}
-              <div className="hidden lg:flex items-center gap-2">
-                <CountrySelector />
+              <div className="hidden lg:block">
                 <CurrencySelector />
               </div>
 
@@ -83,10 +83,10 @@ export function Navbar({ categories }: NavbarProps) {
               <button
                 onClick={() => setMobileMenuOpen(true)}
                 className="lg:hidden relative inline-flex items-center justify-center rounded-full bg-white/10 p-2 hover:bg-white/20 transition-colors"
-                aria-label="Change currency"
+                aria-label="Change country"
               >
                 <span className="text-[11px] font-bold text-amber-400">
-                  {currency}
+                  {selectedCountry?.code ?? currency}
                 </span>
               </button>
 
