@@ -48,9 +48,13 @@ export function CountrySelector() {
       return;
     }
 
+    const currentCurrency = currency;
     setCountryCode(country.code);
     if (switchCurrency) {
       setCurrency(country.defaultCurrency as CurrencyCode);
+    } else {
+      // Explicitly keep the user's current currency selection.
+      setCurrency(currentCurrency);
     }
 
     setPendingCountryCode(null);
