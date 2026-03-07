@@ -1,39 +1,28 @@
 import { MongoClient, ObjectId } from 'mongodb';
-// import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 let mongoClient: MongoClient;
-// let mongoServer: MongoMemoryServer | undefined;
+let mongoServer: MongoMemoryServer | undefined;
 
 const TEST_DB_NAME = 'shazstar_test';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
 
 export async function connect() {
     if (mongoClient) return;
 
-    if (MONGODB_URI) {
-        try {
-            mongoClient = await MongoClient.connect(MONGODB_URI);
-            console.log(`Connected to DB: ${TEST_DB_NAME}`);
-            return;
-        } catch (error) {
-            console.error(`Failed to connect to DB: ${TEST_DB_NAME}`);
-            throw error;
-        }
-    }
-
-    // mongoServer = await MongoMemoryServer.create({
-    //     instance: { dbName: TEST_DB_NAME },
-    // });
-    // const uri = mongoServer.getUri();
-    // mongoClient = await MongoClient.connect(uri);
+    mongoServer = await MongoMemoryServer.create({
+        instance: { dbName: TEST_DB_NAME },
+    });
+    const uri = mongoServer.getUri();
+    mongoClient = await MongoClient.connect(uri);
+    console.log(`Connected to in-memory DB: ${TEST_DB_NAME}`);
 }
 
 export async function close() {
     if (mongoClient) await mongoClient.close();
-    // if (mongoServer) {
-    //     await mongoServer.stop();
-    //     mongoServer = undefined;
-    // }
+    if (mongoServer) {
+        await mongoServer.stop();
+        mongoServer = undefined;
+    }
 }
 
 export async function clear() {

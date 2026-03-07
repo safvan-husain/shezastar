@@ -2,7 +2,7 @@
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { ProductDocument, toProduct, toProducts } from './model/product.model';
-import { CreateProductInput, UpdateProductInput, ImageMappingInput, ProductImage } from './product.schema';
+import { CreateProductInput, UpdateProductInput, ImageMappingInput, ProductImage, BulkPriceUpdateInput } from './product.schema';
 import { nanoid } from 'nanoid';
 import { deleteImages } from '@/lib/utils/file-upload';
 import { getCategoryHierarchyIds, getCategoryLineageMap } from '@/lib/category/category.service';
@@ -437,4 +437,85 @@ export async function searchProducts(query: string, limit = 10) {
         : [];
 
     return toProducts([...phraseDocs, ...fallbackDocs]);
+}
+
+export async function bulkUpdatePrices(input: BulkPriceUpdateInput) {
+    const collection = await getCollection<ProductDocument>(COLLECTION);
+
+    // Build the filter based on mode
+    let filter: Record<string, any> = {};
+
+    if (input.mode === 'category') {
+        if (input.ids.length === 0) {
+            throw new AppError(400, 'NO_CATEGORIES_SELECTED', {
+                message: 'At least one category must be selected',
+            });
+        }
+        // Resolve all hierarchy IDs for the selected categories
+        const allHierarchyIds = await Promise.all(
+            input.ids.map(id => getCategoryHierarchyIds(id))
+        );
+        const flatIds = Array.from(new Set(allHierarchyIds.flat()));
+        filter = { subCategoryIds: { $in: flatIds } };
+    } else if (input.mode === 'product') {
+        if (input.ids.length === 0) {
+            throw new AppError(400, 'NO_PRODUCTS_SELECTED', {
+                message: 'At least one product must be selected',
+            });
+        }
+        const objectIds = input.ids.map(id => {
+            try {
+                return new ObjectId(id);
+            } catch {
+                throw new AppError(400, 'INVALID_ID', {
+                    message: `Invalid product ID: ${id}`,
+                });
+            }
+        });
+        filter = { _id: { $in: objectIds } };
+    }
+    // mode === 'all' => empty filter matches everything
+
+    // Fetch all matching products
+    const docs = await collection.find(filter).toArray();
+
+    if (docs.length === 0) {
+        return { modifiedCount: 0 };
+    }
+
+    // Compute new prices and build bulk operations
+    const operations = docs.map(doc => {
+        const newBasePrice =
+            input.method === 'percentage'
+                ? Math.round(doc.basePrice * (1 + input.value / 100) * 100) / 100
+                : Math.round((doc.basePrice + input.value) * 100) / 100;
+
+        const newVariantStock = (doc.variantStock || []).map(vs => {
+            if (vs.price != null) {
+                const newPrice =
+                    input.method === 'percentage'
+                        ? Math.round(vs.price * (1 + input.value / 100) * 100) / 100
+                        : Math.round((vs.price + input.value) * 100) / 100;
+                return { ...vs, price: newPrice };
+            }
+            return vs;
+        });
+
+        return {
+            updateOne: {
+                filter: { _id: doc._id },
+                update: {
+                    $set: {
+                        basePrice: newBasePrice,
+                        variantStock: newVariantStock,
+                        updatedAt: new Date(),
+                    },
+                },
+            },
+        };
+    });
+
+    const result = await collection.bulkWrite(operations);
+
+    return { modifiedCount: result.modifiedCount };
 }

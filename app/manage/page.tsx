@@ -29,6 +29,12 @@ const QUICK_ACTIONS = [
         href: '/manage/settings',
         actionLabel: 'Open Settings',
     },
+    {
+        title: 'Bulk price update',
+        description: 'Update prices in bulk by category, product, or all at once.',
+        href: '/manage/products/bulk-price-update',
+        actionLabel: 'Update Prices',
+    },
 ];
 
 type DashboardStats = {

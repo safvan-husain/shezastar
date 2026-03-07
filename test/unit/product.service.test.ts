@@ -6,6 +6,7 @@ import {
     deleteProduct,
     getAllProducts,
     searchProducts,
+    bulkUpdatePrices,
 } from '@/lib/product/product.service';
 import { AppError } from '@/lib/errors/app-error';
 import { clear } from '../test-db';
@@ -376,5 +377,136 @@ describe('Product Service - Search', () => {
     it('should return empty array for whitespace-only query', async () => {
         const result = await searchProducts('    ');
         expect(result).toEqual([]);
+    });
+});
+
+describe('Product Service - Bulk Price Update', () => {
+    let categoryId: string;
+    let subCategoryId: string;
+    let productA: any;
+    let productB: any;
+    let productC: any;
+
+    beforeAll(async () => {
+        await clear();
+
+        // Create category structure
+        const category = await createCategory({ name: 'Bulk Test Category', subCategories: [] });
+        categoryId = category.id;
+
+        const withSub = await addSubCategory(categoryId, { name: 'Bulk Sub' });
+        subCategoryId = withSub.subCategories[0].id;
+
+        // Product A — in the category, with variant stock prices
+        productA = await createProduct({
+            name: 'Bulk Product A',
+            basePrice: 100,
+            images: [],
+            variants: [],
+            subCategoryIds: [subCategoryId],
+            variantStock: [
+                { variantCombinationKey: 'default', stockCount: 5, price: 120 },
+            ],
+            specifications: [],
+        });
+
+        // Product B — in the category, no variant prices
+        productB = await createProduct({
+            name: 'Bulk Product B',
+            basePrice: 200,
+            images: [],
+            variants: [],
+            subCategoryIds: [subCategoryId],
+            variantStock: [],
+            specifications: [],
+        });
+
+        // Product C — outside the category
+        productC = await createProduct({
+            name: 'Bulk Product C',
+            basePrice: 50,
+            images: [],
+            variants: [],
+            subCategoryIds: ['other-cat'],
+            variantStock: [],
+            specifications: [],
+        });
+    });
+
+    afterAll(async () => {
+        await clear();
+    });
+
+    it('should update prices by category using percentage', async () => {
+        const result = await bulkUpdatePrices({
+            mode: 'category',
+            ids: [categoryId],
+            method: 'percentage',
+            value: 10, // 10% increase
+        });
+
+        expect(result.modifiedCount).toBe(2); // A and B
+
+        const updatedA = await getProduct(productA.id);
+        expect(updatedA.basePrice).toBe(110); // 100 * 1.10
+        expect(updatedA.variantStock[0].price).toBe(132); // 120 * 1.10
+
+        const updatedB = await getProduct(productB.id);
+        expect(updatedB.basePrice).toBe(220); // 200 * 1.10
+
+        // Product C should be unchanged
+        const unchangedC = await getProduct(productC.id);
+        expect(unchangedC.basePrice).toBe(50);
+    });
+
+    it('should update prices by product IDs using fixed amount', async () => {
+        const result = await bulkUpdatePrices({
+            mode: 'product',
+            ids: [productC.id],
+            method: 'fixed',
+            value: 25,
+        });
+
+        expect(result.modifiedCount).toBe(1);
+
+        const updatedC = await getProduct(productC.id);
+        expect(updatedC.basePrice).toBe(75); // 50 + 25
+    });
+
+    it('should update all products', async () => {
+        // Snapshot current prices
+        const beforeA = await getProduct(productA.id);
+        const beforeB = await getProduct(productB.id);
+        const beforeC = await getProduct(productC.id);
+
+        const result = await bulkUpdatePrices({
+            mode: 'all',
+            ids: [],
+            method: 'fixed',
+            value: 5,
+        });
+
+        expect(result.modifiedCount).toBe(3);
+
+        const afterA = await getProduct(productA.id);
+        expect(afterA.basePrice).toBe(beforeA.basePrice + 5);
+
+        const afterB = await getProduct(productB.id);
+        expect(afterB.basePrice).toBe(beforeB.basePrice + 5);
+
+        const afterC = await getProduct(productC.id);
+        expect(afterC.basePrice).toBe(beforeC.basePrice + 5);
+    });
+
+    it('should throw error when no categories selected', async () => {
+        await expect(
+            bulkUpdatePrices({ mode: 'category', ids: [], method: 'fixed', value: 10 })
+        ).rejects.toThrow('NO_CATEGORIES_SELECTED');
+    });
+
+    it('should throw error when no products selected', async () => {
+        await expect(
+            bulkUpdatePrices({ mode: 'product', ids: [], method: 'fixed', value: 10 })
+        ).rejects.toThrow('NO_PRODUCTS_SELECTED');
     });
 });

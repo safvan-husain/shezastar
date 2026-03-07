@@ -81,6 +81,13 @@ export const ImageMappingSchema = z.object({
     variantItemIds: z.array(z.string()), // Can be single items or combination
 });
 
+export const BulkPriceUpdateSchema = z.object({
+    mode: z.enum(['category', 'product', 'all']),
+    ids: z.array(z.string()).default([]),   // category or product IDs depending on mode
+    method: z.enum(['percentage', 'fixed']),
+    value: z.number().positive('Value must be positive'),
+});
+
 export type ProductSpecification = z.infer<typeof ProductSpecificationSchema>;
 export type ProductImage = z.infer<typeof ProductImageSchema>;
 export type ProductVariant = z.infer<typeof ProductVariantSchema>;
@@ -90,3 +97,4 @@ export type ProductInstallationLocation = z.infer<typeof ProductInstallationLoca
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 export type ImageMappingInput = z.infer<typeof ImageMappingSchema>;
+export type BulkPriceUpdateInput = z.infer<typeof BulkPriceUpdateSchema>;
