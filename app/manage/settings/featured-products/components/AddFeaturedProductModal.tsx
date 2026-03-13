@@ -22,37 +22,48 @@ export default function AddFeaturedProductModal({
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [pagination, setPagination] = useState({
+        page: 1,
+        totalPages: 1,
+        total: 0
+    });
+
+    const [isFirstRender, setIsFirstRender] = useState(true);
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        if (isFirstRender) {
+            setIsFirstRender(false);
+            fetchProducts(1, '');
+            return;
+        }
+
+        const debounceTimer = setTimeout(() => {
+            setPagination(p => ({ ...p, page: 1 }));
+            fetchProducts(1, searchTerm);
+        }, 300);
+        return () => clearTimeout(debounceTimer);
+    }, [searchTerm]);
+
+    const handlePageChange = (newPage: number) => {
+        setPagination(p => ({ ...p, page: newPage }));
+        fetchProducts(newPage, searchTerm);
+    };
 
     useEffect(() => {
-        // Filter products based on search term
-        const filtered = products.filter(product => {
-            // Exclude already featured products
-            if (currentFeaturedIds.includes(product.id)) {
-                return false;
-            }
-
-            // Filter by search term
-            if (searchTerm) {
-                const term = searchTerm.toLowerCase();
-                return (
-                    product.name.toLowerCase().includes(term) ||
-                    (product.description && stripHtml(product.description).toLowerCase().includes(term))
-                );
-            }
-
-            return true;
-        });
-
+        // Exclude already featured products
+        const filtered = products.filter(product => !currentFeaturedIds.includes(product.id));
         setFilteredProducts(filtered);
-    }, [products, searchTerm, currentFeaturedIds]);
+    }, [products, currentFeaturedIds]);
 
-    const fetchProducts = async () => {
+    const fetchProducts = async (page: number, search: string) => {
+        setLoading(true);
         try {
-            const response = await fetch('/api/products');
+            const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', '20');
+            if (search) params.append('search', search);
+
+            const response = await fetch(`/api/products?${params.toString()}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
@@ -60,6 +71,11 @@ export default function AddFeaturedProductModal({
 
             const data = await response.json();
             setProducts(data.products || []);
+            setPagination({
+                page: data.pagination.page,
+                totalPages: data.pagination.totalPages,
+                total: data.pagination.total
+            });
         } catch (error: any) {
             const message = error instanceof Error ? error.message : 'Failed to load products';
             showToast(message, 'error');
@@ -190,6 +206,31 @@ export default function AddFeaturedProductModal({
                         </div>
                     )}
                 </div>
+
+                {/* Footer / Pagination */}
+                {pagination.totalPages > 1 && (
+                    <div className="p-6 border-t border-[var(--border-subtle)] flex items-center justify-between">
+                        <div className="text-sm text-[var(--text-secondary)]">
+                            Showing page {pagination.page} of {pagination.totalPages} ({pagination.total} total products)
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handlePageChange(pagination.page - 1)}
+                                disabled={pagination.page <= 1 || loading}
+                                className="px-4 py-2 border border-[var(--border-subtle)] rounded-md hover:bg-[var(--bg-base)] disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => handlePageChange(pagination.page + 1)}
+                                disabled={pagination.page >= pagination.totalPages || loading}
+                                className="px-4 py-2 bg-[var(--secondary)] text-white rounded-md hover:bg-[var(--secondary-hover)] disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
