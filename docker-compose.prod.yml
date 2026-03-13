@@ -2,10 +2,16 @@ services:
   seed:
     env_file:
       - .env.production
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME:-shezastar}
 
   migration:
     env_file:
       - .env.production
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME:-shezastar}
 
   app:
     build:
@@ -17,13 +23,8 @@ services:
       - .env.production
     environment:
       - NODE_ENV=production
-      - MONGODB_USER=${MONGODB_USER}
-      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
-      - MONGODB_DATABASE=${MONGODB_DATABASE}
-      - MONGODB_HOST=mongodb
-      - MONGODB_PORT=27017
-      - MONGODB_AUTH_SOURCE=admin
-      - MONGODB_URI=
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME:-shezastar}
       # Production optimizations
       - NEXT_TELEMETRY_DISABLED=1
     volumes:
