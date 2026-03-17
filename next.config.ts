@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  cacheComponents: true,
   experimental: {
     // Enable if you're using server actions
     serverActions: {

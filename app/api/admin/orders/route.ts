@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from 'next/server';
 import { handleAdminListOrders } from '@/lib/order/order.controller';
 
+
+
 export async function GET(req: Request) {
+    await connection();
     const url = new URL(req.url);
     const pageParam = url.searchParams.get('page');
     const limitParam = url.searchParams.get('limit');

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getCountryPricings } from '@/lib/app-settings/app-settings.service';
 import CountryPricingList from './components/CountryPricingList';
 
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic';
 
 export default async function CountriesSettingsPage() {
   const countries = await getCountryPricings();

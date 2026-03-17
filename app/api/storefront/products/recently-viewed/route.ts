@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from 'next/server';
 import { handleTrackProductView, handleGetRecentlyViewed } from '@/lib/product/recently-viewed.controller';
 
+
+
 export async function GET() {
+    await connection();
     const { status, body } = await handleGetRecentlyViewed();
     return NextResponse.json(body, { status });
 }

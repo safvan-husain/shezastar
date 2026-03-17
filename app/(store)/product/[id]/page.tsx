@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Product } from '@/lib/product/model/product.model';
 import { ProductErrorHandler, ProductPageError } from '../components/ProductErrorHandler';
 import { ProductDetails } from '../components/ProductDetails';
@@ -40,7 +41,6 @@ async function fetchProduct(id: string): Promise<{ product: Product | null; erro
       let body: any;
       try {
         body = await res.json();
-
       } catch {
         body = { error: 'Failed to parse response body' };
       }
@@ -144,23 +144,37 @@ async function fetchRelatedProducts(categoryIds: string[], originId?: string): P
   }
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params;
-  const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY || '';
-  const tabbyMerchantCode = process.env.TABBY_MERCHANT_CODE || '';
-  const tabbyConfig = (tabbyPublicKey && tabbyMerchantCode)
-    ? { publicKey: tabbyPublicKey, merchantCode: tabbyMerchantCode }
-    : undefined;
+function ProductPageSkeleton() {
+  return (
+    <div className="space-y-12 animate-pulse">
+      <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
+        <div className="aspect-square bg-gray-200 rounded-xl" />
+        <div className="space-y-6">
+          <div className="h-4 bg-gray-200 rounded w-1/4" />
+          <div className="h-10 bg-gray-200 rounded w-3/4" />
+          <div className="h-8 bg-gray-200 rounded w-1/3" />
+          <div className="space-y-3">
+            <div className="h-4 bg-gray-200 rounded w-full" />
+            <div className="h-4 bg-gray-200 rounded w-full" />
+            <div className="h-4 bg-gray-200 rounded w-2/3" />
+          </div>
+          <div className="h-12 bg-gray-200 rounded w-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
+async function ProductPageContent({ id, tabbyConfig }: { id: string; tabbyConfig?: { publicKey: string; merchantCode: string } }) {
   const { product, error: productError } = await fetchProduct(id);
 
   if (productError) {
     return (
-      <div className="container mx-auto px-4 py-12 space-y-4">
+      <div className="space-y-4">
         <ProductErrorHandler error={productError} />
         <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">Unable to load product</h1>
         <p className="text-[var(--storefront-text-secondary)]">
-          Something went wrong while loading this product. Please try again, and copy the toast details if you need to report the issue.
+          Something went wrong while loading this product. Please try again.
         </p>
       </div>
     );
@@ -168,10 +182,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) {
     return (
-      <div className="container mx-auto px-4 py-12 space-y-4">
+      <div className="space-y-4">
         <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">Product not found</h1>
         <p className="text-[var(--storefront-text-secondary)]">
-          We could not find this product. It may have been removed or the link is incorrect.
+          We could not find this product.
         </p>
       </div>
     );
@@ -182,7 +196,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const filteredRelatedProducts = relatedProducts.filter(p => p.id !== product.id);
 
   return (
-    <div className="container mx-auto px-4 py-12 space-y-12 mt-24 lg:mt-32 max-w-7xl">
+    <div className="space-y-12">
       {relatedError && <ProductErrorHandler error={relatedError} />}
 
       <ProductDetails
@@ -193,6 +207,23 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <RelatedProducts products={filteredRelatedProducts} />
 
       <RecentlyViewed currentProductId={product.id} />
+    </div>
+  );
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params;
+  const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY || '';
+  const tabbyMerchantCode = process.env.TABBY_MERCHANT_CODE || '';
+  const tabbyConfig = (tabbyPublicKey && tabbyMerchantCode)
+    ? { publicKey: tabbyPublicKey, merchantCode: tabbyMerchantCode }
+    : undefined;
+
+  return (
+    <div className="container mx-auto px-4 py-12 mt-24 lg:mt-32 max-w-7xl">
+      <Suspense fallback={<ProductPageSkeleton />}>
+        <ProductPageContent id={id} tabbyConfig={tabbyConfig} />
+      </Suspense>
     </div>
   );
 }
