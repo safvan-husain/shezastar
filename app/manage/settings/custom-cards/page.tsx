@@ -1,11 +1,10 @@
 import { getCustomCards } from '@/lib/app-settings/app-settings.service';
 import CustomCardList from './components/CustomCardList';
 import Link from 'next/link';
-import { connection } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export default async function CustomCardsPage() {
-    await connection();
-
     const customCards = await getCustomCards();
 
     return (

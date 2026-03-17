@@ -1,6 +1,4 @@
-import { NextResponse, connection } from 'next/server';
-
-
+import { NextResponse } from 'next/server';
 
 import {
     handleEnsureStorefrontSession,
@@ -19,7 +17,6 @@ async function readBody(req: Request): Promise<unknown> {
 }
 
 export async function GET(_req: Request, ctx: RouteContext) {
-    await connection();
     await ctx.params;
     const { status, body } = await handleGetStorefrontSession();
     return NextResponse.json(body, { status });

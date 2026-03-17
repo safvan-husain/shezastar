@@ -2,7 +2,6 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { connection } from 'next/server';
 
 import { getCollection } from '@/lib/db/mongo-client';
 import { AdminDocument } from '@/lib/auth/admin-auth-core';
@@ -95,9 +94,7 @@ export async function revokeAdminSessionCookie() {
     });
 }
 
-
 export async function requireAdminAuth() {
-    await connection();
     const admin = await getAdminDocument();
     if (!admin) {
         redirect('/login?error=admin-not-configured');

@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import { requireAdminAuth } from '@/lib/auth/admin-auth';
 import { getMongoUri } from '@/lib/db/mongo-client';
 
-// export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
     // Check for admin authentication

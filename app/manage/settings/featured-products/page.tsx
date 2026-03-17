@@ -1,11 +1,10 @@
 import { getFeaturedProducts } from '@/lib/app-settings/app-settings.service';
 import FeaturedProductsList from './components/FeaturedProductsList';
 import Link from 'next/link';
-import { connection } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export default async function FeaturedProductsPage() {
-    await connection();
-
     const products = await getFeaturedProducts();
 
     return (

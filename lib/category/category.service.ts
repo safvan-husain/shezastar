@@ -1,5 +1,4 @@
 // lib/category/category.service.ts
-import { cacheLife } from 'next/cache';
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import {
@@ -119,8 +118,6 @@ export async function getCategory(identifier: string) {
 }
 
 export async function getAllCategories() {
-    'use cache';
-    cacheLife('minutes');
     const collection = await getCollection<CategoryDocument>(COLLECTION);
     const docs = await collection.find({}).sort({ name: 1 }).toArray();
     return toCategories(docs);

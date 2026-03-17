@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -55,9 +54,7 @@ export default async function RootLayout({
       >
         <CurrencyProvider initialRates={rates}>
           <ToastProvider>
-            <Suspense fallback={null}>
-              {children}
-            </Suspense>
+            {children}
           </ToastProvider>
         </CurrencyProvider>
       </body>

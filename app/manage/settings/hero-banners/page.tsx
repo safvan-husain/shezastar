@@ -1,11 +1,10 @@
 import { getHeroBanners } from '@/lib/app-settings/app-settings.service';
 import HeroBannerList from './components/HeroBannerList';
 import Link from 'next/link';
-import { connection } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export default async function HeroBannersPage() {
-    await connection();
-
     const banners = await getHeroBanners();
 
     return (

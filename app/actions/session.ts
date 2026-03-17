@@ -1,7 +1,6 @@
 'use server';
 
 import { cookies, headers } from 'next/headers';
-import { connection } from 'next/server';
 import { randomBytes } from 'node:crypto';
 import {
     STOREFRONT_COOKIE_NAME,
@@ -20,7 +19,6 @@ const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 // Helper to get or create session WITHOUT setting cookies (safe for layouts)
 export async function getOrCreateStorefrontSession(): Promise<StorefrontSession> {
-    await connection();
     const headerStore = await headers();
     const userAgent = headerStore.get('user-agent') ?? undefined;
     const ipAddressRaw = headerStore.get('x-forwarded-for') ?? undefined;

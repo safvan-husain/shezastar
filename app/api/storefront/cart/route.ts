@@ -1,6 +1,4 @@
-import { NextResponse, connection } from 'next/server';
-
-
+import { NextResponse } from 'next/server';
 
 import {
     handleAddToCart,
@@ -13,7 +11,6 @@ import {
 type RouteParams = { params: Promise<Record<string, string>> };
 
 export async function GET(req: Request, ctx: RouteParams) {
-    await connection();
     await ctx.params;
     const { status, body } = await handleGetCartForCurrentSession();
     return NextResponse.json(body, {
