@@ -7,8 +7,9 @@ import { AppError } from '@/lib/errors/app-error';
 
 
 export async function GET(request: NextRequest) {
+    await connection();
     try {
-        await connection();
+
         const searchParams = request.nextUrl.searchParams;
         const query = searchParams.get('q');
         const limitParam = searchParams.get('limit');

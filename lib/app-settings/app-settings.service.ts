@@ -1,3 +1,4 @@
+import { cacheLife } from 'next/cache';
 import { getCollection } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { AppSettingsDocument, toAppSettings, getDefaultSettings } from './model/app-settings.model';
@@ -29,6 +30,8 @@ function getResultDocument<T>(result: T | { value?: T | null } | null | undefine
 }
 
 export async function getAppSettings() {
+    'use cache';
+    cacheLife('minutes');
     const collection = await getCollection<AppSettingsDocument>(COLLECTION);
     const doc = await collection.findOne({});
 
