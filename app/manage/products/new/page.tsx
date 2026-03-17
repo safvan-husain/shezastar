@@ -1,13 +1,16 @@
-// app/(admin)/products/new/page.tsx
 import Link from 'next/link';
+import { connection } from 'next/server';
 import { ProductForm } from '../components/ProductForm';
 import { getInstallationLocations } from '@/lib/app-settings/app-settings.service';
 import { handleGetAllBrands } from '@/lib/brand/brand.controller';
 
 export default async function NewProductPage() {
+    await connection();
+
     const globalInstallationLocations = await getInstallationLocations();
     const { body: brandsBody } = await handleGetAllBrands();
     const brands = Array.isArray(brandsBody) ? brandsBody : [];
+
 
     return (
         <div className="min-h-screen bg-[var(--background)]">

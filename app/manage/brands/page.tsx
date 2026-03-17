@@ -1,11 +1,13 @@
-// app/manage/brands/page.tsx
 import Link from 'next/link';
+import { connection } from 'next/server';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { handleGetAllBrands } from '@/lib/brand/brand.controller';
 import Image from 'next/image';
 
 export default async function BrandsPage() {
+    await connection();
+
     const { body } = await handleGetAllBrands();
     const brands = Array.isArray(body) ? body : [];
 

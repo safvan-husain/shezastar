@@ -1,10 +1,11 @@
 import { getInstallationLocations } from '@/lib/app-settings/app-settings.service';
 import InstallationLocationsList from './components/InstallationLocationsList';
 import Link from 'next/link';
-
-// export const dynamic = 'force-dynamic';
+import { connection } from 'next/server';
 
 export default async function InstallationLocationsPage() {
+    await connection();
+
     const locations = await getInstallationLocations();
 
     return (

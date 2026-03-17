@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { getCountryPricings } from '@/lib/app-settings/app-settings.service';
 import CountryPricingList from './components/CountryPricingList';
-
-// export const dynamic = 'force-dynamic';
+import { connection } from 'next/server';
 
 export default async function CountriesSettingsPage() {
+  await connection();
+
   const countries = await getCountryPricings();
 
   return (

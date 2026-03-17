@@ -47,20 +47,28 @@ export default function StorefrontLayout({
 }) {
   return (
     <div className="bg-white min-h-screen flex flex-col">
-      <div className="fixed top-0 left-0 right-0 z-[100]">
-        <Suspense fallback={<div className="h-16 bg-white border-b" />}>
-          <NavbarWrapper />
-        </Suspense>
-      </div>
-      <main className="flex-1 lg:mt-10 overflow-x-hidden">
-        <Suspense fallback={<div className="container mx-auto px-4 py-8 animate-pulse bg-gray-50 h-96 rounded-xl mt-24" />}>
-          <StorefrontProvidersWrapper>
+      <Suspense fallback={
+        <>
+          <div className="h-16 bg-white border-b fixed top-0 left-0 right-0 z-[100]" />
+          <main className="flex-1 lg:mt-10 overflow-x-hidden">
+            <div className="container mx-auto px-4 py-8 animate-pulse bg-gray-50 h-96 rounded-xl mt-24" />
+          </main>
+        </>
+      }>
+        <StorefrontProvidersWrapper>
+          <div className="fixed top-0 left-0 right-0 z-[100]">
+            <Suspense fallback={<div className="h-16 bg-white border-b" />}>
+              <NavbarWrapper />
+            </Suspense>
+          </div>
+          <main className="flex-1 lg:mt-10 overflow-x-hidden">
             {children}
-          </StorefrontProvidersWrapper>
-        </Suspense>
-      </main>
-      <WhatsAppFloatingButton />
-      <FooterWrapper />
+          </main>
+          <WhatsAppFloatingButton />
+          <FooterWrapper />
+        </StorefrontProvidersWrapper>
+      </Suspense>
     </div>
   );
 }
+
