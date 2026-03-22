@@ -26,6 +26,11 @@ import {
 
 const COLLECTION = 'categories';
 
+let cachedCategories: CategoryDocument[] | null = null;
+let cachedLineageMap: Map<string, string[]> | null = null;
+let lastCacheUpdate = 0;
+const CACHE_TTL = 30000; // 30 seconds
+
 function parseObjectId(id: string) {
     try {
         return new ObjectId(id);
@@ -97,6 +102,10 @@ export async function createCategory(input: CreateCategoryInput) {
         throw new AppError(500, 'FAILED_TO_CREATE_CATEGORY');
     }
 
+    // Invalidate cache
+    cachedCategories = null;
+    cachedLineageMap = null;
+
     return toCategory(created);
 }
 
@@ -166,6 +175,10 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
         throw new AppError(500, 'FAILED_TO_UPDATE_CATEGORY');
     }
 
+    // Invalidate cache
+    cachedCategories = null;
+    cachedLineageMap = null;
+
     return toCategory(updated);
 }
 
@@ -180,6 +193,10 @@ export async function deleteCategory(id: string) {
     }
 
     await collection.deleteOne({ _id: objectId });
+
+    // Invalidate cache
+    cachedCategories = null;
+    cachedLineageMap = null;
 
     return { success: true };
 }
@@ -225,6 +242,10 @@ export async function addSubCategory(id: string, input: AddSubCategoryInput) {
         throw new AppError(500, 'FAILED_TO_ADD_SUBCATEGORY');
     }
 
+    // Invalidate cache
+    cachedCategories = null;
+    cachedLineageMap = null;
+
     return toCategory(updated);
 }
 
@@ -256,6 +277,10 @@ export async function removeSubCategory(id: string, subCategoryId: string) {
     if (!updated) {
         throw new AppError(500, 'FAILED_TO_REMOVE_SUBCATEGORY');
     }
+
+    // Invalidate cache
+    cachedCategories = null;
+    cachedLineageMap = null;
 
     return toCategory(updated);
 }
@@ -309,6 +334,10 @@ export async function addSubSubCategory(
         throw new AppError(500, 'FAILED_TO_ADD_SUBSUBCATEGORY');
     }
 
+    // Invalidate cache
+    cachedCategories = null;
+    cachedLineageMap = null;
+
     return toCategory(updated);
 }
 
@@ -354,6 +383,10 @@ export async function removeSubSubCategory(
     if (!updated) {
         throw new AppError(500, 'FAILED_TO_REMOVE_SUBSUBCATEGORY');
     }
+
+    // Invalidate cache
+    cachedCategories = null;
+    cachedLineageMap = null;
 
     return toCategory(updated);
 }
@@ -424,73 +457,66 @@ export async function updateSubCategory(
         throw new AppError(500, 'FAILED_TO_UPDATE_SUBCATEGORY');
     }
 
+    // Invalidate cache
+    cachedCategories = null;
+    cachedLineageMap = null;
+
     return toCategory(updated);
 }
 
 export async function getCategoryHierarchyIds(identifier: string): Promise<string[]> {
-    const collection = await getCollection<CategoryDocument>(COLLECTION);
+    const lineageMap = await getCategoryLineageMap();
+    const categories = cachedCategories!; // will be set after getCategoryLineageMap
+
     const matchedIds = new Set<string>();
 
-    if (ObjectId.isValid(identifier)) {
-        const category = await collection.findOne({ _id: new ObjectId(identifier) });
-        if (category) {
-            matchedIds.add(category._id.toString());
-            category.subCategories?.forEach(sub => {
-                matchedIds.add(sub.id);
-                (sub.subSubCategories || []).forEach(subSub => matchedIds.add(subSub.id));
-            });
-            return Array.from(matchedIds);
-        }
-    }
-
-    const categoryBySlug = await collection.findOne({ slug: identifier });
-    if (categoryBySlug) {
-        matchedIds.add(categoryBySlug._id.toString());
-        categoryBySlug.subCategories?.forEach(sub => {
-            matchedIds.add(sub.id);
-            (sub.subSubCategories || []).forEach(subSub => matchedIds.add(subSub.id));
-        });
-        return Array.from(matchedIds);
-    }
-
-    const categoryWithSub = await collection.findOne({
-        $or: [
-            { 'subCategories.id': identifier },
-            { 'subCategories.slug': identifier },
-        ],
-    });
-    if (categoryWithSub) {
-        const subCategory = categoryWithSub.subCategories.find(
-            sub => sub.id === identifier || sub.slug === identifier
-        );
-        if (subCategory) {
-            matchedIds.add(subCategory.id);
-            (subCategory.subSubCategories || []).forEach(subSub => matchedIds.add(subSub.id));
-            return Array.from(matchedIds);
-        }
-    }
-
-    const categoryWithSubSub = await collection.findOne({
-        $or: [
-            { 'subCategories.subSubCategories.id': identifier },
-            { 'subCategories.subSubCategories.slug': identifier },
-        ],
-    });
-    if (categoryWithSubSub) {
-        for (const sub of categoryWithSubSub.subCategories) {
-            const subSub = sub.subSubCategories?.find(
-                s => s.id === identifier || s.slug === identifier
-            );
-            if (subSub) {
-                matchedIds.add(subSub.id);
-                return Array.from(matchedIds);
+    // Case 1: identifier is an ID
+    if (lineageMap.has(identifier)) {
+        // Find all IDs that have this identifier in their lineage (children)
+        for (const [mid, lineage] of lineageMap.entries()) {
+            if (lineage.includes(identifier)) {
+                matchedIds.add(mid);
             }
         }
     }
 
-    throw new AppError(404, 'CATEGORY_NOT_FOUND', {
-        message: `Category with identifier "${identifier}" not found`,
-    });
+    // Case 2: identifier is a Slug
+    if (matchedIds.size === 0) {
+        // Find category/sub-cat/sub-sub-cat by slug
+        for (const cat of categories) {
+            if (cat.slug === identifier) {
+                const catId = cat._id.toString();
+                for (const [mid, lineage] of lineageMap.entries()) {
+                    if (lineage.includes(catId)) matchedIds.add(mid);
+                }
+                break;
+            }
+
+            for (const sub of cat.subCategories) {
+                if (sub.slug === identifier) {
+                    for (const [mid, lineage] of lineageMap.entries()) {
+                        if (lineage.includes(sub.id)) matchedIds.add(mid);
+                    }
+                    break;
+                }
+
+                for (const subSub of sub.subSubCategories || []) {
+                    if (subSub.slug === identifier) {
+                        matchedIds.add(subSub.id);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if (matchedIds.size === 0) {
+        throw new AppError(404, 'CATEGORY_NOT_FOUND', {
+            message: `Category with identifier "${identifier}" not found`,
+        });
+    }
+
+    return Array.from(matchedIds);
 }
 
 /**
@@ -498,6 +524,11 @@ export async function getCategoryHierarchyIds(identifier: string): Promise<strin
  * Useful for relevancy scoring and finding broader contexts.
  */
 export async function getCategoryLineageMap(): Promise<Map<string, string[]>> {
+    const now = Date.now();
+    if (cachedLineageMap && cachedCategories && (now - lastCacheUpdate < CACHE_TTL)) {
+        return cachedLineageMap;
+    }
+
     const collection = await getCollection<CategoryDocument>(COLLECTION);
     const categories = await collection.find({}).toArray();
     const map = new Map<string, string[]>();
@@ -517,6 +548,9 @@ export async function getCategoryLineageMap(): Promise<Map<string, string[]>> {
         }
     }
 
+    cachedCategories = categories;
+    cachedLineageMap = map;
+    lastCacheUpdate = now;
     return map;
 }
 

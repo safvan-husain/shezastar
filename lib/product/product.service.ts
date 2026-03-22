@@ -97,11 +97,29 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
     const skip = (page - 1) * limit;
     let filter: Record<string, any> = {};
 
-    if (categoryId) {
+    // Get lineage map once for all uses if needed
+    const lineageMap = (categoryId || originId) ? await getCategoryLineageMap() : null;
+
+    if (categoryId && lineageMap) {
         const ids = Array.isArray(categoryId) ? categoryId : [categoryId];
-        const allHierarchyIds = await Promise.all(ids.map(id => getCategoryHierarchyIds(id)));
-        const flatHierarchyIds = Array.from(new Set(allHierarchyIds.flat()));
-        filter = { ...filter, subCategoryIds: { $in: flatHierarchyIds } };
+        
+        // Resolve all hierarchy IDs using the lineage map instead of repeated DB queries
+        const flatHierarchyIds = new Set<string>();
+        for (const id of ids) {
+            // Check if it's a category/sub/sub-sub ID
+            if (lineageMap.has(id)) {
+                // To get hierarchy for id, we want all IDs that have this id in their lineage
+                for (const [mid, lineage] of lineageMap.entries()) {
+                    if (lineage.includes(id)) {
+                        flatHierarchyIds.add(mid);
+                    }
+                }
+            }
+        }
+        
+        if (flatHierarchyIds.size > 0) {
+            filter = { ...filter, subCategoryIds: { $in: Array.from(flatHierarchyIds) } };
+        }
     }
 
     if (originId) {
@@ -112,13 +130,29 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
         }
     }
 
-    let docs = await collection.find(filter).sort({ createdAt: -1 }).toArray();
+    // Performance Optimization: If we have an originId (relevancy sorting), we fetch a pool of candidates.
+    // Otherwise we do proper DB pagination to avoid fetching huge datasets.
+    let docs: ProductDocument[];
+    if (originId) {
+        // Fetch up to 500 latest matching products as candidates for relevancy scoring.
+        // This prevents memory issues and timeouts on large catalogs.
+        docs = await collection.find(filter)
+            .sort({ createdAt: -1 })
+            .limit(500)
+            .toArray();
+    } else {
+        // Normal paginated request
+        docs = await collection.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+    }
 
     // Relevancy Sorting if originId is provided
-    if (originId && docs.length > 0) {
+    if (originId && docs.length > 0 && lineageMap) {
         try {
             const originProduct = await getProduct(originId);
-            const lineageMap = await getCategoryLineageMap();
 
             // Pre-calculate origin lineages
             const originLineages = originProduct.subCategoryIds
@@ -160,8 +194,8 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
         }
     }
 
-    const total = docs.length;
-    const paginatedDocs = docs.slice(skip, skip + limit);
+    const total = originId ? docs.length : await collection.countDocuments(filter);
+    const paginatedDocs = originId ? docs.slice(skip, skip + limit) : docs;
 
     return {
         products: toProducts(paginatedDocs),
