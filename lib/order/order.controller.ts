@@ -4,8 +4,15 @@ import {
     listOrders,
     getOrderById,
     updateOrderStatusById,
+    requestOrderCancellationByCustomer,
+    reviewOrderCancellationByAdmin,
+    type OrderCancellationActor,
 } from './order.service';
-import { UpdateOrderStatusSchema } from './order.schema';
+import { 
+    UpdateOrderStatusSchema, 
+    RequestOrderCancellationSchema, 
+    ReviewOrderCancellationSchema 
+} from './order.schema';
 
 const VALID_STATUSES: OrderStatus[] = ['pending', 'paid', 'cancelled', 'failed', 'completed'];
 
@@ -61,6 +68,30 @@ export async function handleAdminUpdateOrderStatus(id: string, input: unknown) {
     try {
         const parsed = UpdateOrderStatusSchema.parse(input);
         const result = await updateOrderStatusById(id, parsed.status);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleRequestOrderCancellationByCustomer(
+    id: string,
+    input: unknown,
+    actor: OrderCancellationActor,
+) {
+    try {
+        const parsed = RequestOrderCancellationSchema.parse(input);
+        const result = await requestOrderCancellationByCustomer(id, actor, parsed.reason);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleAdminReviewOrderCancellationRequest(id: string, input: unknown) {
+    try {
+        const parsed = ReviewOrderCancellationSchema.parse(input);
+        const result = await reviewOrderCancellationByAdmin(id, parsed);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);

@@ -2,8 +2,41 @@ import { ObjectId } from '@/lib/db/mongo-client';
 import type { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 import type { InstallationOption } from '@/lib/cart/cart.schema';
 
-export type OrderStatus = 'pending' | 'paid' | 'cancelled' | 'failed' | 'completed';
+export type OrderStatus =
+    | 'pending'
+    | 'paid'
+    | 'cancellation_requested'
+    | 'cancellation_approved'
+    | 'cancelled'
+    | 'refund_failed'
+    | 'failed'
+    | 'completed';
 
+export type OrderCancellationDecision = 'pending' | 'approved' | 'rejected';
+
+export interface OrderCancellationDocument {
+    requestedAt?: Date;
+    approvedAt?: Date;
+    completedAt?: Date;
+    rejectedAt?: Date;
+    requestReason?: string;
+    adminDecision?: OrderCancellationDecision;
+    adminNote?: string;
+    requestedBySessionId?: string;
+    requestedByUserId?: ObjectId;
+}
+
+export interface OrderRefundDocument {
+    status: 'not_requested' | 'pending' | 'partial' | 'succeeded' | 'failed';
+    provider?: 'stripe' | 'tabby';
+    amount?: number;
+    currency?: string;
+    requestedAt?: Date;
+    processedAt?: Date;
+    externalRefundId?: string;
+    failureCode?: string;
+    failureMessage?: string;
+}
 export interface OrderItemDocument {
     productId: string;
     productName: string;
@@ -36,6 +69,8 @@ export interface OrderDocument {
     totalAmount: number;
     currency: string;
     status: OrderStatus;
+    cancellation?: OrderCancellationDocument;
+    refund?: OrderRefundDocument;
     billingDetails?: BillingDetails;
     userId?: ObjectId;
     createdAt: Date;
@@ -74,10 +109,36 @@ export interface Order {
     totalAmount: number;
     currency: string;
     status: OrderStatus;
+    cancellation?: {
+        requestedAt?: string;
+        approvedAt?: string;
+        completedAt?: string;
+        rejectedAt?: string;
+        requestReason?: string;
+        adminDecision?: OrderCancellationDecision;
+        adminNote?: string;
+        requestedBySessionId?: string;
+        requestedByUserId?: string;
+    };
+    refund?: {
+        status: 'not_requested' | 'pending' | 'partial' | 'succeeded' | 'failed';
+        provider?: 'stripe' | 'tabby';
+        amount?: number;
+        currency?: string;
+        requestedAt?: string;
+        processedAt?: string;
+        externalRefundId?: string;
+        failureCode?: string;
+        failureMessage?: string;
+    };
     billingDetails?: BillingDetails;
     userId?: string;
     createdAt: string;
     updatedAt: string;
+}
+
+function toIso(value?: Date): string | undefined {
+    return value ? value.toISOString() : undefined;
 }
 
 export function toOrder(doc: OrderDocument): Order {
@@ -111,6 +172,32 @@ export function toOrder(doc: OrderDocument): Order {
         totalAmount: doc.totalAmount,
         currency: doc.currency,
         status: doc.status,
+        cancellation: doc.cancellation
+            ? {
+                requestedAt: toIso(doc.cancellation.requestedAt),
+                approvedAt: toIso(doc.cancellation.approvedAt),
+                completedAt: toIso(doc.cancellation.completedAt),
+                rejectedAt: toIso(doc.cancellation.rejectedAt),
+                requestReason: doc.cancellation.requestReason,
+                adminDecision: doc.cancellation.adminDecision,
+                adminNote: doc.cancellation.adminNote,
+                requestedBySessionId: doc.cancellation.requestedBySessionId,
+                requestedByUserId: doc.cancellation.requestedByUserId?.toHexString(),
+            }
+            : undefined,
+        refund: doc.refund
+            ? {
+                status: doc.refund.status,
+                provider: doc.refund.provider,
+                amount: doc.refund.amount,
+                currency: doc.refund.currency,
+                requestedAt: toIso(doc.refund.requestedAt),
+                processedAt: toIso(doc.refund.processedAt),
+                externalRefundId: doc.refund.externalRefundId,
+                failureCode: doc.refund.failureCode,
+                failureMessage: doc.refund.failureMessage,
+            }
+            : undefined,
         billingDetails: doc.billingDetails,
         userId: doc.userId?.toHexString(),
         createdAt: doc.createdAt.toISOString(),

@@ -3,10 +3,45 @@ import 'server-only';
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { Order, OrderDocument, toOrder, OrderStatus } from './model/order.model';
+import { buildPendingRefundFromOrder, queueRefundForApprovedCancellation } from '@/lib/refund/refund.service';
 
 const COLLECTION = 'orders';
 
 let indexesEnsured = false;
+
+export interface OrderCancellationActor {
+    sessionId: string;
+    userId?: string;
+}
+
+export interface AdminReviewCancellationInput {
+    decision: 'approve' | 'reject';
+    note?: string;
+}
+
+function parseOrderObjectId(id: string): ObjectId {
+    try {
+        return new ObjectId(id);
+    } catch {
+        throw new AppError(400, 'INVALID_ORDER_ID', { id });
+    }
+}
+
+function parseOptionalObjectId(id?: string): ObjectId | undefined {
+    if (!id) {
+        return undefined;
+    }
+    try {
+        return new ObjectId(id);
+    } catch {
+        return undefined;
+    }
+}
+
+function normalizeOptionalText(value?: string): string | undefined {
+    const trimmed = value?.trim();
+    return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
 
 async function getOrderCollection() {
     const collection = await getCollection<OrderDocument>(COLLECTION);
@@ -90,12 +125,7 @@ export async function getOrdersBySessionId(sessionId: string): Promise<Order[]> 
 }
 
 export async function getOrderById(id: string): Promise<Order> {
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ORDER_ID', { id });
-    }
+    const objectId = parseOrderObjectId(id);
 
     const collection = await getOrderCollection();
     const doc = await collection.findOne({ _id: objectId });
@@ -151,14 +181,26 @@ export async function listOrders(params: {
 }
 
 export async function updateOrderStatusById(id: string, status: OrderStatus): Promise<Order> {
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ORDER_ID', { id });
-    }
+    const objectId = parseOrderObjectId(id);
 
     const collection = await getOrderCollection();
+    const existing = await collection.findOne({ _id: objectId });
+
+    if (!existing) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    if (
+        existing.status === 'cancellation_requested'
+        || existing.status === 'cancellation_approved'
+        || existing.status === 'refund_failed'
+    ) {
+        throw new AppError(409, 'CANCELLATION_STATUS_MANAGED_SEPARATELY', {
+            id,
+            currentStatus: existing.status,
+        });
+    }
+
     const now = new Date();
 
     const result = await collection.findOneAndUpdate(
@@ -170,6 +212,149 @@ export async function updateOrderStatusById(id: string, status: OrderStatus): Pr
             },
         },
         { returnDocument: 'after' }
+    );
+
+    return toOrder(result ?? existing);
+}
+
+function assertOrderOwnership(doc: OrderDocument, actor: OrderCancellationActor, orderId: string): void {
+    if (doc.userId) {
+        if (!actor.userId || doc.userId.toHexString() !== actor.userId) {
+            throw new AppError(403, 'ORDER_ACCESS_DENIED', { id: orderId });
+        }
+        return;
+    }
+
+    if (doc.sessionId !== actor.sessionId) {
+        throw new AppError(403, 'ORDER_ACCESS_DENIED', { id: orderId });
+    }
+}
+
+export async function requestOrderCancellationByCustomer(
+    id: string,
+    actor: OrderCancellationActor,
+    reason: string,
+): Promise<Order> {
+    const objectId = parseOrderObjectId(id);
+    const collection = await getOrderCollection();
+
+    const doc = await collection.findOne({ _id: objectId });
+
+    if (!doc) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    assertOrderOwnership(doc, actor, id);
+
+    if (doc.cancellation?.requestedAt) {
+        throw new AppError(409, 'CANCELLATION_REQUEST_ALREADY_SUBMITTED', { id });
+    }
+
+    if (doc.status !== 'paid') {
+        throw new AppError(409, 'ORDER_NOT_CANCELLABLE', { id, status: doc.status });
+    }
+
+    const now = new Date();
+    const requestedByUserId = parseOptionalObjectId(actor.userId);
+    const cancellation: NonNullable<OrderDocument['cancellation']> = {
+        requestedAt: now,
+        requestReason: reason.trim(),
+        adminDecision: 'pending',
+        requestedBySessionId: actor.sessionId,
+        requestedByUserId,
+    };
+
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: {
+                status: 'cancellation_requested',
+                cancellation,
+                updatedAt: now,
+            },
+        },
+        { returnDocument: 'after' },
+    );
+
+    if (!result) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    return toOrder(result);
+}
+
+export async function reviewOrderCancellationByAdmin(
+    id: string,
+    input: AdminReviewCancellationInput,
+): Promise<Order> {
+    const objectId = parseOrderObjectId(id);
+    const collection = await getOrderCollection();
+    const doc = await collection.findOne({ _id: objectId });
+
+    if (!doc) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    if (!doc.cancellation?.requestedAt) {
+        throw new AppError(409, 'CANCELLATION_REQUEST_NOT_FOUND', { id });
+    }
+
+    if (doc.status !== 'cancellation_requested') {
+        throw new AppError(409, 'ORDER_NOT_IN_CANCELLATION_REVIEW', { id, status: doc.status });
+    }
+
+    const now = new Date();
+    const adminNote = normalizeOptionalText(input.note);
+    const existingCancellation = doc.cancellation ?? {};
+    const cancellation: NonNullable<OrderDocument['cancellation']> = {
+        ...existingCancellation,
+        adminDecision: input.decision === 'approve' ? 'approved' : 'rejected',
+    };
+
+    if (adminNote) {
+        cancellation.adminNote = adminNote;
+    }
+
+    if (input.decision === 'approve') {
+        cancellation.approvedAt = now;
+    } else {
+        cancellation.rejectedAt = now;
+    }
+
+    const nextStatus: OrderStatus = input.decision === 'approve' ? 'cancellation_approved' : 'paid';
+    const updatePayload: Partial<OrderDocument> = {
+        status: nextStatus,
+        cancellation,
+        updatedAt: now,
+    };
+
+    if (input.decision === 'approve') {
+        const order = toOrder(doc);
+        const pendingRefund = buildPendingRefundFromOrder(order);
+        const queuedRefund = await queueRefundForApprovedCancellation(order);
+
+        if (queuedRefund.externalRefundId) {
+            pendingRefund.externalRefundId = queuedRefund.externalRefundId;
+        }
+        if (queuedRefund.requestedAt) {
+            pendingRefund.requestedAt = queuedRefund.requestedAt;
+        }
+        if (typeof queuedRefund.amount === 'number') {
+            pendingRefund.amount = queuedRefund.amount;
+        }
+        if (queuedRefund.currency) {
+            pendingRefund.currency = queuedRefund.currency;
+        }
+
+        updatePayload.refund = pendingRefund;
+    }
+
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: updatePayload,
+        },
+        { returnDocument: 'after' },
     );
 
     if (!result) {

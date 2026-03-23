@@ -2,6 +2,14 @@ import { getOrCreateStorefrontSession } from '@/app/actions/session';
 import { getOrdersBySessionId } from '@/lib/order/order.service';
 import Link from 'next/link';
 import Image from 'next/image';
+import { OrderCancellationRequestButton } from './components/OrderCancellationRequestButton';
+
+function formatStatus(status: string) {
+    return status
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+}
 
 export default async function OrdersPage() {
     const session = await getOrCreateStorefrontSession();
@@ -40,14 +48,19 @@ export default async function OrdersPage() {
                     </div>
                 ) : (
                     <div className="space-y-8">
-                        {orders.map((order) => (
-                            <div
-                                key={order.id}
-                                className="bg-white border text-neutral-600 border-gray-200 rounded-lg overflow-hidden"
-                            >
-                                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">
+                        {orders.map((order) => {
+                            const hasCancellationRequest = Boolean(
+                                order.cancellation?.requestedAt,
+                            );
+                            
+                            return (
+                                <div
+                                    key={order.id}
+                                    className="bg-white border text-neutral-600 border-gray-200 rounded-lg overflow-hidden"
+                                >
+                                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">
                                             Order #{order.id.slice(-6).toUpperCase()}
                                         </p>
                                         <p className="text-sm text-gray-500">
@@ -58,11 +71,14 @@ export default async function OrdersPage() {
                                         <span
                                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize
                         ${order.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                        order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                            'bg-gray-100 text-gray-800'}`}
+                                order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                order.status === 'cancellation_requested' ? 'bg-amber-100 text-amber-800' :
+                                order.status === 'cancellation_approved' ? 'bg-blue-100 text-blue-800' :
+                                order.status === 'refund_failed' ? 'bg-red-100 text-red-800' :
+                                order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'}`}
                                         >
-                                            {order.status}
+                                            {formatStatus(order.status)}
                                         </span>
                                         <p className="text-sm font-medium text-gray-900">
                                             {order.totalAmount.toLocaleString('en-US', {
@@ -117,9 +133,42 @@ export default async function OrdersPage() {
                                             ))}
                                         </ul>
                                     </div>
+
+                                    <div className="mt-4 border-t border-gray-200 pt-4">
+                                        {order.status === 'paid' && !hasCancellationRequest && (
+                                            <OrderCancellationRequestButton orderId={order.id} />
+                                        )}
+
+                                        {order.status === 'cancellation_requested' && (
+                                            <p className="text-xs text-amber-700">
+                                                Cancellation requested. Waiting for admin review.
+                                            </p>
+                                        )}
+
+                                        {order.status === 'cancellation_approved' && (
+                                            <p className="text-xs text-blue-700">
+                                                Cancellation approved. Final completion will be updated
+                                                automatically after refund confirmation.
+                                            </p>
+                                        )}
+
+                                        {order.status === 'refund_failed' && (
+                                            <p className="text-xs text-red-700">
+                                                Refund failed at the payment provider. Please contact
+                                                support for assistance.
+                                            </p>
+                                        )}
+
+                                        {order.cancellation?.adminDecision === 'rejected' && (
+                                            <p className="text-xs text-red-700">
+                                                Your cancellation request was rejected.
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        ))}
+                        );
+                        })}
                     </div>
                 )}
             </div>

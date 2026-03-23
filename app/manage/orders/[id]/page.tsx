@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 import type { Order } from '@/lib/order/model/order.model';
 import { OrderStatusUpdater } from '../components/OrderStatusUpdater';
+import { OrderCancellationReview } from '../components/OrderCancellationReview';
 
 interface OrderDetailPageProps {
     params: Promise<{ id: string }>;
@@ -70,8 +71,8 @@ function formatDate(iso: string) {
     }
 }
 
-function formatStatus(status: Order['status']) {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+function formatStatus(status: string) {
+    return status.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
 }
 
 function getInstallationOptionLabel(option: string) {
@@ -212,6 +213,137 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                 </div>
                             </div>
                         </Card>
+
+                        {(order.cancellation || order.status === "cancellation_requested") && (
+                            <Card>
+                                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
+                                    Cancellation
+                                </h2>
+                                {order.cancellation ? (
+                                    <div className="space-y-3 text-sm">
+                                        <p className="text-[var(--text-secondary)]">
+                                            Decision:{" "}
+                                            <span className="font-semibold text-[var(--text-primary)]">
+                                                {formatStatus(
+                                                    order.cancellation.adminDecision ?? "pending",
+                                                )}
+                                            </span>
+                                        </p>
+                                        {order.cancellation.requestReason && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Request reason:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {order.cancellation.requestReason}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.cancellation.requestedAt && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Requested:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {formatDate(order.cancellation.requestedAt)}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.cancellation.approvedAt && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Approved:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {formatDate(order.cancellation.approvedAt)}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.cancellation.rejectedAt && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Rejected:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {formatDate(order.cancellation.rejectedAt)}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.cancellation.completedAt && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Completed:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {formatDate(order.cancellation.completedAt)}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.cancellation.adminNote && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Admin note:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {order.cancellation.adminNote}
+                                                </span>
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : null}
+
+                                {order.status === "cancellation_requested" && (
+                                    <div className="mt-5 border-t border-[var(--border-subtle)] pt-5">
+                                        <OrderCancellationReview orderId={order.id} />
+                                    </div>
+                                )}
+                            </Card>
+                        )}
+
+                        {order.refund && (
+                            <Card>
+                                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
+                                    Refund
+                                </h2>
+                                <div className="space-y-2 text-sm text-[var(--text-secondary)]">
+                                    <p>
+                                        Status:{" "}
+                                        <span className="font-semibold text-[var(--text-primary)]">
+                                            {formatStatus(order.refund.status)}
+                                        </span>
+                                    </p>
+                                    {order.refund.provider && (
+                                        <p>
+                                            Provider:{" "}
+                                            <span className="font-semibold text-[var(--text-primary)] capitalize">
+                                                {order.refund.provider}
+                                            </span>
+                                        </p>
+                                    )}
+                                    {typeof order.refund.amount === "number" && (
+                                        <p>
+                                            Amount:{" "}
+                                            <span className="font-semibold text-[var(--text-primary)]">
+                                                {order.refund.amount.toFixed(2)}{" "}
+                                                {(order.refund.currency ?? order.currency).toUpperCase()}
+                                            </span>
+                                        </p>
+                                    )}
+                                    {order.refund.requestedAt && (
+                                        <p>
+                                            Requested:{" "}
+                                            <span className="text-[var(--text-primary)]">
+                                                {formatDate(order.refund.requestedAt)}
+                                            </span>
+                                        </p>
+                                    )}
+                                    {order.refund.processedAt && (
+                                        <p>
+                                            Processed:{" "}
+                                            <span className="text-[var(--text-primary)]">
+                                                {formatDate(order.refund.processedAt)}
+                                            </span>
+                                        </p>
+                                    )}
+                                    {order.refund.failureMessage && (
+                                        <p>
+                                            Failure:{" "}
+                                            <span className="text-[var(--text-primary)]">
+                                                {order.refund.failureMessage}
+                                            </span>
+                                        </p>
+                                    )}
+                                </div>
+                            </Card>
+                        )}
 
                         <Card>
                             <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
