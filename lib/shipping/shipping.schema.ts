@@ -38,14 +38,25 @@ export const SmsaShipmentResponseSchema = z.object({
 });
 
 export const SmsaTrackingScanSchema = z.object({
-    Date: z.string(),
-    Details: z.string(),
-    Location: z.string(),
+    ReceivedBy: z.string().optional(),
+    City: z.string(),
+    ScanType: z.string(),
+    ScanDescription: z.string(),
+    ScanDateTime: z.string(),
+    ScanTimeZone: z.string().optional(),
 });
 
 export const SmsaTrackingResponseSchema = z.object({
     AWB: z.string(),
     Reference: z.string().optional(),
+    Pieces: z.number().optional(),
+    CODAmount: z.number().optional(),
+    ContentDesc: z.string().optional(),
+    RecipientName: z.string().optional(),
+    OriginCity: z.string().optional(),
+    OriginCountry: z.string().optional(),
+    DesinationCity: z.string().optional(),
+    DesinationCountry: z.string().optional(),
     isDelivered: z.boolean(),
     Scans: z.array(SmsaTrackingScanSchema).optional(),
 });

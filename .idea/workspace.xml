@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment="feat: shipment v1">
-      <change beforePath="$PROJECT_DIR$/app/manage/orders/components/ProceedToShippingButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/manage/orders/components/ProceedToShippingButton.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/product/product.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/shipping/shipping.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/shipping/shipping.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/shipping/shipping.schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/shipping/shipping.schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/shipping/shipping.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/shipping/shipping.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/unit/product.service.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/unit/product.service.test.ts" afterDir="false" />
+    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment=".">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(store)/orders/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(store)/orders/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/storefront/orders/[id]/tracking/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/storefront/orders/[id]/tracking/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/unit/shipping.service.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/unit/shipping.service.test.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -103,7 +101,7 @@
       <updated>1771513673226</updated>
       <workItem from="1771513674270" duration="632000" />
       <workItem from="1771556521836" duration="4081000" />
-      <workItem from="1774433657770" duration="1678000" />
+      <workItem from="1774433657770" duration="3363000" />
     </task>
     <task id="LOCAL-00001" summary="feat: shipment v1">
       <option name="closed" value="true" />
@@ -113,7 +111,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774434627668</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary=".">
+      <option name="closed" value="true" />
+      <created>1774437212005</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1774437212005</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -121,7 +127,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat: shipment v1" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: shipment v1" />
+    <MESSAGE value="." />
+    <option name="LAST_COMMIT_MESSAGE" value="." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -131,6 +138,12 @@
           <line>13</line>
           <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/app/(store)/orders/components/OrderShipmentTracking.tsx</url>
+          <line>43</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

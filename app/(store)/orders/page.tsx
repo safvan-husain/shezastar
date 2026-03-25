@@ -3,6 +3,7 @@ import { getOrdersBySessionId } from '@/lib/order/order.service';
 import Link from 'next/link';
 import Image from 'next/image';
 import { OrderCancellationRequestButton } from './components/OrderCancellationRequestButton';
+import { OrderShipmentTracking } from './components/OrderShipmentTracking';
 
 function formatStatus(status: string) {
     return status
@@ -135,6 +136,14 @@ export default async function OrdersPage() {
                                     </div>
 
                                     <div className="mt-4 border-t border-gray-200 pt-4">
+                                        {order.shipping?.awb && (
+                                            <OrderShipmentTracking
+                                                orderId={order.id}
+                                                awb={order.shipping.awb}
+                                                initialStatus={order.shipping.status}
+                                            />
+                                        )}
+
                                         {order.status === 'paid' && !hasCancellationRequest && (
                                             <OrderCancellationRequestButton orderId={order.id} />
                                         )}

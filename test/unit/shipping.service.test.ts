@@ -39,9 +39,9 @@ describe('shipping.service country normalization', () => {
                 phone: '+971500000000',
                 zip: '00000',
             })
-        ).rejects.toMatchObject<AppError>({
+        ).rejects.toMatchObject({
             status: 400,
             code: 'INVALID_SMSA_COUNTRY_CODE',
-        });
+        } as Partial<AppError>);
     });
 });
