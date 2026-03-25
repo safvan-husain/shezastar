@@ -3,7 +3,8 @@ import { AppError } from '@/lib/errors/app-error';
 import { Order } from '@/lib/order/model/order.model';
 import { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 import { SmsaShipmentAddress, CreateShipmentInput, SmsaShipmentResponse, SmsaTrackingResponse } from './shipping.schema';
-import { getProduct } from '@/lib/product/product.service';
+import { getProduct, updateProductWeight } from '@/lib/product/product.service';
+import { getCountryPricings } from '@/lib/app-settings/app-settings.service';
 
 const SMSA_API_KEY = process.env.SMSA_API_KEY;
 const SMSA_BASE_URL = process.env.SMSA_BASE_URL?.replace(/\/$/, '');
@@ -18,7 +19,65 @@ function getHeaders() {
     };
 }
 
-export function mapBillingToConsigneeAddress(billing: BillingDetails): SmsaShipmentAddress {
+const SMSA_COUNTRY_CODE_ALIASES: Record<string, string> = {
+    AE: 'AE',
+    UAE: 'AE',
+    'UNITED ARAB EMIRATES': 'AE',
+    SA: 'SA',
+    KSA: 'SA',
+    'SAUDI ARABIA': 'SA',
+    KW: 'KW',
+    KUWAIT: 'KW',
+    OM: 'OM',
+    OMAN: 'OM',
+    QA: 'QA',
+    QATAR: 'QA',
+    BH: 'BH',
+    BAHRAIN: 'BH',
+    US: 'US',
+    USA: 'US',
+    'UNITED STATES': 'US',
+    'UNITED STATES OF AMERICA': 'US',
+};
+
+function normalizeCountryToken(value: string): string {
+    return value.trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
+async function resolveSmsaCountryCode(rawCountry: string): Promise<string> {
+    const normalized = normalizeCountryToken(rawCountry);
+
+    if (/^[A-Z]{2}$/.test(normalized)) {
+        return normalized;
+    }
+
+    const fromAlias = SMSA_COUNTRY_CODE_ALIASES[normalized];
+    if (fromAlias) {
+        return fromAlias;
+    }
+
+    const countryPricings = await getCountryPricings();
+    for (const country of countryPricings) {
+        const codeToken = normalizeCountryToken(country.code);
+        const nameToken = normalizeCountryToken(country.name);
+
+        if (normalized === codeToken || normalized === nameToken) {
+            const resolved = SMSA_COUNTRY_CODE_ALIASES[codeToken]
+                || SMSA_COUNTRY_CODE_ALIASES[nameToken]
+                || (/^[A-Z]{2}$/.test(codeToken) ? codeToken : undefined);
+            if (resolved) {
+                return resolved;
+            }
+        }
+    }
+
+    throw new AppError(400, 'INVALID_SMSA_COUNTRY_CODE', {
+        message: 'Billing country cannot be mapped to an ISO-2 code accepted by SMSA.',
+        country: rawCountry,
+    });
+}
+
+export async function mapBillingToConsigneeAddress(billing: BillingDetails): Promise<SmsaShipmentAddress> {
     const name = `${billing.firstName} ${billing.lastName}`.trim();
     // ContactName length validation: 5-150.
     const validName = name.length < 5 ? name.padEnd(5, ' ') : name.slice(0, 150);
@@ -26,12 +85,13 @@ export function mapBillingToConsigneeAddress(billing: BillingDetails): SmsaShipm
     const address1 = billing.streetAddress1;
     // AddressLine1 length validation: 10-100.
     const validAddress1 = address1.length < 10 ? address1.padEnd(10, ' ') : address1.slice(0, 100);
+    const countryCode = await resolveSmsaCountryCode(billing.country);
 
     return {
         AddressLine1: validAddress1,
         AddressLine2: billing.streetAddress2?.slice(0, 100),
         City: billing.city.slice(0, 50),
-        Country: billing.country,
+        Country: countryCode,
         ContactName: validName,
         ContactPhoneNumber: billing.phone,
         PostalCode: billing.zip,
@@ -53,6 +113,12 @@ export function getPlatformShipperAddress(): SmsaShipmentAddress {
         ContactPhoneNumber: process.env.SMSA_SHIPPER_PHONE || '000000000',
         PostalCode: process.env.SMSA_SHIPPER_POSTAL_CODE,
     };
+}
+
+export interface MissingWeightProduct {
+    productId: string;
+    productName: string;
+    currentWeight?: number;
 }
 
 /**
@@ -105,6 +171,60 @@ export async function validateOrderWeights(order: Order, overrides?: Record<stri
     return { totalWeight, contents: contentDescription || 'Sheza Star Products' };
 }
 
+export async function getOrderMissingWeightProducts(order: Order): Promise<MissingWeightProduct[]> {
+    const missingProducts: MissingWeightProduct[] = [];
+    const productIds = Array.from(new Set(order.items.map(item => item.productId)));
+
+    for (const productId of productIds) {
+        const product = await getProduct(productId);
+        const weight = product.weight;
+
+        if (typeof weight !== 'number' || weight <= 0) {
+            missingProducts.push({
+                productId,
+                productName: product.subtitle || product.name,
+                currentWeight: typeof weight === 'number' ? weight : undefined,
+            });
+        }
+    }
+
+    return missingProducts;
+}
+
+export async function updateOrderProductWeights(
+    order: Order,
+    weights: Record<string, number>
+): Promise<Array<{ productId: string; productName: string; weight: number }>> {
+    const productIdsInOrder = new Set(order.items.map(item => item.productId));
+    const requestedProductIds = Object.keys(weights);
+
+    if (requestedProductIds.length === 0) {
+        throw new AppError(400, 'NO_WEIGHTS_PROVIDED', {
+            message: 'No product weights were provided.',
+        });
+    }
+
+    const invalidProductIds = requestedProductIds.filter((productId) => !productIdsInOrder.has(productId));
+    if (invalidProductIds.length > 0) {
+        throw new AppError(400, 'INVALID_ORDER_PRODUCTS', {
+            message: 'Some products do not belong to this order.',
+            productIds: invalidProductIds,
+        });
+    }
+
+    const updatedProducts: Array<{ productId: string; productName: string; weight: number }> = [];
+    for (const productId of requestedProductIds) {
+        const updated = await updateProductWeight(productId, weights[productId]);
+        updatedProducts.push({
+            productId,
+            productName: updated.subtitle || updated.name,
+            weight: updated.weight ?? weights[productId],
+        });
+    }
+
+    return updatedProducts;
+}
+
 export async function createB2cShipment(order: Order, input: CreateShipmentInput): Promise<SmsaShipmentResponse> {
     if (!SMSA_BASE_URL) {
         throw new AppError(500, 'SMSA_CONFIG_MISSING', { message: 'SMSA_BASE_URL is not configured.' });
@@ -120,7 +240,7 @@ export async function createB2cShipment(order: Order, input: CreateShipmentInput
 
     const payload = {
         CODAmount: 0,
-        ConsigneeAddress: mapBillingToConsigneeAddress(order.billingDetails),
+        ConsigneeAddress: await mapBillingToConsigneeAddress(order.billingDetails),
         ContentDescription: contents,
         DeclaredValue: order.totalAmount, // or subtotal
         OrderNumber: order.id,

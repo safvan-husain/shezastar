@@ -34,6 +34,7 @@ describe('Product Service Unit Tests', () => {
             subCategoryIds: [],
             variantStock: [],
             specifications: [{ title: 'Highlights', items: ['Fast charging', 'Compact design'] }],
+            weight: 1.25,
         };
 
         const result = await createProduct(input);
@@ -41,6 +42,7 @@ describe('Product Service Unit Tests', () => {
         expect(result.basePrice).toBe(input.basePrice);
         expect(result.id).toBeDefined();
         expect(result.specifications).toEqual(input.specifications);
+        expect(result.weight).toBe(1.25);
         createdProductId = result.id;
     });
 
@@ -75,12 +77,14 @@ describe('Product Service Unit Tests', () => {
             name: 'Updated Name',
             basePrice: 200,
             specifications: [{ title: 'Highlights', items: ['Updated highlight'] }],
+            weight: 2.5,
         };
 
         const result = await updateProduct(createdProductId, update);
         expect(result.name).toBe(update.name);
         expect(result.basePrice).toBe(update.basePrice);
         expect(result.specifications).toEqual(update.specifications);
+        expect(result.weight).toBe(2.5);
     });
 
     it('should delete product', async () => {

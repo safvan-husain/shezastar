@@ -1,25 +1,39 @@
 import { catchError, AppError } from '@/lib/errors/app-error';
 import { getOrderById, updateOrderStatusById, setOrderShipping } from '@/lib/order/order.service';
-import { createB2cShipment, getShipmentLabel, trackShipment } from './shipping.service';
-import { CreateShipmentInputSchema, CreateShipmentInput } from './shipping.schema';
+import {
+    createB2cShipment,
+    getShipmentLabel,
+    trackShipment,
+    getOrderMissingWeightProducts,
+    updateOrderProductWeights,
+} from './shipping.service';
+import {
+    CreateShipmentInputSchema,
+    CreateShipmentInput,
+    UpdateShipmentWeightsInputSchema,
+    UpdateShipmentWeightsInput,
+} from './shipping.schema';
+
+function assertShipmentEligible(order: Awaited<ReturnType<typeof getOrderById>>) {
+    if (order.status !== 'paid') {
+        throw new AppError(400, 'INVALID_ORDER_STATUS', {
+            message: 'Shipment can only be created for paid orders.',
+            orderStatus: order.status,
+        });
+    }
+
+    if (order.shipping?.awb) {
+        throw new AppError(400, 'SHIPMENT_ALREADY_EXISTS', {
+            message: 'A shipment already exists for this order.',
+            awb: order.shipping.awb
+        });
+    }
+}
 
 export async function handleCreateShipment(orderId: string, input: unknown) {
     try {
         const order = await getOrderById(orderId);
-
-        if (order.status !== 'paid') {
-            throw new AppError(400, 'INVALID_ORDER_STATUS', { 
-                message: 'Shipment can only be created for paid orders.',
-                orderStatus: order.status
-            });
-        }
-
-        if (order.shipping?.awb) {
-            throw new AppError(400, 'SHIPMENT_ALREADY_EXISTS', { 
-                message: 'A shipment already exists for this order.',
-                awb: order.shipping.awb
-            });
-        }
+        assertShipmentEligible(order);
 
         const parsed: CreateShipmentInput = CreateShipmentInputSchema.parse(input);
 
@@ -40,6 +54,43 @@ export async function handleCreateShipment(orderId: string, input: unknown) {
 
         return { status: 200, body: tracking.shipping };
 
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleShipmentWeightCheck(orderId: string) {
+    try {
+        const order = await getOrderById(orderId);
+        assertShipmentEligible(order);
+
+        const missingProducts = await getOrderMissingWeightProducts(order);
+        return {
+            status: 200,
+            body: {
+                canProceed: missingProducts.length === 0,
+                missingProducts,
+            },
+        };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleUpdateShipmentWeights(orderId: string, input: unknown) {
+    try {
+        const order = await getOrderById(orderId);
+        assertShipmentEligible(order);
+
+        const parsed: UpdateShipmentWeightsInput = UpdateShipmentWeightsInputSchema.parse(input);
+        const updatedProducts = await updateOrderProductWeights(order, parsed.weights);
+
+        return {
+            status: 200,
+            body: {
+                updatedProducts,
+            },
+        };
     } catch (err) {
         return catchError(err);
     }

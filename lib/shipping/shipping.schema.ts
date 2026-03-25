@@ -14,6 +14,19 @@ export const CreateShipmentInputSchema = z.object({
     weightOverrides: z.record(z.string(), z.number().min(0)).optional(), 
 });
 
+export const UpdateShipmentWeightsInputSchema = z.object({
+    weights: z.record(z.string(), z.number().positive()),
+});
+
+export const ShipmentWeightCheckResponseSchema = z.object({
+    canProceed: z.boolean(),
+    missingProducts: z.array(z.object({
+        productId: z.string(),
+        productName: z.string(),
+        currentWeight: z.number().optional(),
+    })),
+});
+
 export const SmsaShipmentResponseSchema = z.object({
     sawb: z.string(),
     createDate: z.string(),
@@ -39,5 +52,7 @@ export const SmsaTrackingResponseSchema = z.object({
 
 export type SmsaShipmentAddress = z.infer<typeof SmsaShipmentAddressSchema>;
 export type CreateShipmentInput = z.infer<typeof CreateShipmentInputSchema>;
+export type UpdateShipmentWeightsInput = z.infer<typeof UpdateShipmentWeightsInputSchema>;
 export type SmsaShipmentResponse = z.infer<typeof SmsaShipmentResponseSchema>;
 export type SmsaTrackingResponse = z.infer<typeof SmsaTrackingResponseSchema>;
+export type ShipmentWeightCheckResponse = z.infer<typeof ShipmentWeightCheckResponseSchema>;

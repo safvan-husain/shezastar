@@ -4,15 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/manage/orders/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/manage/orders/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/manage/orders/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/manage/orders/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/order/model/order.model.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/order/model/order.model.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/order/order.schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/order/order.schema.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/order/order.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/order/order.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/product/model/product.model.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/product/model/product.model.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/product/product.schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/product/product.schema.ts" afterDir="false" />
+    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment="feat: shipment v1">
+      <change beforePath="$PROJECT_DIR$/app/manage/orders/components/ProceedToShippingButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/manage/orders/components/ProceedToShippingButton.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/product/product.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/shipping/shipping.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/shipping/shipping.controller.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/shipping/shipping.schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/shipping/shipping.schema.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/shipping/shipping.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/shipping/shipping.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/unit/product.service.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/unit/product.service.test.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,6 +68,7 @@
     "nodejs_package_manager_path": "npm",
     "npm.Next.js: server-side.executor": "Debug",
     "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "/Users/safvanhusain/code/bliz/shezastar/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -104,11 +103,36 @@
       <updated>1771513673226</updated>
       <workItem from="1771513674270" duration="632000" />
       <workItem from="1771556521836" duration="4081000" />
-      <workItem from="1774433657770" duration="799000" />
+      <workItem from="1774433657770" duration="1678000" />
     </task>
+    <task id="LOCAL-00001" summary="feat: shipment v1">
+      <option name="closed" value="true" />
+      <created>1774434627668</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1774434627668</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="feat: shipment v1" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: shipment v1" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/route.ts</url>
+          <line>13</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

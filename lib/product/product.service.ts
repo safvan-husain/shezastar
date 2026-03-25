@@ -41,6 +41,7 @@ export async function createProduct(input: CreateProductInput) {
         installationService: input.installationService,
         variantStock: input.variantStock || [],
         specifications: input.specifications || [],
+        weight: input.weight,
         brandId: input.brandId,
         createdAt: now,
         updatedAt: now,
@@ -256,6 +257,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     if (input.subCategoryIds !== undefined) updateDoc.subCategoryIds = input.subCategoryIds;
     if (input.installationService !== undefined) updateDoc.installationService = input.installationService;
     if (input.brandId !== undefined) updateDoc.brandId = input.brandId;
+    if (input.weight !== undefined) updateDoc.weight = input.weight;
 
     await collection.updateOne({ _id: objectId }, { $set: updateDoc });
 
@@ -265,6 +267,29 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     }
 
     return toProduct(updated);
+}
+
+export async function updateProductWeight(id: string, weight: number) {
+    const collection = await getCollection<ProductDocument>(COLLECTION);
+
+    let objectId: ObjectId;
+    try {
+        objectId = new ObjectId(id);
+    } catch {
+        throw new AppError(400, 'INVALID_ID');
+    }
+
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        { $set: { weight, updatedAt: new Date() } },
+        { returnDocument: 'after' }
+    );
+
+    if (!result) {
+        throw new AppError(404, 'PRODUCT_NOT_FOUND');
+    }
+
+    return toProduct(result);
 }
 
 export async function deleteProduct(id: string) {

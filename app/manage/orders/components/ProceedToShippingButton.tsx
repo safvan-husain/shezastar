@@ -12,6 +12,12 @@ interface ProceedToShippingButtonProps {
 interface MissingWeightProduct {
     productId: string;
     productName: string;
+    currentWeight?: number;
+}
+
+interface WeightCheckResponse {
+    canProceed: boolean;
+    missingProducts: MissingWeightProduct[];
 }
 
 export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps) {
@@ -23,13 +29,32 @@ export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps)
     const [missingProducts, setMissingProducts] = useState<MissingWeightProduct[]>([]);
     const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
 
-    // Only show for paid orders that don't have a shipment yet
     if (order.status !== 'paid' || order.shipping?.awb) {
         return null;
     }
 
-    async function callCreateShipment(weightOverrides?: Record<string, number>) {
-        setIsLoading(true);
+    function openWeightModal(products: MissingWeightProduct[]) {
+        setMissingProducts(products);
+        setWeightInputs(
+            Object.fromEntries(
+                products.map((product) => [
+                    product.productId,
+                    typeof product.currentWeight === 'number' && product.currentWeight > 0
+                        ? String(product.currentWeight)
+                        : '',
+                ])
+            )
+        );
+        setShowWeightModal(true);
+    }
+
+    function closeWeightModal() {
+        setShowWeightModal(false);
+        setMissingProducts([]);
+        setWeightInputs({});
+    }
+
+    async function createShipmentRequest(weightOverrides?: Record<string, number>): Promise<boolean> {
         const url = `/api/admin/orders/${order.id}/shipment`;
 
         try {
@@ -40,64 +65,166 @@ export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps)
             });
 
             let body: any = null;
-            try { body = await res.json(); } catch { body = null; }
+            try {
+                body = await res.json();
+            } catch {
+                body = null;
+            }
 
             if (!res.ok) {
-                // Missing weights — prompt the admin to enter them
                 if (res.status === 400 && body?.code === 'MISSING_PRODUCT_WEIGHTS') {
-                    const missingIds: string[] = body?.context?.productIds ?? [];
-                    const productList: MissingWeightProduct[] = missingIds.map(pid => ({
-                        productId: pid,
-                        productName: order.items.find(i => i.productId === pid)?.productName ?? pid,
+                    const missingIds: string[] = body?.details?.productIds ?? body?.context?.productIds ?? [];
+                    const productList: MissingWeightProduct[] = missingIds.map((productId) => ({
+                        productId,
+                        productName:
+                            order.items.find((item) => item.productId === productId)?.productName ?? productId,
                     }));
-                    setMissingProducts(productList);
-                    setWeightInputs(Object.fromEntries(missingIds.map(id => [id, ''])));
-                    setShowWeightModal(true);
-                    return;
+                    openWeightModal(productList);
+                    return false;
                 }
 
-                showToast(
-                    body?.message ?? body?.error ?? 'Failed to create shipment',
-                    'error',
-                    { status: res.status, body, url, method: 'POST' }
-                );
-                return;
+                showToast(body?.message ?? body?.error ?? 'Failed to create shipment', 'error', {
+                    status: res.status,
+                    body,
+                    url,
+                    method: 'POST',
+                });
+                return false;
             }
 
             showToast('Shipment created successfully', 'success', {
-                status: res.status, body, url, method: 'POST',
+                status: res.status,
+                body,
+                url,
+                method: 'POST',
             });
-            setShowWeightModal(false);
+            closeWeightModal();
             router.refresh();
+            return true;
         } catch (error: any) {
             showToast(error?.message ?? 'Failed to create shipment', 'error', {
                 body: error instanceof Error ? { stack: error.stack } : { error },
                 url,
                 method: 'POST',
             });
+            return false;
+        }
+    }
+
+    async function handleProceedToShipping() {
+        const url = `/api/admin/orders/${order.id}/shipment/weight-check`;
+        setIsLoading(true);
+
+        try {
+            const res = await fetch(url, { method: 'GET' });
+
+            let body: any = null;
+            try {
+                body = await res.json();
+            } catch {
+                body = null;
+            }
+
+            if (!res.ok) {
+                showToast(body?.message ?? body?.error ?? 'Failed to verify product weights', 'error', {
+                    status: res.status,
+                    body,
+                    url,
+                    method: 'GET',
+                });
+                return;
+            }
+
+            const data = body as WeightCheckResponse;
+            if (data.canProceed) {
+                await createShipmentRequest();
+                return;
+            }
+
+            const products = (data.missingProducts ?? []).map((product) => ({
+                productId: product.productId,
+                productName:
+                    product.productName ||
+                    order.items.find((item) => item.productId === product.productId)?.productName ||
+                    product.productId,
+                currentWeight: product.currentWeight,
+            }));
+            openWeightModal(products);
+        } catch (error: any) {
+            showToast(error?.message ?? 'Failed to verify product weights', 'error', {
+                body: error instanceof Error ? { stack: error.stack } : { error },
+                url,
+                method: 'GET',
+            });
         } finally {
             setIsLoading(false);
         }
     }
 
-    function handleWeightSubmit() {
-        const parsed: Record<string, number> = {};
-        for (const [pid, raw] of Object.entries(weightInputs)) {
-            const val = parseFloat(raw);
-            if (isNaN(val) || val <= 0) {
-                showToast(`Please enter a valid weight for ${missingProducts.find(p => p.productId === pid)?.productName ?? pid}`, 'error', {});
+    async function handleWeightSubmit() {
+        const parsedWeights: Record<string, number> = {};
+        for (const [productId, rawWeight] of Object.entries(weightInputs)) {
+            const weight = parseFloat(rawWeight);
+            if (Number.isNaN(weight) || weight <= 0) {
+                const productName =
+                    missingProducts.find((product) => product.productId === productId)?.productName ?? productId;
+                showToast(`Please enter a valid weight for ${productName}`, 'error');
                 return;
             }
-            parsed[pid] = val;
+            parsedWeights[productId] = weight;
         }
-        callCreateShipment(parsed);
+
+        const url = `/api/admin/orders/${order.id}/shipment/weights`;
+        setIsLoading(true);
+
+        try {
+            const res = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weights: parsedWeights }),
+            });
+
+            let body: any = null;
+            try {
+                body = await res.json();
+            } catch {
+                body = null;
+            }
+
+            if (!res.ok) {
+                showToast(body?.message ?? body?.error ?? 'Failed to update product weights', 'error', {
+                    status: res.status,
+                    body,
+                    url,
+                    method: 'PATCH',
+                });
+                return;
+            }
+
+            showToast('Product weights updated', 'success', {
+                status: res.status,
+                body,
+                url,
+                method: 'PATCH',
+            });
+
+            await createShipmentRequest();
+        } catch (error: any) {
+            showToast(error?.message ?? 'Failed to update product weights', 'error', {
+                body: error instanceof Error ? { stack: error.stack } : { error },
+                url,
+                method: 'PATCH',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
         <>
             <button
                 type="button"
-                onClick={() => callCreateShipment()}
+                onClick={handleProceedToShipping}
                 disabled={isLoading}
                 className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
@@ -112,15 +239,18 @@ export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps)
                 ) : (
                     <>
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6m16 0l-8 5-8-5m16 0v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4" />
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6m16 0l-8 5-8-5m16 0v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4"
+                            />
                         </svg>
                         Proceed to Shipping
                     </>
                 )}
             </button>
 
-            {/* Weight Override Modal */}
             {showWeightModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="w-full max-w-md rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] shadow-[var(--shadow-md)] p-6">
@@ -128,14 +258,14 @@ export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps)
                             Missing Product Weights
                         </h2>
                         <p className="text-sm text-[var(--text-secondary)] mb-5">
-                            The following products don't have a weight set. Enter the weight in KG for each before creating the shipment.
+                            The following products don&apos;t have a weight set. Enter the weight in KG for each before creating the shipment.
                         </p>
 
                         <div className="space-y-4">
-                            {missingProducts.map(p => (
-                                <div key={p.productId}>
+                            {missingProducts.map((product) => (
+                                <div key={product.productId}>
                                     <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
-                                        {p.productName}
+                                        {product.productName}
                                     </label>
                                     <div className="flex items-center gap-2">
                                         <input
@@ -143,9 +273,12 @@ export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps)
                                             min="0.01"
                                             step="0.01"
                                             placeholder="0.00"
-                                            value={weightInputs[p.productId] ?? ''}
-                                            onChange={e =>
-                                                setWeightInputs(prev => ({ ...prev, [p.productId]: e.target.value }))
+                                            value={weightInputs[product.productId] ?? ''}
+                                            onChange={(event) =>
+                                                setWeightInputs((prev) => ({
+                                                    ...prev,
+                                                    [product.productId]: event.target.value,
+                                                }))
                                             }
                                             className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                                         />
@@ -158,7 +291,7 @@ export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps)
                         <div className="mt-6 flex items-center justify-end gap-3">
                             <button
                                 type="button"
-                                onClick={() => { setShowWeightModal(false); setMissingProducts([]); }}
+                                onClick={closeWeightModal}
                                 disabled={isLoading}
                                 className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] disabled:opacity-60 transition-colors"
                             >
@@ -170,7 +303,7 @@ export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps)
                                 disabled={isLoading}
                                 className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60 transition-colors"
                             >
-                                {isLoading ? 'Creating…' : 'Confirm & Ship'}
+                                {isLoading ? 'Creating…' : 'Save & Ship'}
                             </button>
                         </div>
                     </div>
