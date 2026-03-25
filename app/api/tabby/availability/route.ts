@@ -15,6 +15,7 @@ import {
 import { AppError } from '@/lib/errors/app-error';
 
 const TABBY_API_URL = 'https://api.tabby.ai/api/v2/checkout';
+const SMSA_SCAN_STATUS_PATTERN = /^[A-Z]{2,3}$/;
 
 export async function POST(req: NextRequest) {
     const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY;
@@ -238,7 +239,12 @@ export async function POST(req: NextRequest) {
                 pastOrders = await getOrdersBySessionId(sessionId);
             }
 
-            const successfulOrders = pastOrders.filter(o => o.status === 'paid' || o.status === 'completed');
+            const successfulOrders = pastOrders.filter((o) =>
+                o.status === 'paid'
+                || o.status === 'requested_shipment'
+                || o.status === 'shipped'
+                || SMSA_SCAN_STATUS_PATTERN.test(o.status)
+            );
             const totalPaidAmount = successfulOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
             buyerHistory = {

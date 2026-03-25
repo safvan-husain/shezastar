@@ -6,9 +6,15 @@ const STATUS_OPTIONS = [
     { value: '', label: 'All statuses' },
     { value: 'pending', label: 'Pending' },
     { value: 'paid', label: 'Paid' },
+    { value: 'requested_shipment', label: 'Requested Shipment' },
+    { value: 'AF', label: 'AF (Arrived Facility)' },
+    { value: 'OD', label: 'OD (Out for Delivery)' },
+    { value: 'DL', label: 'DL (Delivered)' },
+    { value: 'cancellation_requested', label: 'Cancellation Requested' },
+    { value: 'cancellation_approved', label: 'Cancellation Approved' },
+    { value: 'refund_failed', label: 'Refund Failed' },
     { value: 'cancelled', label: 'Cancelled' },
     { value: 'failed', label: 'Failed' },
-    { value: 'completed', label: 'Completed' },
 ];
 
 interface OrdersStatusFilterProps {

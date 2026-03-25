@@ -41,10 +41,19 @@ describe('Order controller (admin)', () => {
         expect((response.body as any).orders).toHaveLength(1);
     });
 
-    it('returns 400 for invalid status filter', async () => {
-        const response = await handleAdminListOrders(1, 20, 'unknown');
-        expect(response.status).toBe(400);
-        expect((response.body as any).code).toBe('INVALID_STATUS');
+    it('passes through arbitrary status filters for provider-specific statuses', async () => {
+        vi.mocked(orderService.listOrders).mockResolvedValueOnce({
+            orders: [],
+            pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        });
+
+        const response = await handleAdminListOrders(1, 20, 'AF');
+        expect(response.status).toBe(200);
+        expect(orderService.listOrders).toHaveBeenCalledWith({
+            page: 1,
+            limit: 20,
+            status: 'AF',
+        });
     });
 
     it('gets an order by id', async () => {
@@ -85,13 +94,12 @@ describe('Order controller (admin)', () => {
         expect((response.body as any).status).toBe('paid');
     });
 
-    it('rejects invalid status payloads', async () => {
+    it('rejects empty status payloads', async () => {
         const response = await handleAdminUpdateOrderStatus('order-1', {
-            status: 'unknown',
+            status: '',
         });
 
         expect(response.status).toBe(400);
         expect((response.body as any).code).toBe('VALIDATION_ERROR');
     });
 });
-

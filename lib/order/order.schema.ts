@@ -2,17 +2,7 @@ import { z } from 'zod';
 import { BillingDetailsSchema } from '@/lib/billing-details/billing-details.schema';
 import { InstallationOptionSchema } from '@/lib/cart/cart.schema';
 
-export const OrderStatusSchema = z.enum([
-    'pending',
-    'paid',
-    'shipped',
-    'cancellation_requested',
-    'cancellation_approved',
-    'cancelled',
-    'refund_failed',
-    'failed',
-    'completed',
-]);
+export const OrderStatusSchema = z.string().min(1);
 
 export const OrderCancellationSchema = z.object({
     requestedAt: z.string().min(1).optional(),
@@ -85,7 +75,7 @@ export const OrderSchema = z.object({
 });
 
 export const UpdateOrderStatusSchema = z.object({
-    status: z.literal('completed'),
+    status: z.string().min(1),
 });
 
 export const RequestOrderCancellationSchema = z.object({

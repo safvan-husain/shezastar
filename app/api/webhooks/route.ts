@@ -122,7 +122,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
 
     try {
         const status = session.payment_status === 'paid' ? 'paid' : 'pending';
-        const wasAlreadyPaid = order.status === 'paid' || order.status === 'completed';
+        const wasAlreadyPaid = order.status !== 'pending';
 
         await updateOrderStatusById(order.id, status);
 

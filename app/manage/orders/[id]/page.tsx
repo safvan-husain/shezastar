@@ -73,7 +73,20 @@ function formatDate(iso: string) {
 }
 
 function formatStatus(status: string) {
+    if (/^[A-Z]{2,3}$/.test(status)) {
+        return status;
+    }
+
     return status.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+}
+
+function getReadableOrderStatus(order: Order) {
+    const normalized = formatStatus(order.status);
+    if (/^[A-Z]{2,3}$/.test(order.status) && order.shipping?.status) {
+        return `${normalized} - ${order.shipping.status}`;
+    }
+
+    return normalized;
 }
 
 function getInstallationOptionLabel(option: string) {
@@ -134,7 +147,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                             </div>
                             <div className="flex flex-col items-end gap-2">
                                 <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border border-[var(--border-subtle)] bg-[var(--bg-subtle)] text-[var(--text-secondary)]">
-                                    {formatStatus(order.status)}
+                                    {getReadableOrderStatus(order)}
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <ProceedToShippingButton order={order} />

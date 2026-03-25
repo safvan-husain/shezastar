@@ -102,7 +102,23 @@ function formatDate(iso: string) {
 }
 
 function formatStatus(status: Order['status']) {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    if (/^[A-Z]{2,3}$/.test(status)) {
+        return status;
+    }
+
+    return status
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+}
+
+function getReadableOrderStatus(order: Order) {
+    const normalized = formatStatus(order.status);
+    if (/^[A-Z]{2,3}$/.test(order.status) && order.shipping?.status) {
+        return `${normalized} - ${order.shipping.status}`;
+    }
+
+    return normalized;
 }
 
 function getCustomerName(order: Order) {
@@ -256,7 +272,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                             const customerName = getCustomerName(order);
                                             const customerContact = getCustomerContact(order);
                                             const itemsCount = order.items.length;
-                                            const statusLabel = formatStatus(order.status);
+                                            const statusLabel = getReadableOrderStatus(order);
 
                                             return (
                                                 <tr key={order.id} className="hover:bg-[var(--bg-subtle)]">
@@ -309,7 +325,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                             {orders.map(order => {
                                 const customerName = getCustomerName(order);
                                 const customerContact = getCustomerContact(order);
-                                const statusLabel = formatStatus(order.status);
+                                const statusLabel = getReadableOrderStatus(order);
                                 const itemsCount = order.items.length;
 
                                 return (

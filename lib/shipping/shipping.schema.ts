@@ -38,6 +38,7 @@ export const SmsaShipmentResponseSchema = z.object({
 });
 
 export const SmsaTrackingScanSchema = z.object({
+    ReferenceID: z.number().optional(),
     ReceivedBy: z.string().optional(),
     City: z.string(),
     ScanType: z.string(),
@@ -57,13 +58,32 @@ export const SmsaTrackingResponseSchema = z.object({
     OriginCountry: z.string().optional(),
     DesinationCity: z.string().optional(),
     DesinationCountry: z.string().optional(),
-    isDelivered: z.boolean(),
+    isDelivered: z.boolean().optional().default(false),
     Scans: z.array(SmsaTrackingScanSchema).optional(),
 });
+
+export const SmsaTrackingWebhookItemSchema = z.object({
+    AWB: z.string().min(1),
+    Reference: z.string().optional(),
+    Pieces: z.number().optional(),
+    CODAmount: z.number().optional(),
+    ContentDesc: z.string().optional(),
+    RecipientName: z.string().optional(),
+    OriginCity: z.string().optional(),
+    OriginCountry: z.string().optional(),
+    DesinationCity: z.string().optional(),
+    DesinationCountry: z.string().optional(),
+    isDelivered: z.boolean().optional().default(false),
+    Scans: z.array(SmsaTrackingScanSchema).optional(),
+});
+
+export const SmsaTrackingWebhookPayloadSchema = z.array(SmsaTrackingWebhookItemSchema).min(1);
 
 export type SmsaShipmentAddress = z.infer<typeof SmsaShipmentAddressSchema>;
 export type CreateShipmentInput = z.infer<typeof CreateShipmentInputSchema>;
 export type UpdateShipmentWeightsInput = z.infer<typeof UpdateShipmentWeightsInputSchema>;
 export type SmsaShipmentResponse = z.infer<typeof SmsaShipmentResponseSchema>;
 export type SmsaTrackingResponse = z.infer<typeof SmsaTrackingResponseSchema>;
+export type SmsaTrackingWebhookItem = z.infer<typeof SmsaTrackingWebhookItemSchema>;
+export type SmsaTrackingWebhookPayload = z.infer<typeof SmsaTrackingWebhookPayloadSchema>;
 export type ShipmentWeightCheckResponse = z.infer<typeof ShipmentWeightCheckResponseSchema>;

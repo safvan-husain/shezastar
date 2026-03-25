@@ -11,7 +11,7 @@ export type OrderStatus =
     | 'cancelled'
     | 'refund_failed'
     | 'failed'
-    | 'completed';
+    | string;
 
 export type OrderCancellationDecision = 'pending' | 'approved' | 'rejected';
 

@@ -58,7 +58,7 @@ describe('Order service (admin helpers)', () => {
 
     it('lists orders with pagination and status filter', async () => {
         // Seed multiple orders with different statuses
-        const statuses: OrderStatus[] = ['pending', 'paid', 'cancelled', 'failed', 'completed'];
+        const statuses: OrderStatus[] = ['pending', 'paid', 'cancelled', 'failed', 'AF'];
         for (let i = 0; i < 10; i++) {
             await createOrder({
                 ...BASE_ORDER_DATA,

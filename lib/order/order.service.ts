@@ -6,6 +6,7 @@ import { Order, OrderDocument, toOrder, OrderStatus } from './model/order.model'
 import { buildPendingRefundFromOrder, queueRefundForApprovedCancellation } from '@/lib/refund/refund.service';
 
 const COLLECTION = 'orders';
+const SMSA_SCAN_STATUS_PATTERN = /^[A-Z]{2,3}$/;
 
 let indexesEnsured = false;
 
@@ -298,6 +299,14 @@ export async function requestOrderCancellationByCustomer(
     if (doc.status !== 'paid') {
         throw new AppError(409, 'ORDER_NOT_CANCELLABLE', { id, status: doc.status });
     }
+    if (doc.shipping?.awb) {
+        throw new AppError(409, 'ORDER_NOT_CANCELLABLE', {
+            id,
+            status: doc.status,
+            message: 'Order already has an active shipment.',
+            awb: doc.shipping.awb,
+        });
+    }
 
     const now = new Date();
     const requestedByUserId = parseOptionalObjectId(actor.userId);
@@ -413,7 +422,12 @@ export async function countOrdersByEmail(email: string): Promise<number> {
     const collection = await getOrderCollection();
     return collection.countDocuments({
         "billingDetails.email": email,
-        status: { $in: ['paid', 'completed'] }
+        $or: [
+            { status: 'paid' },
+            { status: 'requested_shipment' },
+            { status: 'shipped' },
+            { status: { $regex: SMSA_SCAN_STATUS_PATTERN.source } },
+        ],
     });
 }
 
@@ -421,7 +435,12 @@ export async function getOrdersByEmail(email: string, limit: number = 10): Promi
     const collection = await getOrderCollection();
     const docs = await collection.find({
         "billingDetails.email": email,
-        status: { $in: ['paid', 'completed'] }
+        $or: [
+            { status: 'paid' },
+            { status: 'requested_shipment' },
+            { status: 'shipped' },
+            { status: { $regex: SMSA_SCAN_STATUS_PATTERN.source } },
+        ],
     })
         .sort({ createdAt: -1 })
         .limit(limit)
@@ -433,7 +452,12 @@ export async function getOrdersByUserId(userId: string, limit: number = 10): Pro
     const collection = await getOrderCollection();
     const docs = await collection.find({
         userId: new ObjectId(userId),
-        status: { $in: ['paid', 'completed'] }
+        $or: [
+            { status: 'paid' },
+            { status: 'requested_shipment' },
+            { status: 'shipped' },
+            { status: { $regex: SMSA_SCAN_STATUS_PATTERN.source } },
+        ],
     })
         .sort({ createdAt: -1 })
         .limit(limit)

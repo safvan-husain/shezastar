@@ -6,10 +6,23 @@ import { OrderCancellationRequestButton } from './components/OrderCancellationRe
 import { OrderShipmentTracking } from './components/OrderShipmentTracking';
 
 function formatStatus(status: string) {
+    if (/^[A-Z]{2,3}$/.test(status)) {
+        return status;
+    }
+
     return status
         .split('_')
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ');
+}
+
+function getReadableOrderStatus(order: { status: string; shipping?: { status?: string } }) {
+    const normalized = formatStatus(order.status);
+    if (/^[A-Z]{2,3}$/.test(order.status) && order.shipping?.status) {
+        return `${normalized} - ${order.shipping.status}`;
+    }
+
+    return normalized;
 }
 
 export default async function OrdersPage() {
@@ -73,13 +86,17 @@ export default async function OrdersPage() {
                                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize
                         ${order.status === 'paid' ? 'bg-green-100 text-green-800' :
                                 order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                order.status === 'AF' ? 'bg-indigo-100 text-indigo-800' :
+                                order.status === 'OD' ? 'bg-sky-100 text-sky-800' :
+                                order.status === 'DL' ? 'bg-emerald-100 text-emerald-800' :
+                                order.status === 'requested_shipment' ? 'bg-violet-100 text-violet-800' :
                                 order.status === 'cancellation_requested' ? 'bg-amber-100 text-amber-800' :
                                 order.status === 'cancellation_approved' ? 'bg-blue-100 text-blue-800' :
                                 order.status === 'refund_failed' ? 'bg-red-100 text-red-800' :
                                 order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                                     'bg-gray-100 text-gray-800'}`}
                                         >
-                                            {formatStatus(order.status)}
+                                            {getReadableOrderStatus(order)}
                                         </span>
                                         <p className="text-sm font-medium text-gray-900">
                                             {order.totalAmount.toLocaleString('en-US', {
@@ -144,7 +161,7 @@ export default async function OrdersPage() {
                                             />
                                         )}
 
-                                        {order.status === 'paid' && !hasCancellationRequest && (
+                                        {order.status === 'paid' && !order.shipping?.awb && !hasCancellationRequest && (
                                             <OrderCancellationRequestButton orderId={order.id} />
                                         )}
 

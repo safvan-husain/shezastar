@@ -2,7 +2,9 @@ import 'server-only';
 import { AppError } from '@/lib/errors/app-error';
 import { Order } from '@/lib/order/model/order.model';
 import { BillingDetails } from '@/lib/billing-details/billing-details.schema';
-import { SmsaShipmentAddress, CreateShipmentInput, SmsaShipmentResponse, SmsaTrackingResponse } from './shipping.schema';
+import { getCollection, ObjectId } from '@/lib/db/mongo-client';
+import type { OrderDocument } from '@/lib/order/model/order.model';
+import { SmsaShipmentAddress, CreateShipmentInput, SmsaShipmentResponse, SmsaTrackingResponse, SmsaTrackingWebhookPayload, SmsaTrackingWebhookItem } from './shipping.schema';
 import { getProduct, updateProductWeight } from '@/lib/product/product.service';
 import { getCountryPricings } from '@/lib/app-settings/app-settings.service';
 
@@ -317,4 +319,141 @@ export async function getShipmentLabel(awb: string): Promise<Buffer> {
 
     const base64Data = shipment.waybills[0].awbFile;
     return Buffer.from(base64Data, 'base64');
+}
+
+type SmsaTrackingWebhookScan = NonNullable<SmsaTrackingWebhookItem['Scans']>[number];
+
+function resolveLatestScan(shipment: SmsaTrackingWebhookItem): SmsaTrackingWebhookScan | undefined {
+    if (!shipment.Scans || shipment.Scans.length === 0) {
+        return undefined;
+    }
+
+    const scans = [...shipment.Scans];
+    scans.sort((a, b) => {
+        const aTime = parseScanTimestamp(a.ScanDateTime, a.ScanTimeZone);
+        const bTime = parseScanTimestamp(b.ScanDateTime, b.ScanTimeZone);
+        return bTime.getTime() - aTime.getTime();
+    });
+
+    return scans[0];
+}
+
+function parseScanTimestamp(scanDateTime: string, scanTimeZone?: string): Date {
+    const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(scanDateTime);
+    const dateCandidate = hasTimezone || !scanTimeZone
+        ? scanDateTime
+        : `${scanDateTime}${scanTimeZone}`;
+
+    const parsed = new Date(dateCandidate);
+    if (Number.isNaN(parsed.getTime())) {
+        return new Date(0);
+    }
+
+    return parsed;
+}
+
+function parseReferenceObjectId(reference?: string): ObjectId | null {
+    if (!reference) {
+        return null;
+    }
+
+    try {
+        return new ObjectId(reference);
+    } catch {
+        return null;
+    }
+}
+
+export interface SmsaTrackingWebhookProcessResult {
+    received: number;
+    processed: number;
+    updatedOrders: number;
+    statusTransitionedOrders: number;
+    unmatchedAwbs: string[];
+}
+
+export async function processSmsaTrackingWebhook(payload: SmsaTrackingWebhookPayload): Promise<SmsaTrackingWebhookProcessResult> {
+    const collection = await getCollection<OrderDocument>('orders');
+
+    let updatedOrders = 0;
+    let statusTransitionedOrders = 0;
+    const unmatchedAwbs: string[] = [];
+    const cancellationManagedStatuses = new Set(['cancellation_requested', 'cancellation_approved', 'cancelled']);
+
+    for (const shipment of payload) {
+        const awb = shipment.AWB.trim();
+
+        let orderDoc = await collection.findOne({
+            'shipping.provider': 'smsa',
+            'shipping.awb': awb,
+        } as any);
+
+        if (!orderDoc) {
+            const referenceObjectId = parseReferenceObjectId(shipment.Reference);
+            if (referenceObjectId) {
+                orderDoc = await collection.findOne({
+                    _id: referenceObjectId,
+                    'shipping.provider': 'smsa',
+                } as any);
+            }
+        }
+
+        if (!orderDoc) {
+            unmatchedAwbs.push(awb);
+            continue;
+        }
+
+        const latestScan = resolveLatestScan(shipment);
+        const latestScanDate = latestScan
+            ? parseScanTimestamp(latestScan.ScanDateTime, latestScan.ScanTimeZone)
+            : null;
+
+        const shippingStatus = latestScan?.ScanDescription
+            || latestScan?.ScanType
+            || (shipment.isDelivered ? 'Delivered' : undefined);
+
+        const updateSet: Record<string, unknown> = {
+            updatedAt: new Date(),
+        };
+
+        if (shippingStatus) {
+            updateSet['shipping.status'] = shippingStatus;
+        }
+
+        if (latestScanDate && latestScanDate.getTime() > 0) {
+            updateSet['shipping.lastTrackedAt'] = latestScanDate;
+        }
+
+        const scanTypeStatus = latestScan?.ScanType?.trim();
+        const resolvedScanStatus = scanTypeStatus && scanTypeStatus.length > 0
+            ? scanTypeStatus
+            : (shipment.isDelivered ? 'DL' : undefined);
+
+        if (
+            resolvedScanStatus
+            && !cancellationManagedStatuses.has(orderDoc.status)
+            && orderDoc.status !== 'refund_failed'
+            && orderDoc.status !== 'failed'
+        ) {
+            updateSet.status = resolvedScanStatus;
+            statusTransitionedOrders += 1;
+        }
+
+        await collection.updateOne(
+            { _id: orderDoc._id },
+            {
+                $set: updateSet,
+            },
+        );
+
+        updatedOrders += 1;
+    }
+
+    return {
+        received: payload.length,
+        processed: payload.length,
+        updatedOrders,
+        statusTransitionedOrders,
+        unmatchedAwbs,
+    };
 }

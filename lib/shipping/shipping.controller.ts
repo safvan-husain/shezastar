@@ -1,17 +1,20 @@
 import { catchError, AppError } from '@/lib/errors/app-error';
-import { getOrderById, updateOrderStatusById, setOrderShipping } from '@/lib/order/order.service';
+import { getOrderById, setOrderShipping, updateOrderStatusById } from '@/lib/order/order.service';
 import {
     createB2cShipment,
     getShipmentLabel,
     trackShipment,
     getOrderMissingWeightProducts,
     updateOrderProductWeights,
+    processSmsaTrackingWebhook,
 } from './shipping.service';
 import {
     CreateShipmentInputSchema,
     CreateShipmentInput,
     UpdateShipmentWeightsInputSchema,
     UpdateShipmentWeightsInput,
+    SmsaTrackingWebhookPayloadSchema,
+    SmsaTrackingWebhookPayload,
 } from './shipping.schema';
 
 function assertShipmentEligible(order: Awaited<ReturnType<typeof getOrderById>>) {
@@ -49,8 +52,7 @@ export async function handleCreateShipment(orderId: string, input: unknown) {
             labelPdf: response.waybills?.[0]?.awbFile, // cache the label if available
         });
 
-        // Update the main order status to 'shipped'
-        await updateOrderStatusById(orderId, 'shipped');
+        await updateOrderStatusById(orderId, 'requested_shipment');
 
         return { status: 200, body: tracking.shipping };
 
@@ -121,6 +123,16 @@ export async function handleGetShipmentLabel(orderId: string) {
 
         const pdfBuffer = await getShipmentLabel(order.shipping.awb);
         return { status: 200, body: pdfBuffer };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleSmsaTrackingWebhook(input: unknown) {
+    try {
+        const parsed: SmsaTrackingWebhookPayload = SmsaTrackingWebhookPayloadSchema.parse(input);
+        const result = await processSmsaTrackingWebhook(parsed);
+        return { status: 200, body: result };
     } catch (err) {
         return catchError(err);
     }
