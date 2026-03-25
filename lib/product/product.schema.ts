@@ -58,6 +58,7 @@ export const CreateProductSchema = z.object({
     subCategoryIds: z.array(z.string()).default([]),
     installationService: InstallationServiceSchema.optional(),
     variantStock: z.array(VariantStockSchema).default([]),
+    weight: z.number().min(0).optional(),
     brandId: z.string().optional(),
 });
 
@@ -73,6 +74,7 @@ export const UpdateProductSchema = z.object({
     subCategoryIds: z.array(z.string()).optional(),
     installationService: InstallationServiceSchema.optional(),
     variantStock: z.array(VariantStockSchema).optional(),
+    weight: z.number().min(0).optional(),
     brandId: z.string().optional(),
 });
 

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 import type { Order } from '@/lib/order/model/order.model';
 import { OrdersStatusFilter } from './components/OrdersStatusFilter';
+import { ProceedToShippingButton } from './components/ProceedToShippingButton';
 
 interface OrdersPageProps {
     searchParams: Promise<{ page?: string; status?: string }>;
@@ -287,11 +288,14 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                                         {order.totalAmount.toFixed(2)} {order.currency.toUpperCase()}
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
-                                                        <Link href={`/manage/orders/${order.id}`}>
-                                                            <Button size="sm" variant="ghost">
-                                                                View
-                                                            </Button>
-                                                        </Link>
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <ProceedToShippingButton order={order} />
+                                                            <Link href={`/manage/orders/${order.id}`}>
+                                                                <Button size="sm" variant="ghost">
+                                                                    View
+                                                                </Button>
+                                                            </Link>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             );
@@ -355,11 +359,14 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                             <p className="text-sm font-semibold text-[var(--text-primary)]">
                                                 {order.totalAmount.toFixed(2)} {order.currency.toUpperCase()}
                                             </p>
-                                            <Link href={`/manage/orders/${order.id}`}>
-                                                <Button size="sm" variant="ghost">
-                                                    View
-                                                </Button>
-                                            </Link>
+                                            <div className="flex items-center gap-2">
+                                                <ProceedToShippingButton order={order} />
+                                                <Link href={`/manage/orders/${order.id}`}>
+                                                    <Button size="sm" variant="ghost">
+                                                        View
+                                                    </Button>
+                                                </Link>
+                                            </div>
                                         </div>
                                     </Card>
                                 );

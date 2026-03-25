@@ -217,6 +217,51 @@ export async function updateOrderStatusById(id: string, status: OrderStatus): Pr
     return toOrder(result ?? existing);
 }
 
+export async function setOrderShipping(id: string, shipping: NonNullable<OrderDocument['shipping']>): Promise<Order> {
+    const objectId = parseOrderObjectId(id);
+    const collection = await getOrderCollection();
+    
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: {
+                shipping,
+                updatedAt: new Date(),
+            },
+        },
+        { returnDocument: 'after' }
+    );
+
+    if (!result) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    return toOrder(result);
+}
+
+export async function updateOrderShippingStatus(id: string, status: string, lastTrackedAt: Date): Promise<Order> {
+    const objectId = parseOrderObjectId(id);
+    const collection = await getOrderCollection();
+    
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: {
+                'shipping.status': status,
+                'shipping.lastTrackedAt': lastTrackedAt,
+                updatedAt: new Date(),
+            },
+        },
+        { returnDocument: 'after' }
+    );
+
+    if (!result) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    return toOrder(result);
+}
+
 function assertOrderOwnership(doc: OrderDocument, actor: OrderCancellationActor, orderId: string): void {
     if (doc.userId) {
         if (!actor.userId || doc.userId.toHexString() !== actor.userId) {

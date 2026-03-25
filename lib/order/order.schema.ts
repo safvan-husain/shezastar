@@ -5,6 +5,7 @@ import { InstallationOptionSchema } from '@/lib/cart/cart.schema';
 export const OrderStatusSchema = z.enum([
     'pending',
     'paid',
+    'shipped',
     'cancellation_requested',
     'cancellation_approved',
     'cancelled',
@@ -52,6 +53,15 @@ export const OrderItemSchema = z.object({
     installationAddOnPrice: z.number().min(0).default(0),
 });
 
+export const OrderShippingSchema = z.object({
+    provider: z.literal('smsa'),
+    awb: z.string().min(1),
+    createdAt: z.string().min(1),
+    labelPdf: z.string().optional(),
+    status: z.string().optional(),
+    lastTrackedAt: z.string().optional(),
+});
+
 export const OrderSchema = z.object({
     id: z.string().min(1),
     sessionId: z.string().min(1),
@@ -66,6 +76,7 @@ export const OrderSchema = z.object({
     totalAmount: z.number(),
     currency: z.string(),
     status: OrderStatusSchema,
+    shipping: OrderShippingSchema.optional(),
     cancellation: OrderCancellationSchema.optional(),
     refund: OrderRefundSchema.optional(),
     billingDetails: BillingDetailsSchema.optional(),

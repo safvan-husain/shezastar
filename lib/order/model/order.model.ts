@@ -5,6 +5,7 @@ import type { InstallationOption } from '@/lib/cart/cart.schema';
 export type OrderStatus =
     | 'pending'
     | 'paid'
+    | 'shipped'
     | 'cancellation_requested'
     | 'cancellation_approved'
     | 'cancelled'
@@ -37,6 +38,16 @@ export interface OrderRefundDocument {
     failureCode?: string;
     failureMessage?: string;
 }
+
+export interface OrderShippingDocument {
+    provider: 'smsa';
+    awb: string;
+    createdAt: Date;
+    labelPdf?: string; // Base64 or URL
+    status?: string;
+    lastTrackedAt?: Date;
+}
+
 export interface OrderItemDocument {
     productId: string;
     productName: string;
@@ -69,6 +80,7 @@ export interface OrderDocument {
     totalAmount: number;
     currency: string;
     status: OrderStatus;
+    shipping?: OrderShippingDocument;
     cancellation?: OrderCancellationDocument;
     refund?: OrderRefundDocument;
     billingDetails?: BillingDetails;
@@ -109,6 +121,14 @@ export interface Order {
     totalAmount: number;
     currency: string;
     status: OrderStatus;
+    shipping?: {
+        provider: 'smsa';
+        awb: string;
+        createdAt: string;
+        labelPdf?: string;
+        status?: string;
+        lastTrackedAt?: string;
+    };
     cancellation?: {
         requestedAt?: string;
         approvedAt?: string;
@@ -172,6 +192,16 @@ export function toOrder(doc: OrderDocument): Order {
         totalAmount: doc.totalAmount,
         currency: doc.currency,
         status: doc.status,
+        shipping: doc.shipping
+            ? {
+                provider: doc.shipping.provider,
+                awb: doc.shipping.awb,
+                createdAt: doc.shipping.createdAt.toISOString(),
+                labelPdf: doc.shipping.labelPdf,
+                status: doc.shipping.status,
+                lastTrackedAt: toIso(doc.shipping.lastTrackedAt),
+            }
+            : undefined,
         cancellation: doc.cancellation
             ? {
                 requestedAt: toIso(doc.cancellation.requestedAt),

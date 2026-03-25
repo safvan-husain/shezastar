@@ -1,0 +1,43 @@
+import { z } from 'zod';
+
+export const SmsaShipmentAddressSchema = z.object({
+    AddressLine1: z.string().min(10).max(100),
+    AddressLine2: z.string().max(100).optional(),
+    City: z.string().min(3).max(50),
+    Country: z.string().length(2),
+    ContactName: z.string().min(5).max(150),
+    ContactPhoneNumber: z.string().min(1),
+    PostalCode: z.string().optional(),
+});
+
+export const CreateShipmentInputSchema = z.object({
+    weightOverrides: z.record(z.string(), z.number().min(0)).optional(), 
+});
+
+export const SmsaShipmentResponseSchema = z.object({
+    sawb: z.string(),
+    createDate: z.string(),
+    shipmentParcelsCount: z.number(),
+    waybills: z.array(z.object({
+        awb: z.string(),
+        awbFile: z.string(), // base64 pdf content
+    })),
+});
+
+export const SmsaTrackingScanSchema = z.object({
+    Date: z.string(),
+    Details: z.string(),
+    Location: z.string(),
+});
+
+export const SmsaTrackingResponseSchema = z.object({
+    AWB: z.string(),
+    Reference: z.string().optional(),
+    isDelivered: z.boolean(),
+    Scans: z.array(SmsaTrackingScanSchema).optional(),
+});
+
+export type SmsaShipmentAddress = z.infer<typeof SmsaShipmentAddressSchema>;
+export type CreateShipmentInput = z.infer<typeof CreateShipmentInputSchema>;
+export type SmsaShipmentResponse = z.infer<typeof SmsaShipmentResponseSchema>;
+export type SmsaTrackingResponse = z.infer<typeof SmsaTrackingResponseSchema>;

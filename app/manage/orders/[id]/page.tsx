@@ -4,6 +4,7 @@ import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToa
 import type { Order } from '@/lib/order/model/order.model';
 import { OrderStatusUpdater } from '../components/OrderStatusUpdater';
 import { OrderCancellationReview } from '../components/OrderCancellationReview';
+import { ProceedToShippingButton } from '../components/ProceedToShippingButton';
 
 interface OrderDetailPageProps {
     params: Promise<{ id: string }>;
@@ -135,7 +136,10 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                 <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border border-[var(--border-subtle)] bg-[var(--bg-subtle)] text-[var(--text-secondary)]">
                                     {formatStatus(order.status)}
                                 </span>
-                                <OrderStatusUpdater orderId={order.id} initialStatus={order.status} />
+                                <div className="flex items-center gap-2">
+                                    <ProceedToShippingButton order={order} />
+                                    <OrderStatusUpdater orderId={order.id} initialStatus={order.status} />
+                                </div>
                             </div>
                         </div>
 
@@ -213,6 +217,77 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                 </div>
                             </div>
                         </Card>
+
+                        {/* Shipping */}
+                        {order.shipping && (
+                            <Card>
+                                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
+                                    Shipment
+                                </h2>
+                                <div className="space-y-2 text-sm text-[var(--text-secondary)]">
+                                    <p>
+                                        AWB:{' '}
+                                        <span className="font-mono font-semibold text-[var(--text-primary)]">
+                                            {order.shipping.awb}
+                                        </span>
+                                    </p>
+                                    <p>
+                                        Provider:{' '}
+                                        <span className="font-semibold text-[var(--text-primary)] uppercase">
+                                            {order.shipping.provider}
+                                        </span>
+                                    </p>
+                                    {order.shipping.status && (
+                                        <p>
+                                            Status:{' '}
+                                            <span className="font-semibold text-[var(--text-primary)]">
+                                                {order.shipping.status}
+                                            </span>
+                                        </p>
+                                    )}
+                                    <p>
+                                        Created:{' '}
+                                        <span className="text-[var(--text-primary)]">
+                                            {formatDate(order.shipping.createdAt)}
+                                        </span>
+                                    </p>
+                                    {order.shipping.lastTrackedAt && (
+                                        <p>
+                                            Last tracked:{' '}
+                                            <span className="text-[var(--text-primary)]">
+                                                {formatDate(order.shipping.lastTrackedAt)}
+                                            </span>
+                                        </p>
+                                    )}
+                                    <div className="mt-3 pt-3 border-t border-[var(--border-subtle)] flex items-center gap-3">
+                                        <a
+                                            href={`/api/admin/orders/${order.id}/shipment/label`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            </svg>
+                                            Download Label
+                                        </a>
+                                        <a
+                                            href={`/api/admin/orders/${order.id}/shipment`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                            </svg>
+                                            Track Live
+                                        </a>
+                                    </div>
+                                </div>
+                            </Card>
+                        )}
 
                         {(order.cancellation || order.status === "cancellation_requested") && (
                             <Card>

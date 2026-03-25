@@ -14,6 +14,7 @@ export interface ProductDocument {
     subCategoryIds: string[];
     installationService?: InstallationService;
     variantStock: VariantStock[];
+    weight?: number;
     specifications?: ProductSpecification[];
     brandId?: string;
     createdAt: Date;
@@ -32,6 +33,7 @@ export interface Product {
     subCategoryIds: string[];
     installationService?: InstallationService;
     variantStock: VariantStock[];
+    weight?: number;
     specifications: ProductSpecification[];
     brandId?: string;
     brand?: {
@@ -55,6 +57,7 @@ export function toProduct(doc: ProductDocument): Product {
         subCategoryIds: doc.subCategoryIds || [],
         installationService: doc.installationService,
         variantStock: doc.variantStock || [],
+        weight: doc.weight,
         specifications: doc.specifications ?? [],
         brandId: doc.brandId,
         createdAt: doc.createdAt.toISOString(),
