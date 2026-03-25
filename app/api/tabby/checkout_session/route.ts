@@ -4,7 +4,7 @@ import type { InstallationOption } from '@/lib/cart/cart.schema';
 import { getStorefrontSession } from '@/lib/storefront-session';
 import { convertPrice, getExchangeRates } from '@/lib/currency/currency.service';
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
-import { createOrder, getOrdersBySessionId, getOrdersByUserId } from '@/lib/order/order.service';
+import { createOrder, getSuccessfulOrdersBySessionId, getSuccessfulOrdersByUserId } from '@/lib/order/order.service';
 import { OrderDocument, OrderItemDocument } from '@/lib/order/model/order.model';
 import {
     computeCheckoutPricingBreakdown,
@@ -17,7 +17,6 @@ import { ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 
 const TABBY_API_URL = 'https://api.tabby.ai/api/v2/checkout';
-const SMSA_SCAN_STATUS_PATTERN = /^[A-Z]{2,3}$/;
 
 export async function POST(req: NextRequest) {
     const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY;
@@ -312,31 +311,25 @@ export async function POST(req: NextRequest) {
             let registeredSince = session.createdAt;
 
             if (session.userId) {
-                pastOrders = await getOrdersByUserId(session.userId);
+                pastOrders = await getSuccessfulOrdersByUserId(session.userId);
                 const user = await getUserById(session.userId);
                 if (user) {
                     registeredSince = user.createdAt;
                 }
             } else {
-                pastOrders = await getOrdersBySessionId(sessionId);
+                pastOrders = await getSuccessfulOrdersBySessionId(sessionId);
             }
 
-            const successfulOrders = pastOrders.filter((o) =>
-                o.status === 'paid'
-                || o.status === 'requested_shipment'
-                || o.status === 'shipped'
-                || SMSA_SCAN_STATUS_PATTERN.test(o.status)
-            );
-            const totalPaidAmount = successfulOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+            const totalPaidAmount = pastOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
             buyerHistory = {
                 registered_since: registeredSince,
-                loyalty_level: successfulOrders.length,
+                loyalty_level: pastOrders.length,
                 wishlist_count: Math.round(totalPaidAmount),
                 is_social_networks_connected: false,
             };
 
-            orderHistory = successfulOrders.slice(0, 10).map(o => ({
+            orderHistory = pastOrders.slice(0, 10).map(o => ({
                 purchased_at: o.createdAt,
                 amount: o.totalAmount.toFixed(2),
                 status: 'complete',

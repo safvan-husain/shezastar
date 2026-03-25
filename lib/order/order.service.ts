@@ -6,7 +6,14 @@ import { Order, OrderDocument, toOrder, OrderStatus } from './model/order.model'
 import { buildPendingRefundFromOrder, queueRefundForApprovedCancellation } from '@/lib/refund/refund.service';
 
 const COLLECTION = 'orders';
-const SMSA_SCAN_STATUS_PATTERN = /^[A-Z]{2,3}$/;
+const NON_SUCCESS_ORDER_STATUSES: OrderStatus[] = [
+    'pending',
+    'cancelled',
+    'failed',
+    'refund_failed',
+    'cancellation_requested',
+    'cancellation_approved',
+];
 
 let indexesEnsured = false;
 
@@ -422,12 +429,7 @@ export async function countOrdersByEmail(email: string): Promise<number> {
     const collection = await getOrderCollection();
     return collection.countDocuments({
         "billingDetails.email": email,
-        $or: [
-            { status: 'paid' },
-            { status: 'requested_shipment' },
-            { status: 'shipped' },
-            { status: { $regex: SMSA_SCAN_STATUS_PATTERN.source } },
-        ],
+        status: { $nin: NON_SUCCESS_ORDER_STATUSES },
     });
 }
 
@@ -435,12 +437,7 @@ export async function getOrdersByEmail(email: string, limit: number = 10): Promi
     const collection = await getOrderCollection();
     const docs = await collection.find({
         "billingDetails.email": email,
-        $or: [
-            { status: 'paid' },
-            { status: 'requested_shipment' },
-            { status: 'shipped' },
-            { status: { $regex: SMSA_SCAN_STATUS_PATTERN.source } },
-        ],
+        status: { $nin: NON_SUCCESS_ORDER_STATUSES },
     })
         .sort({ createdAt: -1 })
         .limit(limit)
@@ -452,12 +449,31 @@ export async function getOrdersByUserId(userId: string, limit: number = 10): Pro
     const collection = await getOrderCollection();
     const docs = await collection.find({
         userId: new ObjectId(userId),
-        $or: [
-            { status: 'paid' },
-            { status: 'requested_shipment' },
-            { status: 'shipped' },
-            { status: { $regex: SMSA_SCAN_STATUS_PATTERN.source } },
-        ],
+    })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .toArray();
+    return docs.map(toOrder);
+}
+
+export async function getSuccessfulOrdersByUserId(userId: string, limit: number = 10): Promise<Order[]> {
+    const { ObjectId } = await import('mongodb');
+    const collection = await getOrderCollection();
+    const docs = await collection.find({
+        userId: new ObjectId(userId),
+        status: { $nin: NON_SUCCESS_ORDER_STATUSES },
+    })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .toArray();
+    return docs.map(toOrder);
+}
+
+export async function getSuccessfulOrdersBySessionId(sessionId: string, limit: number = 10): Promise<Order[]> {
+    const collection = await getOrderCollection();
+    const docs = await collection.find({
+        sessionId,
+        status: { $nin: NON_SUCCESS_ORDER_STATUSES },
     })
         .sort({ createdAt: -1 })
         .limit(limit)
