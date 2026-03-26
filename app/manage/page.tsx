@@ -151,14 +151,6 @@ export default async function ManageDashboardPage() {
                                 <span className="h-2 w-2 rounded-full bg-[var(--text-primary)]" />
                                 Admin analytics
                             </div>
-                            <div className="space-y-2">
-                                <h1 className="text-4xl font-bold tracking-[-0.04em] sm:text-5xl">
-                                    Watch sales, order pressure, and every operator action from one view.
-                                </h1>
-                                <p className="max-w-3xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
-                                    The dashboard now prioritizes live order distribution, 90-day purchase movement, and a traceable activity stream for product and order operations.
-                                </p>
-                            </div>
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
