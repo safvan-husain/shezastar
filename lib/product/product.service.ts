@@ -570,6 +570,54 @@ export async function searchProducts(query: string, limit = 10) {
 export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: ActivityActor) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
+    const applyPriceChange = (currentPrice: number) => {
+        if (!input.priceChange) {
+            return currentPrice;
+        }
+
+        const delta =
+            input.priceChange.method === 'percentage'
+                ? currentPrice * (input.priceChange.value / 100)
+                : input.priceChange.value;
+        const nextPrice =
+            input.priceChange.direction === 'decrement'
+                ? currentPrice - delta
+                : currentPrice + delta;
+
+        if (nextPrice < 0) {
+            throw new AppError(400, 'INVALID_PRICE_UPDATE', {
+                message: 'Bulk update would make one or more prices negative',
+            });
+        }
+
+        return Math.round(nextPrice * 100) / 100;
+    };
+
+    const applyOfferChange = (currentOfferPercentage?: number) => {
+        if (!input.offerChange) {
+            return currentOfferPercentage;
+        }
+
+        const normalizedCurrentOffer = currentOfferPercentage ?? 0;
+
+        if (input.offerChange.operation === 'replace') {
+            return input.offerChange.value;
+        }
+
+        const nextOffer =
+            input.offerChange.operation === 'decrement'
+                ? normalizedCurrentOffer - input.offerChange.value
+                : normalizedCurrentOffer + input.offerChange.value;
+
+        if (nextOffer < 0 || nextOffer > 100) {
+            throw new AppError(400, 'INVALID_OFFER_UPDATE', {
+                message: 'Bulk update would make one or more offer percentages fall outside 0 to 100',
+            });
+        }
+
+        return Math.round(nextOffer * 100) / 100;
+    };
+
     // Build the filter based on mode
     let filter: Record<string, any> = {};
 
@@ -613,19 +661,12 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: Acti
 
     // Compute new prices and build bulk operations
     const operationDetails = docs.map(doc => {
-        const newBasePrice =
-            input.method === 'percentage'
-                ? Math.round(doc.basePrice * (1 + input.value / 100) * 100) / 100
-                : Math.round((doc.basePrice + input.value) * 100) / 100;
-        const newOfferPercentage = input.offerPercentage ?? doc.offerPercentage;
+        const newBasePrice = applyPriceChange(doc.basePrice);
+        const newOfferPercentage = applyOfferChange(doc.offerPercentage);
 
         const newVariantStock = (doc.variantStock || []).map(vs => {
             if (vs.price != null) {
-                const newPrice =
-                    input.method === 'percentage'
-                        ? Math.round(vs.price * (1 + input.value / 100) * 100) / 100
-                        : Math.round((vs.price + input.value) * 100) / 100;
-                return { ...vs, price: newPrice };
+                return { ...vs, price: applyPriceChange(vs.price) };
             }
             return vs;
         });
@@ -671,9 +712,8 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: Acti
             summary: `${actor.displayName?.trim() || 'Admin'} bulk updated ${docs.length} products`,
             details: {
                 mode: input.mode,
-                method: input.method,
-                value: input.value,
-                offerPercentage: input.offerPercentage,
+                priceChange: input.priceChange,
+                offerChange: input.offerChange,
                 affectedCount: docs.length,
                 products: operationDetails.map(({ doc, newBasePrice, newOfferPercentage, newVariantStock }) => ({
                     productId: doc._id.toHexString(),

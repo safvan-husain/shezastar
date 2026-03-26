@@ -83,13 +83,29 @@ export const ImageMappingSchema = z.object({
     variantItemIds: z.array(z.string()), // Can be single items or combination
 });
 
+export const BulkPriceChangeSchema = z.object({
+    method: z.enum(['percentage', 'fixed']),
+    direction: z.enum(['increment', 'decrement']).default('increment'),
+    value: z.number().nonnegative('Value must be non-negative'),
+});
+
+export const BulkOfferChangeSchema = z.object({
+    operation: z.enum(['increment', 'decrement', 'replace']).default('increment'),
+    value: z.number().min(0).max(100),
+});
+
 export const BulkPriceUpdateSchema = z.object({
     mode: z.enum(['category', 'product', 'all']),
     ids: z.array(z.string()).default([]),   // category or product IDs depending on mode
-    method: z.enum(['percentage', 'fixed']),
-    value: z.number().positive('Value must be positive'),
-    offerPercentage: z.number().min(0).max(100).optional(),
-});
+    priceChange: BulkPriceChangeSchema.optional(),
+    offerChange: BulkOfferChangeSchema.optional(),
+}).refine(
+    (input) => input.priceChange !== undefined || input.offerChange !== undefined,
+    {
+        message: 'At least one price or offer update is required',
+        path: ['priceChange'],
+    }
+);
 
 export type ProductSpecification = z.infer<typeof ProductSpecificationSchema>;
 export type ProductImage = z.infer<typeof ProductImageSchema>;

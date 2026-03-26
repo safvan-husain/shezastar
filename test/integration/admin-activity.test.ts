@@ -125,9 +125,15 @@ describe('Admin activity integration', () => {
             body: JSON.stringify({
                 mode: 'product',
                 ids: [productA.id, productB.id],
-                method: 'fixed',
-                value: 25,
-                offerPercentage: 12,
+                priceChange: {
+                    method: 'fixed',
+                    direction: 'decrement',
+                    value: 25,
+                },
+                offerChange: {
+                    operation: 'replace',
+                    value: 12,
+                },
             }),
         });
 
@@ -141,13 +147,13 @@ describe('Admin activity integration', () => {
                 expect.objectContaining({
                     productId: productA.id,
                     basePriceBefore: 100,
-                    basePriceAfter: 125,
+                    basePriceAfter: 75,
                     offerPercentageAfter: 12,
                 }),
                 expect.objectContaining({
                     productId: productB.id,
                     basePriceBefore: 200,
-                    basePriceAfter: 225,
+                    basePriceAfter: 175,
                     offerPercentageAfter: 12,
                 }),
             ]),

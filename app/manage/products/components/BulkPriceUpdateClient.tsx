@@ -11,6 +11,8 @@ import { handleApiError } from '@/lib/utils/api-error-handler';
 
 type Mode = 'category' | 'product' | 'all';
 type Method = 'percentage' | 'fixed';
+type Direction = 'increment' | 'decrement';
+type OfferOperation = 'increment' | 'decrement' | 'replace';
 
 interface SelectedProduct {
     id: string;
@@ -39,17 +41,29 @@ const MODE_TABS: { value: Mode; label: string; description: string }[] = [
 export default function BulkPriceUpdateClient() {
     const [mode, setMode] = useState<Mode>('category');
     const [method, setMethod] = useState<Method>('percentage');
+    const [direction, setDirection] = useState<Direction>('increment');
     const [value, setValue] = useState('');
+    const [offerOperation, setOfferOperation] = useState<OfferOperation>('increment');
     const [offerPercentage, setOfferPercentage] = useState('');
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
     const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const { showToast } = useToast();
+    const parsedPriceValue = value.trim() === '' ? undefined : Number(value);
     const parsedOfferPercentage =
         offerPercentage.trim() === '' ? undefined : Number(offerPercentage);
 
     const canSubmit = () => {
-        if (!value || Number(value) <= 0) return false;
+        const hasPriceChange = parsedPriceValue !== undefined;
+        const hasOfferChange = parsedOfferPercentage !== undefined;
+
+        if (!hasPriceChange && !hasOfferChange) return false;
+        if (
+            parsedPriceValue !== undefined &&
+            (Number.isNaN(parsedPriceValue) || parsedPriceValue < 0)
+        ) {
+            return false;
+        }
         if (
             parsedOfferPercentage !== undefined &&
             (Number.isNaN(parsedOfferPercentage) || parsedOfferPercentage < 0 || parsedOfferPercentage > 100)
@@ -80,9 +94,23 @@ export default function BulkPriceUpdateClient() {
                 body: JSON.stringify({
                     mode,
                     ids,
-                    method,
-                    value: Number(value),
-                    ...(parsedOfferPercentage !== undefined ? { offerPercentage: parsedOfferPercentage } : {}),
+                    ...(parsedPriceValue !== undefined
+                        ? {
+                            priceChange: {
+                                method,
+                                direction,
+                                value: parsedPriceValue,
+                            },
+                        }
+                        : {}),
+                    ...(parsedOfferPercentage !== undefined
+                        ? {
+                            offerChange: {
+                                operation: offerOperation,
+                                value: parsedOfferPercentage,
+                            },
+                        }
+                        : {}),
                 }),
             });
 
@@ -100,6 +128,8 @@ export default function BulkPriceUpdateClient() {
             // Reset selections after success
             setValue('');
             setOfferPercentage('');
+            setDirection('increment');
+            setOfferOperation('increment');
             setSelectedCategoryIds([]);
             setSelectedProducts([]);
         } catch (err: any) {
@@ -214,12 +244,44 @@ export default function BulkPriceUpdateClient() {
             {/* Price update controls */}
             <Card>
                 <div className="space-y-5">
-                    <h2 className="text-lg font-semibold">Price Increase</h2>
+                    <h2 className="text-lg font-semibold">Price Update</h2>
+
+                    <p className="text-sm text-[var(--text-secondary)]">
+                        Leave the price value blank if you only want to change the offer percentage.
+                    </p>
+
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-[var(--text-secondary)]">
+                            Direction
+                        </label>
+                        <div className="inline-flex rounded-lg border-2 border-[var(--border-subtle)] overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setDirection('increment')}
+                                className={`px-5 py-2 text-sm font-semibold transition-all ${direction === 'increment'
+                                    ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+                                    : 'bg-transparent hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]'
+                                    }`}
+                            >
+                                Increment
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDirection('decrement')}
+                                className={`px-5 py-2 text-sm font-semibold transition-all ${direction === 'decrement'
+                                    ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+                                    : 'bg-transparent hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]'
+                                    }`}
+                            >
+                                Decrement
+                            </button>
+                        </div>
+                    </div>
 
                     {/* Method toggle */}
                     <div className="space-y-2">
                         <label className="block text-sm font-semibold text-[var(--text-secondary)]">
-                            Increase Type
+                            Price Change Type
                         </label>
                         <div className="inline-flex rounded-lg border-2 border-[var(--border-subtle)] overflow-hidden">
                             <button
@@ -247,52 +309,89 @@ export default function BulkPriceUpdateClient() {
 
                     {/* Value input */}
                     <Input
-                        label={method === 'percentage' ? 'Increase by (%)' : 'Increase by (AED)'}
+                        label={method === 'percentage' ? 'Change by (%)' : 'Change by (AED)'}
                         type="number"
-                        min="0.01"
+                        min="0"
                         step="0.01"
-                        placeholder={method === 'percentage' ? 'e.g. 10' : 'e.g. 25.00'}
+                        placeholder={method === 'percentage' ? 'Optional, e.g. 10' : 'Optional, e.g. 25.00'}
                         value={value}
                         onChange={e => setValue(e.target.value)}
                     />
 
                     {/* Preview hint */}
-                    {value && Number(value) > 0 && (
+                    {parsedPriceValue !== undefined && !Number.isNaN(parsedPriceValue) && (
                         <div className="p-3 bg-[var(--muted)] rounded-lg text-sm text-[var(--text-secondary)]">
                             {method === 'percentage' ? (
                                 <span>
-                                    Each product&apos;s price will increase by <strong>{value}%</strong>.
-                                    For example, AED 100 → AED {(100 * (1 + Number(value) / 100)).toFixed(2)}
+                                    Each product&apos;s price will {direction} by <strong>{parsedPriceValue}%</strong>.
+                                    For example, AED 100 → AED {(100 * (direction === 'decrement'
+                                        ? 1 - parsedPriceValue / 100
+                                        : 1 + parsedPriceValue / 100)).toFixed(2)}
                                 </span>
                             ) : (
                                 <span>
-                                    Each product&apos;s price will increase by <strong>AED {Number(value).toFixed(2)}</strong>.
-                                    For example, AED 100 → AED {(100 + Number(value)).toFixed(2)}
+                                    Each product&apos;s price will {direction} by <strong>AED {parsedPriceValue.toFixed(2)}</strong>.
+                                    For example, AED 100 → AED {(direction === 'decrement'
+                                        ? 100 - parsedPriceValue
+                                        : 100 + parsedPriceValue).toFixed(2)}
                                 </span>
                             )}
                         </div>
                     )}
 
-                    <Input
-                        label="Offer Percentage (Optional)"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        placeholder="Leave blank to keep existing offers"
-                        value={offerPercentage}
-                        onChange={e => setOfferPercentage(e.target.value)}
-                    />
+                    <div className="pt-2 border-t border-[var(--border-subtle)] space-y-5">
+                        <h3 className="text-base font-semibold">Offer Percentage</h3>
 
-                    <p className="text-sm text-[var(--text-secondary)]">
-                        Set a value from 0 to 100 to overwrite each selected product&apos;s offer percentage. Leave it blank to keep the current offer percentage unchanged.
-                    </p>
+                        <p className="text-sm text-[var(--text-secondary)]">
+                            Leave this blank if you only want to change prices.
+                        </p>
 
-                    {parsedOfferPercentage !== undefined && (
-                        <div className="p-3 bg-[var(--muted)] rounded-lg text-sm text-[var(--text-secondary)]">
-                            Each selected product&apos;s offer percentage will be set to <strong>{parsedOfferPercentage}%</strong>.
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-[var(--text-secondary)]">
+                                Offer Update Type
+                            </label>
+                            <div className="inline-flex rounded-lg border-2 border-[var(--border-subtle)] overflow-hidden">
+                                {(['increment', 'decrement', 'replace'] as OfferOperation[]).map((operation) => (
+                                    <button
+                                        key={operation}
+                                        type="button"
+                                        onClick={() => setOfferOperation(operation)}
+                                        className={`px-5 py-2 text-sm font-semibold capitalize transition-all ${offerOperation === operation
+                                            ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+                                            : 'bg-transparent hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]'
+                                            }`}
+                                    >
+                                        {operation}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    )}
+
+                        <Input
+                            label={offerOperation === 'replace' ? 'Set offer percentage to' : 'Offer percentage change'}
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            placeholder="Optional, 0 to 100"
+                            value={offerPercentage}
+                            onChange={e => setOfferPercentage(e.target.value)}
+                        />
+
+                        {parsedOfferPercentage !== undefined && !Number.isNaN(parsedOfferPercentage) && (
+                            <div className="p-3 bg-[var(--muted)] rounded-lg text-sm text-[var(--text-secondary)]">
+                                {offerOperation === 'replace' ? (
+                                    <span>
+                                        Each selected product&apos;s offer percentage will be set to <strong>{parsedOfferPercentage}%</strong>.
+                                    </span>
+                                ) : (
+                                    <span>
+                                        Each selected product&apos;s offer percentage will {offerOperation} by <strong>{parsedOfferPercentage}%</strong>.
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </Card>
 
@@ -310,10 +409,10 @@ export default function BulkPriceUpdateClient() {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                             </svg>
-                            Updating Prices...
+                            Applying Update...
                         </>
                     ) : (
-                        'Apply Price Update'
+                        'Apply Bulk Update'
                     )}
                 </Button>
             </div>

@@ -445,8 +445,11 @@ describe('Product Service - Bulk Price Update', () => {
         const result = await bulkUpdatePrices({
             mode: 'category',
             ids: [categoryId],
-            method: 'percentage',
-            value: 10, // 10% increase
+            priceChange: {
+                method: 'percentage',
+                direction: 'increment',
+                value: 10,
+            },
         });
 
         expect(result.modifiedCount).toBe(2); // A and B
@@ -467,8 +470,11 @@ describe('Product Service - Bulk Price Update', () => {
         const result = await bulkUpdatePrices({
             mode: 'product',
             ids: [productC.id],
-            method: 'fixed',
-            value: 25,
+            priceChange: {
+                method: 'fixed',
+                direction: 'increment',
+                value: 25,
+            },
         });
 
         expect(result.modifiedCount).toBe(1);
@@ -477,23 +483,59 @@ describe('Product Service - Bulk Price Update', () => {
         expect(updatedC.basePrice).toBe(75); // 50 + 25
     });
 
-    it('should optionally update offer percentage during bulk price update', async () => {
+    it('should update only the offer percentage when no price change is provided', async () => {
         const beforeA = await getProduct(productA.id);
 
         const result = await bulkUpdatePrices({
             mode: 'product',
             ids: [productA.id],
-            method: 'fixed',
-            value: 10,
-            offerPercentage: 15,
+            offerChange: {
+                operation: 'replace',
+                value: 15,
+            },
         });
 
         expect(result.modifiedCount).toBe(1);
 
         const updatedA = await getProduct(productA.id);
-        expect(updatedA.basePrice).toBe(beforeA.basePrice + 10);
+        expect(updatedA.basePrice).toBe(beforeA.basePrice);
         expect(updatedA.offerPercentage).toBe(15);
-        expect(updatedA.variantStock[0].price).toBe((beforeA.variantStock[0].price ?? 0) + 10);
+        expect(updatedA.variantStock[0].price).toBe(beforeA.variantStock[0].price);
+    });
+
+    it('should decrement prices using percentage', async () => {
+        const beforeB = await getProduct(productB.id);
+
+        const result = await bulkUpdatePrices({
+            mode: 'product',
+            ids: [productB.id],
+            priceChange: {
+                method: 'percentage',
+                direction: 'decrement',
+                value: 10,
+            },
+        });
+
+        expect(result.modifiedCount).toBe(1);
+
+        const updatedB = await getProduct(productB.id);
+        expect(updatedB.basePrice).toBe(Math.round(beforeB.basePrice * 0.9 * 100) / 100);
+    });
+
+    it('should increment offer percentage relative to the existing value', async () => {
+        const result = await bulkUpdatePrices({
+            mode: 'product',
+            ids: [productA.id],
+            offerChange: {
+                operation: 'increment',
+                value: 5,
+            },
+        });
+
+        expect(result.modifiedCount).toBe(1);
+
+        const updatedA = await getProduct(productA.id);
+        expect(updatedA.offerPercentage).toBe(20);
     });
 
     it('should update all products', async () => {
@@ -505,8 +547,11 @@ describe('Product Service - Bulk Price Update', () => {
         const result = await bulkUpdatePrices({
             mode: 'all',
             ids: [],
-            method: 'fixed',
-            value: 5,
+            priceChange: {
+                method: 'fixed',
+                direction: 'increment',
+                value: 5,
+            },
         });
 
         expect(result.modifiedCount).toBe(3);
@@ -523,13 +568,29 @@ describe('Product Service - Bulk Price Update', () => {
 
     it('should throw error when no categories selected', async () => {
         await expect(
-            bulkUpdatePrices({ mode: 'category', ids: [], method: 'fixed', value: 10 })
+            bulkUpdatePrices({
+                mode: 'category',
+                ids: [],
+                priceChange: {
+                    method: 'fixed',
+                    direction: 'increment',
+                    value: 10,
+                },
+            })
         ).rejects.toThrow('NO_CATEGORIES_SELECTED');
     });
 
     it('should throw error when no products selected', async () => {
         await expect(
-            bulkUpdatePrices({ mode: 'product', ids: [], method: 'fixed', value: 10 })
+            bulkUpdatePrices({
+                mode: 'product',
+                ids: [],
+                priceChange: {
+                    method: 'fixed',
+                    direction: 'increment',
+                    value: 10,
+                },
+            })
         ).rejects.toThrow('NO_PRODUCTS_SELECTED');
     });
 });
