@@ -1,4 +1,4 @@
-import 'server-only';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
@@ -660,3 +660,4 @@ export async function mergeCarts(sessionId: string, userId: string): Promise<Car
     const updatedUserCart = await collection.findOne({ _id: userCart._id });
     return toCart(updatedUserCart!);
 }
+enforceServerOnly('cart.service');

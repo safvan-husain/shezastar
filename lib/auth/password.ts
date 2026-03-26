@@ -1,4 +1,6 @@
-import 'server-only';
+import { enforceServerOnly } from '@/lib/utils/server-only';
+
+enforceServerOnly('auth.password');
 import bcrypt from 'bcryptjs';
 
 export async function hashPassword(password: string): Promise<string> {

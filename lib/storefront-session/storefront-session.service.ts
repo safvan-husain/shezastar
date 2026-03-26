@@ -1,4 +1,4 @@
-import 'server-only';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -246,3 +246,4 @@ export async function unbindSession(sessionId: string): Promise<void> {
         throw new AppError(404, 'SESSION_NOT_FOUND');
     }
 }
+enforceServerOnly('storefront-session.service');

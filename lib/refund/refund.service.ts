@@ -1,4 +1,4 @@
-import 'server-only';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 
 import Stripe from 'stripe';
 import { AppError } from '@/lib/errors/app-error';
@@ -313,3 +313,4 @@ export async function queueRefundForApprovedCancellation(order: Order): Promise<
         currency: stripeRefund.currency,
     };
 }
+enforceServerOnly('refund.service');

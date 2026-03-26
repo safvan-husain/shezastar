@@ -1,8 +1,10 @@
-import 'server-only';
 import { getCollection } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 import { hashPassword, verifyPassword } from './password';
 import { User, UserDocument, toUser } from './user.model';
+
+enforceServerOnly('auth.service');
 
 const COLLECTION = 'users';
 

@@ -1,4 +1,4 @@
-import 'server-only';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
@@ -480,3 +480,4 @@ export async function getSuccessfulOrdersBySessionId(sessionId: string, limit: n
         .toArray();
     return docs.map(toOrder);
 }
+enforceServerOnly('order.service');

@@ -1,4 +1,4 @@
-import 'server-only';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 
 import { cookies } from 'next/headers';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -100,3 +100,4 @@ function getSessionSecret() {
 function signPayload(payload: string) {
     return createHmac('sha256', getSessionSecret()).update(payload).digest('hex');
 }
+enforceServerOnly('storefront-session.session-token');

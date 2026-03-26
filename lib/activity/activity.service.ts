@@ -1,10 +1,9 @@
-import 'server-only';
-
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import type { AdminDocument } from '@/lib/auth/admin-auth-core';
 import type { OrderDocument } from '@/lib/order/model/order.model';
 import type { ProductDocument } from '@/lib/product/model/product.model';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 import {
     type ActivityActionType,
     type ActivityActor,
@@ -18,6 +17,8 @@ import {
     type DashboardAnalytics,
     toActivityLog,
 } from './model/activity.model';
+
+enforceServerOnly('activity.service');
 
 const COLLECTION = 'activity_logs';
 const SALES_LOOKBACK_DAYS = 90;

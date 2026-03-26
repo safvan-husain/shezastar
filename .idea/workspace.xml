@@ -6,31 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment=".">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/admin/orders/[id]/cancellation-request/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/orders/[id]/cancellation-request/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/admin/orders/[id]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/orders/[id]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/label/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/label/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/weight-check/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/weight-check/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/weights/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/weights/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/admin/products/bulk-price-update/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/products/bulk-price-update/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/checkout_sessions/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/checkout_sessions/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/products/[id]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/products/[id]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/products/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/products/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/tabby/checkout_session/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/tabby/checkout_session/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/manage/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/manage/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/manage/settings/featured-products/components/FeaturedProductsList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/manage/settings/featured-products/components/FeaturedProductsList.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/auth/admin-auth-core.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/auth/admin-auth-core.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/auth/admin-auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/auth/admin-auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/errors/app-error.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/errors/app-error.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/order/order.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/order/order.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/product/product.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/product/product.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/product/product.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/shipping/shipping.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/shipping/shipping.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/seed-admin.ts" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/seed-admin.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/integration/admin-order-shipment-weights.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/integration/admin-order-shipment-weights.test.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/integration/orders.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/integration/orders.test.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/integration/products.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/integration/products.test.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -124,7 +99,7 @@
       <updated>1771513673226</updated>
       <workItem from="1771513674270" duration="632000" />
       <workItem from="1771556521836" duration="4081000" />
-      <workItem from="1774433657770" duration="11828000" />
+      <workItem from="1774433657770" duration="12903000" />
     </task>
     <task id="LOCAL-00001" summary="feat: shipment v1">
       <option name="closed" value="true" />

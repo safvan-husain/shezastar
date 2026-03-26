@@ -1,4 +1,4 @@
-import 'server-only';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 import { AppError } from '@/lib/errors/app-error';
 import { Order } from '@/lib/order/model/order.model';
 import { BillingDetails } from '@/lib/billing-details/billing-details.schema';
@@ -457,3 +457,4 @@ export async function processSmsaTrackingWebhook(payload: SmsaTrackingWebhookPay
         unmatchedAwbs,
     };
 }
+enforceServerOnly('shipping.service');

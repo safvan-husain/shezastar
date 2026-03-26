@@ -1,5 +1,5 @@
 // lib/wishlist/wishlist.service.ts
-import 'server-only';
+import { enforceServerOnly } from '@/lib/utils/server-only';
 
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
@@ -296,3 +296,4 @@ export async function mergeWishlists(sessionId: string, userId: string): Promise
     const updated = await collection.findOne({ _id: userWishlist._id });
     return toWishlist(updated!);
 }
+enforceServerOnly('wishlist.service');
