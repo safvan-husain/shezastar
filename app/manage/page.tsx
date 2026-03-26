@@ -146,13 +146,6 @@ export default async function ManageDashboardPage() {
             <div className="space-y-6 p-5 sm:p-8 ">
                 <section className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[linear-gradient(160deg,var(--bg-base)_0%,var(--bg-elevated)_58%,var(--bg-subtle)_100%)] p-6 sm:p-8">
                     <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                        <div className="space-y-4">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--text-secondary)]">
-                                <span className="h-2 w-2 rounded-full bg-[var(--text-primary)]" />
-                                Admin analytics
-                            </div>
-                        </div>
-
                         <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
                             <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-base)] shadow-[var(--shadow-sm)]">
                                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
