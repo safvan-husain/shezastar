@@ -179,23 +179,64 @@ export default async function ManageDashboardPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+        <div className="min-h-screen rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]">
             {stats.error && <ErrorToastHandler error={stats.error} />}
-            <div className="container mx-auto px-4 py-10 max-w-6xl space-y-10">
-                <div className="space-y-3">
-                    <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--text-secondary)]">
-                        Admin dashboard
-                    </p>
-                    <h1 className="text-4xl font-bold">ShezaStar Control Center</h1>
-                    <p className="text-lg text-[var(--text-secondary)] max-w-3xl">
-                        Monitor storefront health, curate the product catalog, and keep orders moving without
-                        jumping between multiple tools.
-                    </p>
-                </div>
+            <div className="space-y-8 p-5 sm:p-8">
+                <section className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[linear-gradient(135deg,var(--bg-base)_0%,var(--bg-elevated)_55%,var(--bg-subtle)_100%)]">
+                    <div className="grid gap-8 p-6 lg:grid-cols-[1.6fr_0.9fr] lg:p-8">
+                        <div className="space-y-5">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                                <span className="h-2 w-2 rounded-full bg-[var(--text-primary)]" />
+                                Admin dashboard
+                            </div>
+                            <div className="space-y-3">
+                                <h1 className="max-w-3xl text-4xl font-bold tracking-[-0.04em] sm:text-5xl">
+                                    Run the admin panel from one clean control surface.
+                                </h1>
+                                <p className="max-w-2xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
+                                    The navigation now lives on the right, quick actions stay one click away, and the dashboard surfaces use tighter corners for a cleaner operating feel.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                <Link href="/manage/products/new">
+                                    <Button variant="primary" className="rounded-[var(--radius-md)]">
+                                        Add product
+                                    </Button>
+                                </Link>
+                                <Link href="/manage/orders">
+                                    <Button variant="outline" className="rounded-[var(--radius-md)]">
+                                        Review orders
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
 
-                <section className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                            <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-[var(--shadow-sm)]">
+                                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-muted)]">
+                                    Catalog
+                                </p>
+                                <p className="mt-3 text-3xl font-semibold">{stats.products ?? '—'}</p>
+                                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                                    Active products currently available in the storefront.
+                                </p>
+                            </div>
+                            <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-[var(--shadow-sm)]">
+                                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-muted)]">
+                                    Operations
+                                </p>
+                                <p className="mt-3 text-3xl font-semibold">{stats.orders ?? '—'}</p>
+                                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                                    Orders in the system ready for review, shipping, or support.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     {statItems.map((item) => (
-                        <Card key={item.label} className="flex flex-col gap-4">
+                        <Card key={item.label} className="flex flex-col gap-4 rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
                             <div className="flex items-center justify-between text-sm text-[var(--text-secondary)]">
                                 <span>{item.label}</span>
                                 <span className="font-mono text-xs text-[var(--text-muted)]">
@@ -219,14 +260,14 @@ export default async function ManageDashboardPage() {
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-semibold">Quick actions</h2>
                         <Link href="/manage/settings">
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" className="rounded-[var(--radius-md)]">
                                 Open settings
                             </Button>
                         </Link>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                         {QUICK_ACTIONS.map((action) => (
-                            <Card key={action.title} className="flex flex-col justify-between gap-4">
+                            <Card key={action.title} className="flex flex-col justify-between gap-4 rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
                                 <div>
                                     <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
                                         {action.title}
@@ -236,7 +277,7 @@ export default async function ManageDashboardPage() {
                                     </p>
                                 </div>
                                 <Link href={action.href} className="self-start">
-                                    <Button variant="primary" size="sm">
+                                    <Button variant="primary" size="sm" className="rounded-[var(--radius-md)]">
                                         {action.actionLabel}
                                     </Button>
                                 </Link>

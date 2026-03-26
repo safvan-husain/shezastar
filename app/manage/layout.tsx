@@ -14,8 +14,12 @@ export default async function ManageLayout({
 
     return (
         <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
-            <AdminNavbar />
-            <main>{children}</main>
+            <div className="mx-auto flex min-h-screen w-full max-w-[1600px] gap-3 px-3 py-3 sm:gap-4 sm:px-4">
+                <AdminNavbar />
+                <main className="min-w-0 flex-1">
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }
