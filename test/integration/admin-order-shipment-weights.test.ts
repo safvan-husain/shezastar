@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { GET as shipmentTrackHandler } from '@/app/api/admin/orders/[id]/shipment/route';
 import { GET as weightCheckHandler } from '@/app/api/admin/orders/[id]/shipment/weight-check/route';
 import { PATCH as updateWeightsHandler } from '@/app/api/admin/orders/[id]/shipment/weights/route';
 import { createOrder, getOrderById } from '@/lib/order/order.service';
@@ -301,6 +302,75 @@ describe('Admin shipment weight flow', () => {
 
         const updatedOrder = await getOrderById(order.id);
         expect(updatedOrder.shipping?.awb).toBe('231200021000');
+    });
+
+    it('updates order status from latest tracking scan when webhook did not fire', async () => {
+        const order = await createOrder({
+            ...buildOrderData([
+                {
+                    productId: 'prod-1',
+                    productName: 'Trackable Product',
+                    selectedVariantItemIds: [],
+                    quantity: 1,
+                    unitPrice: 80,
+                },
+            ]),
+            status: 'requested_shipment',
+            shipping: {
+                provider: 'smsa',
+                awb: '231200021000',
+                createdAt: new Date('2026-03-26T08:00:00Z'),
+                status: 'created',
+            },
+        });
+
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    AWB: '231200021000',
+                    Reference: order.id,
+                    isDelivered: false,
+                    Scans: [
+                        {
+                            City: 'Riyadh',
+                            ScanType: 'OD',
+                            ScanDescription: 'Out for Delivery',
+                            ScanDateTime: '2026-03-26T10:00:00',
+                            ScanTimeZone: '+03:00',
+                        },
+                        {
+                            City: 'Jeddah',
+                            ScanType: 'AF',
+                            ScanDescription: 'Arrived Delivery Facility',
+                            ScanDateTime: '2026-03-26T09:00:00',
+                            ScanTimeZone: '+03:00',
+                        },
+                    ],
+                }),
+                {
+                    status: 200,
+                    headers: { 'content-type': 'application/json' },
+                }
+            )
+        ));
+
+        process.env.SMSA_BASE_URL = 'https://example.com';
+        process.env.SMSA_API_KEY = 'test-api-key';
+
+        const req = new Request(`http://localhost/api/admin/orders/${order.id}/shipment`, {
+            method: 'GET',
+        });
+
+        const res = await shipmentTrackHandler(req, { params: Promise.resolve({ id: order.id }) });
+        const body = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(body.AWB).toBe('231200021000');
+
+        const updatedOrder = await getOrderById(order.id);
+        expect(updatedOrder.status).toBe('OD');
+        expect(updatedOrder.shipping?.status).toBe('Out for Delivery');
+        expect(updatedOrder.shipping?.lastTrackedAt).toBe('2026-03-26T07:00:00.000Z');
     });
 
     it('shipment POST still returns missing-weight error as fallback guard', async () => {

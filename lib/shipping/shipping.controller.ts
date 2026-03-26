@@ -9,6 +9,7 @@ import {
     getOrderMissingWeightProducts,
     updateOrderProductWeights,
     processSmsaTrackingWebhook,
+    syncOrderTrackingState,
 } from './shipping.service';
 import {
     CreateShipmentInputSchema,
@@ -133,6 +134,7 @@ export async function handleTrackShipment(orderId: string) {
         }
 
         const data = await trackShipment(order.shipping.awb, order.id);
+        await syncOrderTrackingState(order.id, order.status, data);
         return { status: 200, body: data };
     } catch (err) {
         return catchError(err);

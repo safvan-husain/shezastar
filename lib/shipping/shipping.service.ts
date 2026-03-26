@@ -351,8 +351,9 @@ export async function getShipmentLabel(awb: string): Promise<Buffer> {
 }
 
 type SmsaTrackingWebhookScan = NonNullable<SmsaTrackingWebhookItem['Scans']>[number];
+const cancellationManagedStatuses = new Set(['cancellation_requested', 'cancellation_approved', 'cancelled']);
 
-function resolveLatestScan(shipment: SmsaTrackingWebhookItem): SmsaTrackingWebhookScan | undefined {
+function resolveLatestScan(shipment: { Scans?: SmsaTrackingWebhookItem['Scans'] }): SmsaTrackingWebhookScan | undefined {
     if (!shipment.Scans || shipment.Scans.length === 0) {
         return undefined;
     }
@@ -401,13 +402,73 @@ export interface SmsaTrackingWebhookProcessResult {
     unmatchedAwbs: string[];
 }
 
+function buildTrackingUpdateSet(
+    shipment: Pick<SmsaTrackingWebhookItem, 'Scans' | 'isDelivered'>,
+    currentOrderStatus: string,
+): Record<string, unknown> {
+    const latestScan = resolveLatestScan(shipment);
+    const latestScanDate = latestScan
+        ? parseScanTimestamp(latestScan.ScanDateTime, latestScan.ScanTimeZone)
+        : null;
+
+    const shippingStatus = latestScan?.ScanDescription
+        || latestScan?.ScanType
+        || (shipment.isDelivered ? 'Delivered' : undefined);
+
+    const updateSet: Record<string, unknown> = {
+        updatedAt: new Date(),
+    };
+
+    if (shippingStatus) {
+        updateSet['shipping.status'] = shippingStatus;
+    }
+
+    if (latestScanDate && latestScanDate.getTime() > 0) {
+        updateSet['shipping.lastTrackedAt'] = latestScanDate;
+    }
+
+    const scanTypeStatus = latestScan?.ScanType?.trim();
+    const resolvedScanStatus = scanTypeStatus && scanTypeStatus.length > 0
+        ? scanTypeStatus
+        : (shipment.isDelivered ? 'DL' : undefined);
+
+    if (
+        resolvedScanStatus
+        && !cancellationManagedStatuses.has(currentOrderStatus)
+        && currentOrderStatus !== 'refund_failed'
+        && currentOrderStatus !== 'failed'
+    ) {
+        updateSet.status = resolvedScanStatus;
+    }
+
+    return updateSet;
+}
+
+export async function syncOrderTrackingState(
+    orderId: string,
+    currentOrderStatus: string,
+    shipment: SmsaTrackingResponse,
+): Promise<void> {
+    const collection = await getCollection<OrderDocument>('orders');
+    const updateSet = buildTrackingUpdateSet(shipment, currentOrderStatus);
+
+    await collection.updateOne(
+        {
+            _id: new ObjectId(orderId),
+            'shipping.provider': 'smsa',
+        } as any,
+        {
+            $set: updateSet,
+        },
+    );
+}
+
 export async function processSmsaTrackingWebhook(payload: SmsaTrackingWebhookPayload): Promise<SmsaTrackingWebhookProcessResult> {
     const collection = await getCollection<OrderDocument>('orders');
 
     let updatedOrders = 0;
     let statusTransitionedOrders = 0;
     const unmatchedAwbs: string[] = [];
-    const cancellationManagedStatuses = new Set(['cancellation_requested', 'cancellation_approved', 'cancelled']);
 
     for (const shipment of payload) {
         const awb = shipment.AWB.trim();
@@ -432,39 +493,8 @@ export async function processSmsaTrackingWebhook(payload: SmsaTrackingWebhookPay
             continue;
         }
 
-        const latestScan = resolveLatestScan(shipment);
-        const latestScanDate = latestScan
-            ? parseScanTimestamp(latestScan.ScanDateTime, latestScan.ScanTimeZone)
-            : null;
-
-        const shippingStatus = latestScan?.ScanDescription
-            || latestScan?.ScanType
-            || (shipment.isDelivered ? 'Delivered' : undefined);
-
-        const updateSet: Record<string, unknown> = {
-            updatedAt: new Date(),
-        };
-
-        if (shippingStatus) {
-            updateSet['shipping.status'] = shippingStatus;
-        }
-
-        if (latestScanDate && latestScanDate.getTime() > 0) {
-            updateSet['shipping.lastTrackedAt'] = latestScanDate;
-        }
-
-        const scanTypeStatus = latestScan?.ScanType?.trim();
-        const resolvedScanStatus = scanTypeStatus && scanTypeStatus.length > 0
-            ? scanTypeStatus
-            : (shipment.isDelivered ? 'DL' : undefined);
-
-        if (
-            resolvedScanStatus
-            && !cancellationManagedStatuses.has(orderDoc.status)
-            && orderDoc.status !== 'refund_failed'
-            && orderDoc.status !== 'failed'
-        ) {
-            updateSet.status = resolvedScanStatus;
+        const updateSet = buildTrackingUpdateSet(shipment, orderDoc.status);
+        if (typeof updateSet.status === 'string' && updateSet.status !== orderDoc.status) {
             statusTransitionedOrders += 1;
         }
 
