@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { CategoryTreeSelector } from './CategoryTreeSelector';
 import { ProductSearchSelector } from './ProductSearchSelector';
+import { handleApiError } from '@/lib/utils/api-error-handler';
 
 type Mode = 'category' | 'product' | 'all';
 type Method = 'percentage' | 'fixed';
@@ -39,13 +40,22 @@ export default function BulkPriceUpdateClient() {
     const [mode, setMode] = useState<Mode>('category');
     const [method, setMethod] = useState<Method>('percentage');
     const [value, setValue] = useState('');
+    const [offerPercentage, setOfferPercentage] = useState('');
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
     const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const { showToast } = useToast();
+    const parsedOfferPercentage =
+        offerPercentage.trim() === '' ? undefined : Number(offerPercentage);
 
     const canSubmit = () => {
         if (!value || Number(value) <= 0) return false;
+        if (
+            parsedOfferPercentage !== undefined &&
+            (Number.isNaN(parsedOfferPercentage) || parsedOfferPercentage < 0 || parsedOfferPercentage > 100)
+        ) {
+            return false;
+        }
         if (mode === 'category' && selectedCategoryIds.length === 0) return false;
         if (mode === 'product' && selectedProducts.length === 0) return false;
         return true;
@@ -55,6 +65,7 @@ export default function BulkPriceUpdateClient() {
         if (!canSubmit()) return;
 
         setSubmitting(true);
+        let apiErrorHandled = false;
         try {
             const ids =
                 mode === 'category'
@@ -71,12 +82,13 @@ export default function BulkPriceUpdateClient() {
                     ids,
                     method,
                     value: Number(value),
+                    ...(parsedOfferPercentage !== undefined ? { offerPercentage: parsedOfferPercentage } : {}),
                 }),
             });
 
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.message || data.error || 'Failed to update prices');
+                apiErrorHandled = true;
+                await handleApiError(res, showToast);
             }
 
             const result = await res.json();
@@ -87,10 +99,28 @@ export default function BulkPriceUpdateClient() {
 
             // Reset selections after success
             setValue('');
+            setOfferPercentage('');
             setSelectedCategoryIds([]);
             setSelectedProducts([]);
         } catch (err: any) {
-            showToast(err.message || 'Failed to update prices', 'error');
+            if (apiErrorHandled) {
+                return;
+            }
+
+            if (err instanceof Error && err.message) {
+                showToast(err.message, 'error', {
+                    url: '/api/admin/products/bulk-price-update',
+                    method: 'POST',
+                    body: { error: err.message },
+                });
+                return;
+            }
+
+            showToast('Failed to update prices', 'error', {
+                url: '/api/admin/products/bulk-price-update',
+                method: 'POST',
+                body: { error: 'Failed to update prices' },
+            });
         } finally {
             setSubmitting(false);
         }
@@ -240,6 +270,27 @@ export default function BulkPriceUpdateClient() {
                                     For example, AED 100 → AED {(100 + Number(value)).toFixed(2)}
                                 </span>
                             )}
+                        </div>
+                    )}
+
+                    <Input
+                        label="Offer Percentage (Optional)"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        placeholder="Leave blank to keep existing offers"
+                        value={offerPercentage}
+                        onChange={e => setOfferPercentage(e.target.value)}
+                    />
+
+                    <p className="text-sm text-[var(--text-secondary)]">
+                        Set a value from 0 to 100 to overwrite each selected product&apos;s offer percentage. Leave it blank to keep the current offer percentage unchanged.
+                    </p>
+
+                    {parsedOfferPercentage !== undefined && (
+                        <div className="p-3 bg-[var(--muted)] rounded-lg text-sm text-[var(--text-secondary)]">
+                            Each selected product&apos;s offer percentage will be set to <strong>{parsedOfferPercentage}%</strong>.
                         </div>
                     )}
                 </div>

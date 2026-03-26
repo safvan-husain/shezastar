@@ -88,6 +88,7 @@ export const BulkPriceUpdateSchema = z.object({
     ids: z.array(z.string()).default([]),   // category or product IDs depending on mode
     method: z.enum(['percentage', 'fixed']),
     value: z.number().positive('Value must be positive'),
+    offerPercentage: z.number().min(0).max(100).optional(),
 });
 
 export type ProductSpecification = z.infer<typeof ProductSpecificationSchema>;

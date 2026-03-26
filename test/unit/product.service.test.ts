@@ -477,6 +477,25 @@ describe('Product Service - Bulk Price Update', () => {
         expect(updatedC.basePrice).toBe(75); // 50 + 25
     });
 
+    it('should optionally update offer percentage during bulk price update', async () => {
+        const beforeA = await getProduct(productA.id);
+
+        const result = await bulkUpdatePrices({
+            mode: 'product',
+            ids: [productA.id],
+            method: 'fixed',
+            value: 10,
+            offerPercentage: 15,
+        });
+
+        expect(result.modifiedCount).toBe(1);
+
+        const updatedA = await getProduct(productA.id);
+        expect(updatedA.basePrice).toBe(beforeA.basePrice + 10);
+        expect(updatedA.offerPercentage).toBe(15);
+        expect(updatedA.variantStock[0].price).toBe((beforeA.variantStock[0].price ?? 0) + 10);
+    });
+
     it('should update all products', async () => {
         // Snapshot current prices
         const beforeA = await getProduct(productA.id);

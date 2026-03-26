@@ -127,6 +127,7 @@ describe('Admin activity integration', () => {
                 ids: [productA.id, productB.id],
                 method: 'fixed',
                 value: 25,
+                offerPercentage: 12,
             }),
         });
 
@@ -141,11 +142,13 @@ describe('Admin activity integration', () => {
                     productId: productA.id,
                     basePriceBefore: 100,
                     basePriceAfter: 125,
+                    offerPercentageAfter: 12,
                 }),
                 expect.objectContaining({
                     productId: productB.id,
                     basePriceBefore: 200,
                     basePriceAfter: 225,
+                    offerPercentageAfter: 12,
                 }),
             ]),
         );

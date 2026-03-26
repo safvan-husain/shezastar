@@ -617,6 +617,7 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: Acti
             input.method === 'percentage'
                 ? Math.round(doc.basePrice * (1 + input.value / 100) * 100) / 100
                 : Math.round((doc.basePrice + input.value) * 100) / 100;
+        const newOfferPercentage = input.offerPercentage ?? doc.offerPercentage;
 
         const newVariantStock = (doc.variantStock || []).map(vs => {
             if (vs.price != null) {
@@ -632,16 +633,18 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: Acti
         return {
             doc,
             newBasePrice,
+            newOfferPercentage,
             newVariantStock,
         };
     });
 
-    const operations = operationDetails.map(({ doc, newBasePrice, newVariantStock }) => ({
+    const operations = operationDetails.map(({ doc, newBasePrice, newOfferPercentage, newVariantStock }) => ({
         updateOne: {
             filter: { _id: doc._id },
             update: {
                 $set: {
                     basePrice: newBasePrice,
+                    offerPercentage: newOfferPercentage,
                     variantStock: newVariantStock,
                     updatedAt: new Date(),
                 },
@@ -670,12 +673,15 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: Acti
                 mode: input.mode,
                 method: input.method,
                 value: input.value,
+                offerPercentage: input.offerPercentage,
                 affectedCount: docs.length,
-                products: operationDetails.map(({ doc, newBasePrice, newVariantStock }) => ({
+                products: operationDetails.map(({ doc, newBasePrice, newOfferPercentage, newVariantStock }) => ({
                     productId: doc._id.toHexString(),
                     name: doc.name,
                     basePriceBefore: doc.basePrice,
                     basePriceAfter: newBasePrice,
+                    offerPercentageBefore: doc.offerPercentage,
+                    offerPercentageAfter: newOfferPercentage,
                     variantPriceDeltas: (doc.variantStock || []).flatMap((entry, index) => {
                         const nextEntry = newVariantStock[index];
                         if (entry.price == null || nextEntry?.price == null || entry.price === nextEntry.price) {
