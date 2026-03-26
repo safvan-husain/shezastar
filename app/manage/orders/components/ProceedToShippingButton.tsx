@@ -253,18 +253,18 @@ export function ProceedToShippingButton({ order }: ProceedToShippingButtonProps)
 
             {showWeightModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] shadow-[var(--shadow-md)] p-6">
-                        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+                    <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-md flex-col rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-6 text-left shadow-[var(--shadow-md)]">
+                        <h2 className="mb-1 whitespace-normal break-words text-left [overflow-wrap:anywhere] text-lg font-semibold text-[var(--text-primary)]">
                             Missing Product Weights
                         </h2>
-                        <p className="text-sm text-[var(--text-secondary)] mb-5">
+                        <p className="mb-5 whitespace-normal break-words text-left [overflow-wrap:anywhere] text-sm text-[var(--text-secondary)]">
                             The following products don&apos;t have a weight set. Enter the weight in KG for each before creating the shipment.
                         </p>
 
-                        <div className="space-y-4">
+                        <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
                             {missingProducts.map((product) => (
                                 <div key={product.productId}>
-                                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+                                    <label className="mb-1 block whitespace-normal break-words text-left [overflow-wrap:anywhere] text-sm font-medium text-[var(--text-primary)]">
                                         {product.productName}
                                     </label>
                                     <div className="flex items-center gap-2">
