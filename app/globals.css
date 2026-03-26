@@ -52,6 +52,21 @@
   --warning: #404040;
   --danger: #000000;
 
+  /* Admin order status accents */
+  --order-status-pending: #a16207;
+  --order-status-paid: #0f766e;
+  --order-status-requested-shipment: #2563eb;
+  --order-status-shipped: #2563eb;
+  --order-status-af: #4f46e5;
+  --order-status-od: #7c3aed;
+  --order-status-dl: #15803d;
+  --order-status-cancellation-requested: #c2410c;
+  --order-status-cancellation-approved: #b91c1c;
+  --order-status-cancelled: #dc2626;
+  --order-status-refund-failed: #be123c;
+  --order-status-failed: #6b7280;
+  --order-status-default: #525252;
+
   /* Storefront-specific tokens (ALWAYS LIGHT MODE - no dark mode support) */
   --storefront-bg: #ffffff;
   --storefront-bg-subtle: #f9fafb;
@@ -118,6 +133,20 @@
     --success: #ffffff;
     --warning: #d4d4d4;
     --danger: #ffffff;
+
+    --order-status-pending: #fbbf24;
+    --order-status-paid: #2dd4bf;
+    --order-status-requested-shipment: #60a5fa;
+    --order-status-shipped: #60a5fa;
+    --order-status-af: #818cf8;
+    --order-status-od: #a78bfa;
+    --order-status-dl: #4ade80;
+    --order-status-cancellation-requested: #fb923c;
+    --order-status-cancellation-approved: #f87171;
+    --order-status-cancelled: #ef4444;
+    --order-status-refund-failed: #fb7185;
+    --order-status-failed: #a3a3a3;
+    --order-status-default: #d4d4d4;
 
     /* Storefront tokens remain LIGHT MODE even in dark mode */
     /* DO NOT override storefront variables - they are always light */

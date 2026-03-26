@@ -1,5 +1,7 @@
 import { catchError, AppError } from '@/lib/errors/app-error';
 import { getOrderById, setOrderShipping, updateOrderStatusById } from '@/lib/order/order.service';
+import { createActivityLog } from '@/lib/activity/activity.service';
+import type { ActivityActor } from '@/lib/activity/model/activity.model';
 import {
     createB2cShipment,
     getShipmentLabel,
@@ -33,7 +35,7 @@ function assertShipmentEligible(order: Awaited<ReturnType<typeof getOrderById>>)
     }
 }
 
-export async function handleCreateShipment(orderId: string, input: unknown) {
+export async function handleCreateShipment(orderId: string, input: unknown, actor?: ActivityActor) {
     try {
         const order = await getOrderById(orderId);
         assertShipmentEligible(order);
@@ -53,6 +55,29 @@ export async function handleCreateShipment(orderId: string, input: unknown) {
         });
 
         await updateOrderStatusById(orderId, 'requested_shipment');
+
+        if (actor && tracking.shipping) {
+            await createActivityLog({
+                actionType: 'order.shipment_created',
+                actor,
+                primaryEntity: {
+                    kind: 'order',
+                    id: order.id,
+                    label: `Order #${order.id.slice(0, 8)}`,
+                },
+                relatedEntities: order.items.map((item) => ({
+                    kind: 'product' as const,
+                    id: item.productId,
+                    label: item.productName,
+                })),
+                summary: `${actor.displayName?.trim() || 'Admin'} created shipment for Order #${order.id.slice(0, 8)}`,
+                details: {
+                    provider: tracking.shipping.provider,
+                    awb: tracking.shipping.awb,
+                    status: tracking.shipping.status,
+                },
+            });
+        }
 
         return { status: 200, body: tracking.shipping };
 

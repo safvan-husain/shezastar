@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { handleShipmentWeightCheck } from '@/lib/shipping/shipping.controller';
+
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { catchError } from '@/lib/errors/app-error';
+import { handleGetDashboardAnalytics } from '@/lib/activity/activity.controller';
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET() {
     try {
         await requireAdminApiAuth();
-        const { id } = await params;
-        const { status, body } = await handleShipmentWeightCheck(id);
+        const { status, body } = await handleGetDashboardAnalytics();
         return NextResponse.json(body, { status });
     } catch (error) {
         const handled = catchError(error);

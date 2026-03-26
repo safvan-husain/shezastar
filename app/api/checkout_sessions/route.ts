@@ -15,6 +15,7 @@ import { getProduct } from '@/lib/product/product.service';
 import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
+import { buildCustomerActivityActor, createActivityLog } from '@/lib/activity/activity.service';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {})
@@ -346,6 +347,33 @@ export async function POST(req: NextRequest) {
             status: 'pending',
             billingDetails: billingDetails,
             userId: storefrontSession.userId ? new ObjectId(storefrontSession.userId) : undefined,
+        });
+
+        await createActivityLog({
+            actionType: 'order.created',
+            actor: buildCustomerActivityActor({
+                sessionId,
+                userId: storefrontSession.userId,
+                displayName: billingName || billingDetails.email,
+            }),
+            primaryEntity: {
+                kind: 'order',
+                id: pendingOrder.id,
+                label: `Order #${pendingOrder.id.slice(0, 8)}`,
+            },
+            relatedEntities: pendingOrder.items.map((item) => ({
+                kind: 'product',
+                id: item.productId,
+                label: item.productName,
+            })),
+            summary: `${billingName || billingDetails.email || 'Customer'} created order #${pendingOrder.id.slice(0, 8)}`,
+            details: {
+                paymentProvider: pendingOrder.paymentProvider,
+                status: pendingOrder.status,
+                totalAmount: pendingOrder.totalAmount,
+                currency: pendingOrder.currency,
+                itemCount: pendingOrder.items.length,
+            },
         });
 
         metadata.orderId = pendingOrder.id;

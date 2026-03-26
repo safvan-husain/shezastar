@@ -8,11 +8,12 @@ import {
 } from './product.schema';
 import * as productService from './product.service';
 import { z } from 'zod';
+import type { ActivityActor } from '@/lib/activity/model/activity.model';
 
-export async function handleCreateProduct(input: unknown) {
+export async function handleCreateProduct(input: unknown, actor?: ActivityActor) {
     try {
         const parsed = CreateProductSchema.parse(input);
-        const result = await productService.createProduct(parsed);
+        const result = await productService.createProduct(parsed, actor);
         return { status: 201, body: result };
     } catch (err) {
         return catchError(err);
@@ -37,19 +38,19 @@ export async function handleGetAllProducts(page?: number, limit?: number, catego
     }
 }
 
-export async function handleUpdateProduct(id: string, input: unknown) {
+export async function handleUpdateProduct(id: string, input: unknown, actor?: ActivityActor) {
     try {
         const parsed = UpdateProductSchema.parse(input);
-        const result = await productService.updateProduct(id, parsed);
+        const result = await productService.updateProduct(id, parsed, actor);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);
     }
 }
 
-export async function handleDeleteProduct(id: string) {
+export async function handleDeleteProduct(id: string, actor?: ActivityActor) {
     try {
-        const result = await productService.deleteProduct(id);
+        const result = await productService.deleteProduct(id, actor);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);

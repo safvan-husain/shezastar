@@ -7,6 +7,9 @@ import {
 import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
 import { searchProducts } from '@/lib/product/product.service';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { buildAdminActivityActor } from '@/lib/activity/activity.service';
+import { catchError } from '@/lib/errors/app-error';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -55,6 +58,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     try {
+        const admin = await requireAdminApiAuth();
+        const actor = buildAdminActivityActor(admin);
         const contentType = req.headers.get('content-type');
 
         // Support both JSON (used by tests) and multipart/form-data (used by the app)
@@ -117,14 +122,18 @@ export async function POST(req: Request) {
                 brandId,
             };
 
-            const { status, body } = await handleCreateProduct(productData);
+            const { status, body } = await handleCreateProduct(productData, actor);
             return NextResponse.json(body, { status });
         }
 
         const jsonData = await req.json();
-        const { status, body } = await handleCreateProduct(jsonData);
+        const { status, body } = await handleCreateProduct(jsonData, actor);
         return NextResponse.json(body, { status });
     } catch (error: any) {
+        const handled = catchError(error);
+        if (handled.status !== 500 || error?.code === 'UNAUTHORIZED') {
+            return NextResponse.json(handled.body, { status: handled.status });
+        }
         return NextResponse.json(
             { error: error.message || 'Failed to create product' },
             { status: 500 }

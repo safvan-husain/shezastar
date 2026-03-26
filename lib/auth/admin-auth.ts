@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { getCollection } from '@/lib/db/mongo-client';
+import { AppError } from '@/lib/errors/app-error';
 import { AdminDocument } from '@/lib/auth/admin-auth-core';
+import { ObjectId } from 'mongodb';
 
 export * from '@/lib/auth/admin-auth-core';
 
@@ -20,6 +22,15 @@ interface AuthPayload {
 export async function getAdminDocument(): Promise<AdminDocument | null> {
     const collection = await getCollection<AdminDocument>('admins');
     return collection.findOne({}, { sort: { createdAt: 1 } });
+}
+
+export async function getAdminDocumentById(adminId: string): Promise<AdminDocument | null> {
+    if (!ObjectId.isValid(adminId)) {
+        return null;
+    }
+
+    const collection = await getCollection<AdminDocument>('admins');
+    return collection.findOne({ _id: new ObjectId(adminId) });
 }
 
 export function createAdminSessionToken(adminId: string) {
@@ -100,9 +111,27 @@ export async function requireAdminAuth() {
         redirect('/login?error=admin-not-configured');
     }
 
-    const session = parseAdminSessionToken((await cookies()).get(ADMIN_COOKIE_NAME)?.value);
-    if (!session || session.adminId !== admin?._id.toString()) {
+    const authenticatedAdmin = await getAuthenticatedAdmin();
+    if (!authenticatedAdmin || authenticatedAdmin._id.toString() !== admin?._id.toString()) {
         redirect('/login');
+    }
+
+    return authenticatedAdmin;
+}
+
+export async function getAuthenticatedAdmin(): Promise<AdminDocument | null> {
+    const session = parseAdminSessionToken((await cookies()).get(ADMIN_COOKIE_NAME)?.value);
+    if (!session) {
+        return null;
+    }
+
+    return getAdminDocumentById(session.adminId);
+}
+
+export async function requireAdminApiAuth(): Promise<AdminDocument> {
+    const admin = await getAuthenticatedAdmin();
+    if (!admin) {
+        throw new AppError(401, 'UNAUTHORIZED', { message: 'Unauthorized' });
     }
 
     return admin;

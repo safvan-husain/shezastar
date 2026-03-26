@@ -1,289 +1,432 @@
 import Link from 'next/link';
 
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
+import { handleGetDashboardAnalytics } from '@/lib/activity/activity.controller';
+import type { DashboardAnalytics } from '@/lib/activity/model/activity.model';
 
-const QUICK_ACTIONS = [
-    {
-        title: 'Add a product',
-        description: 'Create new catalog entries and upload images.',
-        href: '/manage/products/new',
-        actionLabel: 'Create Product',
-    },
-    {
-        title: 'Review orders',
-        description: 'Fulfill or cancel orders and monitor customer progress.',
-        href: '/manage/orders',
-        actionLabel: 'View Orders',
-    },
-    {
-        title: 'Organize categories',
-        description: 'Manage categories, subcategories, and hierarchy.',
-        href: '/manage/categories',
-        actionLabel: 'Open Categories',
-    },
-    {
-        title: 'Update settings',
-        description: 'Tweak featured products, hero banners, and custom cards.',
-        href: '/manage/settings',
-        actionLabel: 'Open Settings',
-    },
-    {
-        title: 'Bulk price update',
-        description: 'Update prices in bulk by category, product, or all at once.',
-        href: '/manage/products/bulk-price-update',
-        actionLabel: 'Update Prices',
-    },
-];
-
-type DashboardStats = {
-    orders: number | null;
-    products: number | null;
-    categories: number | null;
-    variantTypes: number | null;
-    error: ToastErrorPayload | null;
-};
-
-type StatFetchResult = {
-    value: number | null;
-    error: ToastErrorPayload | null;
-};
-
-type PaginatedResponse = {
-    pagination?: {
-        total?: number;
-    };
-};
-
-async function getDashboardStats(): Promise<DashboardStats> {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-    const [ordersResult, productsResult, categoriesResult, variantsResult] = await Promise.all([
-        fetchStat(`${baseUrl}/api/admin/orders?limit=1`, 'orders', (data: unknown) => {
-            const response = data as PaginatedResponse;
-            return typeof response?.pagination?.total === 'number' ? response.pagination.total : null;
-        }),
-        fetchStat(`${baseUrl}/api/products?limit=1`, 'products', (data: unknown) => {
-            const response = data as PaginatedResponse;
-            return typeof response?.pagination?.total === 'number' ? response.pagination.total : null;
-        }),
-        fetchStat(`${baseUrl}/api/categories`, 'categories', data =>
-            Array.isArray(data) ? data.length : null
-        ),
-        fetchStat(`${baseUrl}/api/variant-types`, 'variant types', data =>
-            Array.isArray(data) ? data.length : null
-        ),
-    ]);
-
-    const firstError =
-        ordersResult.error || productsResult.error || categoriesResult.error || variantsResult.error || null;
-
-    return {
-        orders: ordersResult.value,
-        products: productsResult.value,
-        categories: categoriesResult.value,
-        variantTypes: variantsResult.value,
-        error: firstError,
-    };
+function formatCurrency(amount: number) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'AED',
+        maximumFractionDigits: 0,
+    }).format(amount);
 }
 
-async function fetchStat(
-    url: string,
-    label: string,
-    transform: (payload: unknown) => number | null
-): Promise<StatFetchResult> {
-    try {
-        const response = await fetch(url, { cache: 'no-store' });
-        const body = await safeParseJson(response);
+function formatDateLabel(date: string) {
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+    }).format(new Date(`${date}T00:00:00.000Z`));
+}
 
-        if (!response.ok) {
-            return {
-                value: null,
-                error: buildErrorPayload(
-                    label,
-                    response.status,
-                    body,
-                    response.url,
-                    'GET'
-                ),
-            };
-        }
+function formatDateTime(date: string) {
+    return new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(date));
+}
 
+function formatStatus(status: string) {
+    if (/^[A-Z]{2,3}$/.test(status)) {
+        return status;
+    }
+
+    return status
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+}
+
+function getStatusColor(status: string) {
+    const normalized = status.toLowerCase();
+    const colorMap: Record<string, string> = {
+        pending: '#d97706',
+        paid: '#0f766e',
+        requested_shipment: '#2563eb',
+        shipped: '#2563eb',
+        af: '#4f46e5',
+        od: '#7c3aed',
+        dl: '#16a34a',
+        cancellation_requested: '#ea580c',
+        cancellation_approved: '#dc2626',
+        cancelled: '#b91c1c',
+        refund_failed: '#be185d',
+        failed: '#6b7280',
+    };
+
+    return colorMap[normalized] || '#525252';
+}
+
+async function getDashboardData(): Promise<{
+    analytics: DashboardAnalytics | null;
+    error: ToastErrorPayload | null;
+}> {
+    const { status, body } = await handleGetDashboardAnalytics();
+    if (status >= 200 && status < 300) {
         return {
-            value: transform(body),
+            analytics: body as DashboardAnalytics,
             error: null,
         };
-    } catch (error) {
-        const payload: ToastErrorPayload = {
-            message: `Unable to load ${label}`,
-            body: error instanceof Error ? { message: error.message, stack: error.stack } : { error },
-            url,
-            method: 'GET',
-        };
-        return { value: null, error: payload };
     }
-}
 
-async function safeParseJson(response: Response) {
-    try {
-        return await response.json();
-    } catch {
-        return { error: 'Failed to parse response body' };
-    }
-}
-
-function buildErrorPayload(
-    label: string,
-    status: number,
-    body: unknown,
-    url: string,
-    method: string
-): ToastErrorPayload {
     return {
-        message: `Failed to load ${label}`,
-        status,
-        body,
-        url,
-        method,
+        analytics: null,
+        error: {
+            message: 'Failed to load dashboard analytics',
+            status,
+            body,
+            url: 'service:admin:dashboard:analytics',
+            method: 'GET',
+        },
     };
+}
+
+function buildDonutSegments(items: DashboardAnalytics['ordersByStatus']) {
+    const total = items.reduce((sum, item) => sum + item.count, 0);
+    let offset = 0;
+
+    return items.map((item, index) => {
+        const fraction = total > 0 ? item.count / total : 0;
+        const dash = 2 * Math.PI * 42;
+        const segmentLength = dash * fraction;
+        const segment = {
+            ...item,
+            href: `/manage/orders?status=${encodeURIComponent(item.status)}`,
+            strokeDasharray: `${segmentLength} ${dash - segmentLength}`,
+            strokeDashoffset: -offset,
+            color: getStatusColor(item.status),
+        };
+        offset += segmentLength;
+        return segment;
+    });
+}
+
+function buildTrendPolyline(points: DashboardAnalytics['salesTrend']) {
+    const width = 760;
+    const height = 240;
+    const padding = 24;
+    const usableWidth = width - padding * 2;
+    const usableHeight = height - padding * 2;
+    const maxValue = Math.max(...points.map((point) => point.totalAmount), 1);
+
+    return points.map((point, index) => {
+        const x = padding + (index / Math.max(points.length - 1, 1)) * usableWidth;
+        const y = height - padding - (point.totalAmount / maxValue) * usableHeight;
+        return { ...point, x, y };
+    });
 }
 
 export default async function ManageDashboardPage() {
-    const stats = await getDashboardStats();
-    const statItems = [
-        {
-            label: 'Orders',
-            value: stats.orders,
-            helper: 'Total orders in the system',
-            link: '/manage/orders',
-        },
-        {
-            label: 'Products',
-            value: stats.products,
-            helper: 'Products available to customers',
-            link: '/manage/products',
-        },
-        {
-            label: 'Categories',
-            value: stats.categories,
-            helper: 'Organized product categories',
-            link: '/manage/categories',
-        },
-        {
-            label: 'Variant types',
-            value: stats.variantTypes,
-            helper: 'Attribute groups available in catalog',
-            link: '/manage/variant-types',
-        },
-    ];
+    const { analytics, error } = await getDashboardData();
+
+    const ordersByStatus = analytics?.ordersByStatus ?? [];
+    const salesTrend = analytics?.salesTrend ?? [];
+    const recentActivity = analytics?.recentActivity ?? [];
+    const totalOrders = ordersByStatus.reduce((sum, item) => sum + item.count, 0);
+    const totalSales = salesTrend.reduce((sum, item) => sum + item.totalAmount, 0);
+    const lastSevenDaysSales = salesTrend.slice(-7).reduce((sum, item) => sum + item.totalAmount, 0);
+    const donutSegments = buildDonutSegments(ordersByStatus);
+    const trendPoints = buildTrendPolyline(salesTrend);
+    const trendPath = trendPoints.map((point) => `${point.x},${point.y}`).join(' ');
+    const trendArea = trendPoints.length
+        ? [
+            `M ${trendPoints[0].x} ${240 - 24}`,
+            ...trendPoints.map((point) => `L ${point.x} ${point.y}`),
+            `L ${trendPoints[trendPoints.length - 1].x} ${240 - 24}`,
+            'Z',
+          ].join(' ')
+        : '';
 
     return (
-        <div className="min-h-screen rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]">
-            {stats.error && <ErrorToastHandler error={stats.error} />}
-            <div className="space-y-8 p-5 sm:p-8">
-                <section className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[linear-gradient(135deg,var(--bg-base)_0%,var(--bg-elevated)_55%,var(--bg-subtle)_100%)]">
-                    <div className="grid gap-8 p-6 lg:grid-cols-[1.6fr_0.9fr] lg:p-8">
-                        <div className="space-y-5">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+        <div className=" p-4 min-h-screen rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]">
+            {error && <ErrorToastHandler error={error} />}
+
+            <div className="space-y-6 p-5 sm:p-8 ">
+                <section className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[linear-gradient(160deg,var(--bg-base)_0%,var(--bg-elevated)_58%,var(--bg-subtle)_100%)] p-6 sm:p-8">
+                    <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+                        <div className="space-y-4">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--text-secondary)]">
                                 <span className="h-2 w-2 rounded-full bg-[var(--text-primary)]" />
-                                Admin dashboard
+                                Admin analytics
                             </div>
-                            <div className="space-y-3">
-                                <h1 className="max-w-3xl text-4xl font-bold tracking-[-0.04em] sm:text-5xl">
-                                    Run the admin panel from one clean control surface.
+                            <div className="space-y-2">
+                                <h1 className="text-4xl font-bold tracking-[-0.04em] sm:text-5xl">
+                                    Watch sales, order pressure, and every operator action from one view.
                                 </h1>
-                                <p className="max-w-2xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
-                                    The navigation now lives on the right, quick actions stay one click away, and the dashboard surfaces use tighter corners for a cleaner operating feel.
+                                <p className="max-w-3xl text-base leading-7 text-[var(--text-secondary)] sm:text-lg">
+                                    The dashboard now prioritizes live order distribution, 90-day purchase movement, and a traceable activity stream for product and order operations.
                                 </p>
-                            </div>
-                            <div className="flex flex-wrap gap-3">
-                                <Link href="/manage/products/new">
-                                    <Button variant="primary" className="rounded-[var(--radius-md)]">
-                                        Add product
-                                    </Button>
-                                </Link>
-                                <Link href="/manage/orders">
-                                    <Button variant="outline" className="rounded-[var(--radius-md)]">
-                                        Review orders
-                                    </Button>
-                                </Link>
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                            <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-[var(--shadow-sm)]">
-                                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                                    Catalog
+                        <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
+                            <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-base)] shadow-[var(--shadow-sm)]">
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                    Total orders
                                 </p>
-                                <p className="mt-3 text-3xl font-semibold">{stats.products ?? '—'}</p>
+                                <p className="mt-3 text-3xl font-semibold">{totalOrders}</p>
                                 <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                                    Active products currently available in the storefront.
+                                    Current count across every tracked order status.
                                 </p>
-                            </div>
-                            <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4 shadow-[var(--shadow-sm)]">
-                                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                                    Operations
+                            </Card>
+                            <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-base)] shadow-[var(--shadow-sm)]">
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                    90-day sales
                                 </p>
-                                <p className="mt-3 text-3xl font-semibold">{stats.orders ?? '—'}</p>
+                                <p className="mt-3 text-3xl font-semibold">{formatCurrency(totalSales)}</p>
                                 <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                                    Orders in the system ready for review, shipping, or support.
+                                    Successful order value aggregated from the last 90 days.
                                 </p>
-                            </div>
+                            </Card>
+                            <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-base)] shadow-[var(--shadow-sm)]">
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                    Last 7 days
+                                </p>
+                                <p className="mt-3 text-3xl font-semibold">{formatCurrency(lastSevenDaysSales)}</p>
+                                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                                    Recent sales momentum for operational planning.
+                                </p>
+                            </Card>
                         </div>
                     </div>
                 </section>
 
-                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {statItems.map((item) => (
-                        <Card key={item.label} className="flex flex-col gap-4 rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
-                            <div className="flex items-center justify-between text-sm text-[var(--text-secondary)]">
-                                <span>{item.label}</span>
-                                <span className="font-mono text-xs text-[var(--text-muted)]">
-                                    {item.value === null ? '—' : 'Updated now'}
-                                </span>
+                <section className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr]">
+                    <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-xl font-semibold">Orders by Status</h2>
+                                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                                    Circle breakdown of the live order pipeline.
+                                </p>
                             </div>
-                            <div className="text-4xl font-bold">
-                                {item.value ?? '—'}
+                            <Link href="/manage/orders">
+                                <Button variant="outline" size="sm">Open orders</Button>
+                            </Link>
+                        </div>
+
+                        <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
+                            <div className="relative mx-auto flex h-[220px] w-[220px] items-center justify-center">
+                                <svg width="220" height="220" viewBox="0 0 220 220" className="-rotate-90 overflow-visible">
+                                    <circle
+                                        cx="110"
+                                        cy="110"
+                                        r="42"
+                                        fill="none"
+                                        stroke="var(--border-subtle)"
+                                        strokeWidth="28"
+                                    />
+                                    {donutSegments.map((segment) => (
+                                        <a key={segment.status} href={segment.href}>
+                                            <title>{`${formatStatus(segment.status)}: ${segment.count}`}</title>
+                                            <circle
+                                                cx="110"
+                                                cy="110"
+                                                r="42"
+                                                fill="none"
+                                                style={{ stroke: segment.color }}
+                                                strokeWidth="28"
+                                                strokeLinecap="butt"
+                                                strokeDasharray={segment.strokeDasharray}
+                                                strokeDashoffset={segment.strokeDashoffset}
+                                            />
+                                        </a>
+                                    ))}
+                                    <circle cx="110" cy="110" r="26" fill="var(--bg-elevated)" />
+                                </svg>
                             </div>
-                            <p className="text-sm text-[var(--text-secondary)]">{item.helper}</p>
-                            <Link href={item.link} className="self-start">
+
+                            <div className="space-y-3">
+                                {ordersByStatus.length === 0 ? (
+                                    <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--border-subtle)] p-4 text-sm text-[var(--text-secondary)]">
+                                        No order data yet.
+                                    </div>
+                                ) : (
+                                    donutSegments.map((item) => (
+                                        <Link
+                                            key={item.status}
+                                            href={`/manage/orders?status=${encodeURIComponent(item.status)}`}
+                                            className="flex items-center justify-between gap-4 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 transition-colors hover:border-[var(--border-strong)]"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span
+                                                    className="h-3 w-3 rounded-full"
+                                                    style={{ backgroundColor: item.color }}
+                                                />
+                                                <span className="font-medium text-[var(--text-primary)]">{formatStatus(item.status)}</span>
+                                            </div>
+                                            <span className="text-sm text-[var(--text-secondary)]">{item.count}</span>
+                                        </Link>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-xl font-semibold">Purchase Trend</h2>
+                                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                                    Daily sales amount for the last 90 days.
+                                </p>
+                            </div>
+                            <span className="rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                                90 days
+                            </span>
+                        </div>
+
+                        <div className="mt-6 overflow-x-auto">
+                            <div className="min-w-[760px]">
+                                <svg width="760" height="240" viewBox="0 0 760 240" className="w-full">
+                                    {[0, 1, 2, 3].map((row) => {
+                                        const y = 24 + row * 48;
+                                        return (
+                                            <line
+                                                key={row}
+                                                x1="24"
+                                                y1={y}
+                                                x2="736"
+                                                y2={y}
+                                                stroke="var(--border-subtle)"
+                                                strokeDasharray="4 6"
+                                            />
+                                        );
+                                    })}
+                                    {trendArea && (
+                                        <path d={trendArea} fill="var(--bg-subtle)" />
+                                    )}
+                                    {trendPath && (
+                                        <polyline
+                                            fill="none"
+                                            stroke="var(--text-primary)"
+                                            strokeWidth="3"
+                                            points={trendPath}
+                                        />
+                                    )}
+                                    {trendPoints.filter((_, index) => index % 15 === 0 || index === trendPoints.length - 1).map((point) => (
+                                        <g key={point.date}>
+                                            <circle cx={point.x} cy={point.y} r="3.5" fill="var(--text-primary)" />
+                                            <text
+                                                x={point.x}
+                                                y="232"
+                                                textAnchor="middle"
+                                                fill="var(--text-muted)"
+                                                fontSize="10"
+                                            >
+                                                {formatDateLabel(point.date)}
+                                            </text>
+                                        </g>
+                                    ))}
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                            {salesTrend.slice(-3).map((point) => (
+                                <div
+                                    key={point.date}
+                                    className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3"
+                                >
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                                        {formatDateLabel(point.date)}
+                                    </p>
+                                    <p className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
+                                        {formatCurrency(point.totalAmount)}
+                                    </p>
+                                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                                        {point.orderCount} successful orders
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </section>
+
+                <section>
+                    <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-xl font-semibold">Recent Activity</h2>
+                                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                                    Latest admin and customer events with drill-down details.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 space-y-3">
+                            {recentActivity.length === 0 ? (
+                                <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--border-subtle)] p-5 text-sm text-[var(--text-secondary)]">
+                                    No activity recorded yet.
+                                </div>
+                            ) : (
+                                recentActivity.map((activity) => (
+                                    <Link
+                                        key={activity.id}
+                                        href={`/manage/activity/${activity.id}`}
+                                        className="block rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-5 py-4 transition-colors hover:border-[var(--border-strong)]"
+                                    >
+                                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                            <div className="space-y-2">
+                                                <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                                                    <span>{activity.actor.displayName || activity.actor.type}</span>
+                                                    <span className="h-1 w-1 rounded-full bg-[var(--text-muted)]" />
+                                                    <span>{activity.actionType}</span>
+                                                </div>
+                                                <p className="text-base font-medium text-[var(--text-primary)]">
+                                                    {activity.summary}
+                                                </p>
+                                                <div className="flex flex-wrap gap-2 text-sm text-[var(--text-secondary)]">
+                                                    <span>{activity.primaryEntity.label}</span>
+                                                    {activity.diff && activity.diff.length > 0 && (
+                                                        <span>{activity.diff.length} field changes</span>
+                                                    )}
+                                                    {activity.details && Object.keys(activity.details).length > 0 && (
+                                                        <span>{Object.keys(activity.details).length} detail items</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="text-sm text-[var(--text-secondary)]">
+                                                {formatDateTime(activity.createdAt)}
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))
+                            )}
+                        </div>
+                    </Card>
+                </section>
+
+                <section className="grid gap-4 md:grid-cols-3">
+                    {[
+                        {
+                            title: 'Add product',
+                            description: 'Create a new catalog entry with variants and media.',
+                            href: '/manage/products/new',
+                        },
+                        {
+                            title: 'Review orders',
+                            description: 'Process status changes, shipping, and support actions.',
+                            href: '/manage/orders',
+                        },
+                        {
+                            title: 'Bulk price update',
+                            description: 'Apply controlled price movements with a logged activity trail.',
+                            href: '/manage/products/bulk-price-update',
+                        },
+                    ].map((action) => (
+                        <Card key={action.href} className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+                            <h3 className="text-lg font-semibold text-[var(--text-primary)]">{action.title}</h3>
+                            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{action.description}</p>
+                            <Link href={action.href} className="mt-4 inline-flex">
                                 <Button variant="outline" size="sm">
-                                    Manage {item.label}
+                                    Open
                                 </Button>
                             </Link>
                         </Card>
                     ))}
-                </section>
-
-                <section className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-semibold">Quick actions</h2>
-                        <Link href="/manage/settings">
-                            <Button variant="ghost" size="sm" className="rounded-[var(--radius-md)]">
-                                Open settings
-                            </Button>
-                        </Link>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {QUICK_ACTIONS.map((action) => (
-                            <Card key={action.title} className="flex flex-col justify-between gap-4 rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
-                                <div>
-                                    <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                                        {action.title}
-                                    </p>
-                                    <p className="text-lg font-semibold text-[var(--text-primary)] mt-2">
-                                        {action.description}
-                                    </p>
-                                </div>
-                                <Link href={action.href} className="self-start">
-                                    <Button variant="primary" size="sm" className="rounded-[var(--radius-md)]">
-                                        {action.actionLabel}
-                                    </Button>
-                                </Link>
-                            </Card>
-                        ))}
-                    </div>
                 </section>
             </div>
         </div>

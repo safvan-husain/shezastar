@@ -45,6 +45,7 @@ export async function seedAdmin() {
     if (!password) {
         throw new Error('ADMIN_PASSWORD environment variable must be set before seeding the admin');
     }
+    const displayName = process.env.ADMIN_DISPLAY_NAME?.trim() || 'Admin';
 
     const collection = await getCollection('admins');
     const existingAdmin = await collection.findOne({});
@@ -58,6 +59,7 @@ export async function seedAdmin() {
     const now = new Date();
 
     await collection.insertOne({
+        displayName,
         passwordHash,
         salt,
         createdAt: now,

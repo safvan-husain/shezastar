@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import { bulkUpdatePrices } from '@/lib/product/product.service';
 import { BulkPriceUpdateSchema } from '@/lib/product/product.schema';
 import { AppError } from '@/lib/errors/app-error';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 
 export async function POST(req: Request) {
     try {
+        const admin = await requireAdminApiAuth();
         const body = await req.json();
         const parsed = BulkPriceUpdateSchema.safeParse(body);
 
@@ -15,7 +18,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const result = await bulkUpdatePrices(parsed.data);
+        const result = await bulkUpdatePrices(parsed.data, buildAdminActivityActor(admin));
         return NextResponse.json(result);
     } catch (error) {
         if (error instanceof AppError) {

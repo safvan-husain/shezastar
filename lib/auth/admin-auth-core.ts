@@ -3,6 +3,7 @@ import { scryptSync, timingSafeEqual } from 'node:crypto';
 
 export interface AdminDocument {
     _id: ObjectId;
+    displayName?: string;
     passwordHash: string;
     salt: string;
     createdAt: Date;

@@ -6,10 +6,28 @@ import { CreateProductInput, UpdateProductInput, ImageMappingInput, ProductImage
 import { nanoid } from 'nanoid';
 import { deleteImages } from '@/lib/utils/file-upload';
 import { getCategoryHierarchyIds, getCategoryLineageMap } from '@/lib/category/category.service';
+import {
+    buildProductActivityDiff,
+    createActivityLog,
+} from '@/lib/activity/activity.service';
+import type { ActivityActor, ActivityEntity } from '@/lib/activity/model/activity.model';
 
 const COLLECTION = 'products';
 
-export async function createProduct(input: CreateProductInput) {
+function buildProductEntity(product: { id: string; name: string }): ActivityEntity {
+    return {
+        kind: 'product',
+        id: product.id,
+        label: product.name,
+    };
+}
+
+function buildProductSummary(actor: ActivityActor | undefined, verb: string, productName: string) {
+    const actorName = actor?.displayName?.trim() || (actor?.type === 'admin' ? 'Admin' : 'System');
+    return `${actorName} ${verb} product ${productName}`;
+}
+
+export async function createProduct(input: CreateProductInput, actor?: ActivityActor) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
     // Validate input
@@ -54,7 +72,25 @@ export async function createProduct(input: CreateProductInput) {
         throw new AppError(500, 'FAILED_TO_CREATE_PRODUCT');
     }
 
-    return toProduct(created);
+    const product = toProduct(created);
+
+    if (actor) {
+        await createActivityLog({
+            actionType: 'product.created',
+            actor,
+            primaryEntity: buildProductEntity(product),
+            summary: buildProductSummary(actor, 'created', product.name),
+            details: {
+                basePrice: product.basePrice,
+                offerPercentage: product.offerPercentage,
+                categoryCount: product.subCategoryIds.length,
+                variantCount: product.variants.length,
+                imageCount: product.images.length,
+            },
+        });
+    }
+
+    return product;
 }
 
 export async function getProduct(id: string) {
@@ -209,7 +245,7 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
     };
 }
 
-export async function updateProduct(id: string, input: UpdateProductInput) {
+export async function updateProduct(id: string, input: UpdateProductInput, actor?: ActivityActor) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
     // Validate input
@@ -266,7 +302,22 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
         throw new AppError(500, 'FAILED_TO_UPDATE_PRODUCT');
     }
 
-    return toProduct(updated);
+    const product = toProduct(updated);
+
+    if (actor) {
+        await createActivityLog({
+            actionType: 'product.updated',
+            actor,
+            primaryEntity: buildProductEntity(product),
+            summary: buildProductSummary(actor, 'updated', product.name),
+            details: {
+                changedFieldCount: Object.keys(input).length,
+            },
+            diff: buildProductActivityDiff(existing, updated, Object.keys(input) as Array<keyof ProductDocument>),
+        });
+    }
+
+    return product;
 }
 
 export async function updateProductWeight(id: string, weight: number) {
@@ -292,7 +343,7 @@ export async function updateProductWeight(id: string, weight: number) {
     return toProduct(result);
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string, actor?: ActivityActor) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
     let objectId: ObjectId;
@@ -314,6 +365,24 @@ export async function deleteProduct(id: string) {
     }
 
     await collection.deleteOne({ _id: objectId });
+
+    if (actor) {
+        await createActivityLog({
+            actionType: 'product.deleted',
+            actor,
+            primaryEntity: {
+                kind: 'product',
+                id,
+                label: existing.name,
+            },
+            summary: buildProductSummary(actor, 'deleted', existing.name),
+            details: {
+                basePrice: existing.basePrice,
+                imageCount: existing.images.length,
+                variantCount: existing.variants.length,
+            },
+        });
+    }
 
     return { success: true };
 }
@@ -498,7 +567,7 @@ export async function searchProducts(query: string, limit = 10) {
     return toProducts([...phraseDocs, ...fallbackDocs]);
 }
 
-export async function bulkUpdatePrices(input: BulkPriceUpdateInput) {
+export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: ActivityActor) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
     // Build the filter based on mode
@@ -543,7 +612,7 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput) {
     }
 
     // Compute new prices and build bulk operations
-    const operations = docs.map(doc => {
+    const operationDetails = docs.map(doc => {
         const newBasePrice =
             input.method === 'percentage'
                 ? Math.round(doc.basePrice * (1 + input.value / 100) * 100) / 100
@@ -561,20 +630,68 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput) {
         });
 
         return {
-            updateOne: {
-                filter: { _id: doc._id },
-                update: {
-                    $set: {
-                        basePrice: newBasePrice,
-                        variantStock: newVariantStock,
-                        updatedAt: new Date(),
-                    },
-                },
-            },
+            doc,
+            newBasePrice,
+            newVariantStock,
         };
     });
 
+    const operations = operationDetails.map(({ doc, newBasePrice, newVariantStock }) => ({
+        updateOne: {
+            filter: { _id: doc._id },
+            update: {
+                $set: {
+                    basePrice: newBasePrice,
+                    variantStock: newVariantStock,
+                    updatedAt: new Date(),
+                },
+            },
+        },
+    }));
+
     const result = await collection.bulkWrite(operations);
+
+    if (actor && docs.length > 0) {
+        await createActivityLog({
+            actionType: 'product.bulk_price_updated',
+            actor,
+            primaryEntity: {
+                kind: 'product',
+                id: 'bulk-price-update',
+                label: `${docs.length} products`,
+            },
+            relatedEntities: docs.map((doc) => ({
+                kind: 'product',
+                id: doc._id.toHexString(),
+                label: doc.name,
+            })),
+            summary: `${actor.displayName?.trim() || 'Admin'} bulk updated ${docs.length} products`,
+            details: {
+                mode: input.mode,
+                method: input.method,
+                value: input.value,
+                affectedCount: docs.length,
+                products: operationDetails.map(({ doc, newBasePrice, newVariantStock }) => ({
+                    productId: doc._id.toHexString(),
+                    name: doc.name,
+                    basePriceBefore: doc.basePrice,
+                    basePriceAfter: newBasePrice,
+                    variantPriceDeltas: (doc.variantStock || []).flatMap((entry, index) => {
+                        const nextEntry = newVariantStock[index];
+                        if (entry.price == null || nextEntry?.price == null || entry.price === nextEntry.price) {
+                            return [];
+                        }
+
+                        return [{
+                            variantCombinationKey: entry.variantCombinationKey,
+                            before: entry.price,
+                            after: nextEntry.price,
+                        }];
+                    }),
+                })),
+            },
+        });
+    }
 
     return { modifiedCount: result.modifiedCount };
 }

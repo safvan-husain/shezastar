@@ -1,9 +1,16 @@
-import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
 import { GET as getProducts, POST as createProduct } from '@/app/api/products/route';
 import { GET as getProduct, PUT as updateProduct, DELETE as deleteProduct } from '@/app/api/products/[id]/route';
 import { clear } from '../test-db';
 import { addSubCategory, addSubSubCategory, createCategory } from '@/lib/category/category.service';
 import { createProduct as createProductService } from '@/lib/product/product.service';
+
+vi.mock('@/lib/auth/admin-auth', () => ({
+    requireAdminApiAuth: vi.fn().mockResolvedValue({
+        _id: { toString: () => '507f1f77bcf86cd799439011' },
+        displayName: 'Safvan',
+    }),
+}));
 
 describe('Products API Integration', () => {
     let createdProductId: string;

@@ -7,6 +7,9 @@ import {
 } from '@/lib/product/product.controller';
 import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { buildAdminActivityActor } from '@/lib/activity/activity.service';
+import { catchError } from '@/lib/errors/app-error';
 
 export async function GET(
     req: Request,
@@ -22,6 +25,8 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const admin = await requireAdminApiAuth();
+        const actor = buildAdminActivityActor(admin);
         const { id } = await params;
         const contentType = req.headers.get('content-type');
 
@@ -83,15 +88,19 @@ export async function PUT(
             if (brandId !== undefined) productData.brandId = brandId;
             productData.images = allImages;
 
-            const { status, body } = await handleUpdateProduct(id, productData);
+            const { status, body } = await handleUpdateProduct(id, productData, actor);
             return NextResponse.json(body, { status });
         } else {
             // Handle JSON request (backward compatibility)
             const data = await req.json();
-            const { status, body } = await handleUpdateProduct(id, data);
+            const { status, body } = await handleUpdateProduct(id, data, actor);
             return NextResponse.json(body, { status });
         }
     } catch (error: any) {
+        const handled = catchError(error);
+        if (handled.status !== 500 || error?.code === 'UNAUTHORIZED') {
+            return NextResponse.json(handled.body, { status: handled.status });
+        }
         return NextResponse.json(
             { error: error.message || 'Failed to update product' },
             { status: 500 }
@@ -103,7 +112,14 @@ export async function DELETE(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await params;
-    const { status, body } = await handleDeleteProduct(id);
-    return NextResponse.json(body, { status });
+    try {
+        const admin = await requireAdminApiAuth();
+        const actor = buildAdminActivityActor(admin);
+        const { id } = await params;
+        const { status, body } = await handleDeleteProduct(id, actor);
+        return NextResponse.json(body, { status });
+    } catch (error) {
+        const handled = catchError(error);
+        return NextResponse.json(handled.body, { status: handled.status });
+    }
 }

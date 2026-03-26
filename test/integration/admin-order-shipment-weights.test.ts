@@ -7,6 +7,13 @@ import { createProduct, getProduct } from '@/lib/product/product.service';
 import type { OrderDocument } from '@/lib/order/model/order.model';
 import { clear } from '../test-db';
 
+vi.mock('@/lib/auth/admin-auth', () => ({
+    requireAdminApiAuth: vi.fn().mockResolvedValue({
+        _id: { toString: () => '507f1f77bcf86cd799439011' },
+        displayName: 'Safvan',
+    }),
+}));
+
 const BILLING_DETAILS = {
     email: 'shipping@example.com',
     firstName: 'Shipping',

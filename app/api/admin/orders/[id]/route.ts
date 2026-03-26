@@ -4,6 +4,9 @@ import {
     handleAdminGetOrder,
     handleAdminUpdateOrderStatus,
 } from '@/lib/order/order.controller';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { buildAdminActivityActor } from '@/lib/activity/activity.service';
+import { catchError } from '@/lib/errors/app-error';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -12,18 +15,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const payload = await req.json();
-    const { status, body } = await handleAdminUpdateOrderStatus(id, payload);
+    try {
+        const admin = await requireAdminApiAuth();
+        const { id } = await params;
+        const payload = await req.json();
+        const { status, body } = await handleAdminUpdateOrderStatus(id, payload, buildAdminActivityActor(admin));
 
-    if (status >= 200 && status < 300) {
-        try {
-            revalidatePath('/manage/orders', 'page');
-            revalidatePath(`/manage/orders/${id}`, 'page');
-        } catch {
-            // Ignore revalidation errors in test environment
+        if (status >= 200 && status < 300) {
+            try {
+                revalidatePath('/manage/orders', 'page');
+                revalidatePath(`/manage/orders/${id}`, 'page');
+            } catch {
+                // Ignore revalidation errors in test environment
+            }
         }
-    }
 
-    return NextResponse.json(body, { status });
+        return NextResponse.json(body, { status });
+    } catch (error) {
+        const handled = catchError(error);
+        return NextResponse.json(handled.body, { status: handled.status });
+    }
 }

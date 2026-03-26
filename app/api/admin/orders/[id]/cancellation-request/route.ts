@@ -1,43 +1,42 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 
-import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { handleAdminReviewOrderCancellationRequest } from '@/lib/order/order.controller';
+import { catchError } from '@/lib/errors/app-error';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-
     try {
-        await requireAdminAuth();
-    } catch {
-        return NextResponse.json(
-            {
-                code: 'UNAUTHORIZED',
-                error: 'UNAUTHORIZED',
-                message: 'Unauthorized',
-            },
-            { status: 401 },
-        );
-    }
+        const admin = await requireAdminApiAuth();
+        const { id } = await params;
 
-    let payload: unknown = {};
-    try {
-        payload = await req.json();
-    } catch {
-        payload = {};
-    }
-
-    const { status, body } = await handleAdminReviewOrderCancellationRequest(id, payload);
-
-    if (status >= 200 && status < 300) {
+        let payload: unknown = {};
         try {
-            revalidatePath('/(store)/orders', 'page');
-            revalidatePath('/manage/orders', 'page');
-            revalidatePath(`/manage/orders/${id}`, 'page');
+            payload = await req.json();
         } catch {
-            // Ignore revalidation errors in test environments.
+            payload = {};
         }
-    }
 
-    return NextResponse.json(body, { status });
+        const { status, body } = await handleAdminReviewOrderCancellationRequest(
+            id,
+            payload,
+            buildAdminActivityActor(admin),
+        );
+
+        if (status >= 200 && status < 300) {
+            try {
+                revalidatePath('/(store)/orders', 'page');
+                revalidatePath('/manage/orders', 'page');
+                revalidatePath(`/manage/orders/${id}`, 'page');
+            } catch {
+                // Ignore revalidation errors in test environments.
+            }
+        }
+
+        return NextResponse.json(body, { status });
+    } catch (error) {
+        const handled = catchError(error);
+        return NextResponse.json(handled.body, { status: handled.status });
+    }
 }

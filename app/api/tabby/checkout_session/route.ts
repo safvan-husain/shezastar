@@ -15,6 +15,7 @@ import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { getUserById } from '@/lib/auth/auth.service';
 import { ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
+import { buildCustomerActivityActor, createActivityLog } from '@/lib/activity/activity.service';
 
 const TABBY_API_URL = 'https://api.tabby.ai/api/v2/checkout';
 
@@ -270,6 +271,34 @@ export async function POST(req: NextRequest) {
             status: 'pending',
             billingDetails: billingDetails,
             userId: session.userId ? new ObjectId(session.userId) : undefined,
+        });
+
+        const billingName = `${billingDetails.firstName} ${billingDetails.lastName}`.trim();
+        await createActivityLog({
+            actionType: 'order.created',
+            actor: buildCustomerActivityActor({
+                sessionId,
+                userId: session.userId,
+                displayName: billingName || billingDetails.email,
+            }),
+            primaryEntity: {
+                kind: 'order',
+                id: pendingOrder.id,
+                label: `Order #${pendingOrder.id.slice(0, 8)}`,
+            },
+            relatedEntities: pendingOrder.items.map((item) => ({
+                kind: 'product',
+                id: item.productId,
+                label: item.productName,
+            })),
+            summary: `${billingName || billingDetails.email || 'Customer'} created order #${pendingOrder.id.slice(0, 8)}`,
+            details: {
+                paymentProvider: pendingOrder.paymentProvider,
+                status: pendingOrder.status,
+                totalAmount: pendingOrder.totalAmount,
+                currency: pendingOrder.currency,
+                itemCount: pendingOrder.items.length,
+            },
         });
 
         // Validate stock

@@ -1,10 +1,17 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { clear } from '../test-db';
 import { GET as listOrdersHandler } from '@/app/api/admin/orders/route';
 import { GET as getOrderHandler, PATCH as patchOrderHandler } from '@/app/api/admin/orders/[id]/route';
 import { createOrder } from '@/lib/order/order.service';
 import type { OrderDocument, OrderStatus } from '@/lib/order/model/order.model';
+
+vi.mock('@/lib/auth/admin-auth', () => ({
+    requireAdminApiAuth: vi.fn().mockResolvedValue({
+        _id: { toString: () => '507f1f77bcf86cd799439011' },
+        displayName: 'Safvan',
+    }),
+}));
 
 const BILLING_DETAILS = {
     email: 'buyer@example.com',
@@ -109,4 +116,3 @@ describe('Admin orders API', () => {
         expect(patchBody.billingDetails).toEqual(expect.objectContaining(BILLING_DETAILS));
     });
 });
-
