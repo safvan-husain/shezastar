@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { mapBillingToConsigneeAddress } from '@/lib/shipping/shipping.service';
+import { mapBillingToConsigneeAddress, trackShipment } from '@/lib/shipping/shipping.service';
 import { AppError } from '@/lib/errors/app-error';
 
 vi.mock('@/lib/app-settings/app-settings.service', () => ({
@@ -10,6 +10,8 @@ vi.mock('@/lib/app-settings/app-settings.service', () => ({
 describe('shipping.service country normalization', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        process.env.SMSA_BASE_URL = 'https://example.com';
+        process.env.SMSA_API_KEY = 'test-api-key';
     });
 
     it('maps storefront country alias to SMSA ISO-2 code', async () => {
@@ -43,5 +45,44 @@ describe('shipping.service country normalization', () => {
             status: 400,
             code: 'INVALID_SMSA_COUNTRY_CODE',
         } as Partial<AppError>);
+    });
+
+    it('falls back to tracking by order reference when stored awb returns 404', async () => {
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        type: 'https://tools.ietf.org/html/rfc7231#section-6.5.4',
+                        title: 'Not Found',
+                        status: 404,
+                    }),
+                    {
+                        status: 404,
+                        headers: { 'content-type': 'application/json' },
+                    }
+                )
+            )
+            .mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        AWB: '231200021000',
+                        Reference: '69c52306916c84a6eb9d7971',
+                        Scans: [],
+                    }),
+                    {
+                        status: 200,
+                        headers: { 'content-type': 'application/json' },
+                    }
+                )
+            );
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        const tracking = await trackShipment('legacy-sawb', '69c52306916c84a6eb9d7971');
+
+        expect(tracking.AWB).toBe('231200021000');
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(fetchMock.mock.calls[0][0]).toBe('https://example.com/api/track/single/legacy-sawb');
+        expect(fetchMock.mock.calls[1][0]).toBe('https://example.com/api/track/reference/69c52306916c84a6eb9d7971');
     });
 });

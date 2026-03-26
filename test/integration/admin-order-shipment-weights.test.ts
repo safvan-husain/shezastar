@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { GET as weightCheckHandler } from '@/app/api/admin/orders/[id]/shipment/weight-check/route';
 import { PATCH as updateWeightsHandler } from '@/app/api/admin/orders/[id]/shipment/weights/route';
-import { createOrder } from '@/lib/order/order.service';
+import { createOrder, getOrderById } from '@/lib/order/order.service';
 import { createProduct, getProduct } from '@/lib/product/product.service';
 import type { OrderDocument } from '@/lib/order/model/order.model';
 import { clear } from '../test-db';
@@ -39,6 +39,7 @@ function buildOrderData(items: OrderDocument['items']): Omit<OrderDocument, '_id
 describe('Admin shipment weight flow', () => {
     beforeEach(async () => {
         await clear();
+        vi.restoreAllMocks();
     });
 
     it('returns missing products from weight-check endpoint', async () => {
@@ -234,6 +235,72 @@ describe('Admin shipment weight flow', () => {
         expect(res.status).toBe(400);
         expect(body.code).toBe('INVALID_ORDER_PRODUCTS');
         expect(body.details?.productIds).toContain(outsiderProduct.id);
+    });
+
+    it('stores the waybill awb returned by SMSA when creating a shipment', async () => {
+        const product = await createProduct({
+            name: 'Shipment Ready Product',
+            basePrice: 80,
+            images: [],
+            variants: [],
+            subCategoryIds: [],
+            variantStock: [],
+            specifications: [],
+            weight: 1.25,
+        });
+
+        const order = await createOrder(
+            buildOrderData([
+                {
+                    productId: product.id,
+                    productName: product.name,
+                    selectedVariantItemIds: [],
+                    quantity: 1,
+                    unitPrice: 80,
+                },
+            ])
+        );
+
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    sawb: 'SAWB-12345',
+                    createDate: '2026-03-26T00:00:00Z',
+                    shipmentParcelsCount: 1,
+                    waybills: [
+                        {
+                            awb: '231200021000',
+                            awbFile: 'ZmFrZS1wZGY=',
+                        },
+                    ],
+                }),
+                {
+                    status: 200,
+                    headers: { 'content-type': 'application/json' },
+                }
+            )
+        ));
+
+        vi.resetModules();
+        process.env.SMSA_BASE_URL = 'https://example.com';
+        process.env.SMSA_API_KEY = 'test-api-key';
+
+        const { POST: createShipmentHandler } = await import('@/app/api/admin/orders/[id]/shipment/route');
+
+        const req = new Request(`http://localhost/api/admin/orders/${order.id}/shipment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+        });
+
+        const res = await createShipmentHandler(req, { params: Promise.resolve({ id: order.id }) });
+        const body = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(body.awb).toBe('231200021000');
+
+        const updatedOrder = await getOrderById(order.id);
+        expect(updatedOrder.shipping?.awb).toBe('231200021000');
     });
 
     it('shipment POST still returns missing-weight error as fallback guard', async () => {

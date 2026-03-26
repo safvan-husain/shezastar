@@ -8,15 +8,22 @@ import { SmsaShipmentAddress, CreateShipmentInput, SmsaShipmentResponse, SmsaTra
 import { getProduct, updateProductWeight } from '@/lib/product/product.service';
 import { getCountryPricings } from '@/lib/app-settings/app-settings.service';
 
-const SMSA_API_KEY = process.env.SMSA_API_KEY;
-const SMSA_BASE_URL = process.env.SMSA_BASE_URL?.replace(/\/$/, '');
+function getSmsaBaseUrl() {
+    const baseUrl = process.env.SMSA_BASE_URL?.replace(/\/$/, '');
+    if (!baseUrl) {
+        throw new AppError(500, 'SMSA_CONFIG_MISSING', { message: 'SMSA_BASE_URL is not configured.' });
+    }
+
+    return baseUrl;
+}
 
 function getHeaders() {
-    if (!SMSA_API_KEY) {
+    const apiKey = process.env.SMSA_API_KEY;
+    if (!apiKey) {
         throw new AppError(500, 'SMSA_CONFIG_MISSING', { message: 'SMSA_API_KEY is not configured.' });
     }
     return {
-        'ApiKey': SMSA_API_KEY,
+        'ApiKey': apiKey,
         'Content-Type': 'application/json',
     };
 }
@@ -228,10 +235,6 @@ export async function updateOrderProductWeights(
 }
 
 export async function createB2cShipment(order: Order, input: CreateShipmentInput): Promise<SmsaShipmentResponse> {
-    if (!SMSA_BASE_URL) {
-        throw new AppError(500, 'SMSA_CONFIG_MISSING', { message: 'SMSA_BASE_URL is not configured.' });
-    }
-
     if (!order.billingDetails) {
         throw new AppError(400, 'BILLING_DETAILS_MISSING', { message: 'Order is missing billing details.' });
     }
@@ -255,7 +258,7 @@ export async function createB2cShipment(order: Order, input: CreateShipmentInput
         WeightUnit: 'KG', 
     };
 
-    const res = await fetch(`${SMSA_BASE_URL}/api/shipment/b2c/new`, {
+    const res = await fetch(`${getSmsaBaseUrl()}/api/shipment/b2c/new`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(payload),
@@ -271,12 +274,8 @@ export async function createB2cShipment(order: Order, input: CreateShipmentInput
     return data as SmsaShipmentResponse;
 }
 
-export async function trackShipment(awb: string): Promise<SmsaTrackingResponse> {
-    if (!SMSA_BASE_URL) {
-        throw new AppError(500, 'SMSA_CONFIG_MISSING', { message: 'SMSA_BASE_URL is not configured.' });
-    }
-
-    const res = await fetch(`${SMSA_BASE_URL}/api/track/single/${awb}`, {
+async function trackShipmentByAwb(awb: string): Promise<SmsaTrackingResponse> {
+    const res = await fetch(`${getSmsaBaseUrl()}/api/track/single/${awb}`, {
         method: 'GET',
         headers: getHeaders(),
     });
@@ -291,12 +290,42 @@ export async function trackShipment(awb: string): Promise<SmsaTrackingResponse> 
     return data as SmsaTrackingResponse;
 }
 
-export async function queryShipment(awb: string): Promise<SmsaShipmentResponse> {
-    if (!SMSA_BASE_URL) {
-        throw new AppError(500, 'SMSA_CONFIG_MISSING', { message: 'SMSA_BASE_URL is not configured.' });
+async function trackShipmentByReference(reference: string): Promise<SmsaTrackingResponse> {
+    const res = await fetch(`${getSmsaBaseUrl()}/api/track/reference/${reference}`, {
+        method: 'GET',
+        headers: getHeaders(),
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        console.error('SMSA Track By Reference Error:', res.status, text);
+        throw new AppError(res.status, 'SMSA_API_ERROR', { message: 'Failed to track SMSA shipment', details: text });
     }
 
-    const res = await fetch(`${SMSA_BASE_URL}/api/shipment/b2c/query/${awb}`, {
+    const data = await res.json();
+    return data as SmsaTrackingResponse;
+}
+
+export async function trackShipment(awb: string, reference?: string): Promise<SmsaTrackingResponse> {
+    try {
+        return await trackShipmentByAwb(awb);
+    } catch (error) {
+        const shouldFallback = reference
+            && error instanceof AppError
+            && error.status === 404
+            && error.code === 'SMSA_API_ERROR';
+
+        if (!shouldFallback) {
+            throw error;
+        }
+
+        return trackShipmentByReference(reference);
+    }
+}
+
+export async function queryShipment(awb: string): Promise<SmsaShipmentResponse> {
+
+    const res = await fetch(`${getSmsaBaseUrl()}/api/shipment/b2c/query/${awb}`, {
         method: 'GET',
         headers: getHeaders(),
     });

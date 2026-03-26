@@ -44,11 +44,12 @@ export async function handleCreateShipment(orderId: string, input: unknown, acto
 
         // createB2cShipment does weight validation, and creates the shipment in SMSA
         const response = await createB2cShipment(order, parsed);
+        const awb = response.waybills?.[0]?.awb?.trim() || response.sawb.trim();
 
         // Create the shipping doc on the order
         const tracking = await setOrderShipping(orderId, {
             provider: 'smsa',
-            awb: response.sawb,
+            awb,
             createdAt: new Date(),
             status: 'created',
             labelPdf: response.waybills?.[0]?.awbFile, // cache the label if available
@@ -131,7 +132,7 @@ export async function handleTrackShipment(orderId: string) {
             throw new AppError(404, 'SHIPMENT_NOT_FOUND', { message: 'No SMSA shipment found for this order.' });
         }
 
-        const data = await trackShipment(order.shipping.awb);
+        const data = await trackShipment(order.shipping.awb, order.id);
         return { status: 200, body: data };
     } catch (err) {
         return catchError(err);
