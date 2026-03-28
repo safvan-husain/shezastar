@@ -1,4 +1,5 @@
 process.env.TABBY_PUBLIC_KEY = 'test_public_key';
+process.env.TABBY_SECRET_KEY = 'test_secret_key';
 process.env.TABBY_MERCHANT_CODE = 'test_merchant_code';
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
@@ -8,9 +9,16 @@ const fetchMock = vi.fn();
 global.fetch = fetchMock;
 
 // Mock Session to avoid actual DB calls for session management
-vi.mock('@/lib/storefront-session', () => ({
-    getStorefrontSessionId: vi.fn().mockResolvedValue('test-session-id'),
-}));
+vi.mock('@/lib/storefront-session', async () => {
+    const actual = await vi.importActual<typeof import('@/lib/storefront-session')>('@/lib/storefront-session');
+    return {
+        ...actual,
+        getStorefrontSession: vi.fn().mockResolvedValue({
+            sessionId: 'test-session-id',
+            userId: undefined,
+        }),
+    };
+});
 
 const getCartForCurrentSessionMock = vi.fn().mockResolvedValue({
     items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100, selectedVariantItemIds: [] }],
@@ -46,6 +54,33 @@ const validateStockAvailabilityMock = vi.fn().mockResolvedValue({
 
 vi.mock('@/lib/product/product.service-stock', () => ({
     validateStockAvailability: validateStockAvailabilityMock,
+}));
+
+vi.mock('@/lib/product/product.service', () => ({
+    getProduct: vi.fn(async (id: string) => ({
+        id,
+        name: id,
+        images: [],
+        variants: [],
+    })),
+}));
+
+vi.mock('@/lib/checkout/country-pricing.service', () => ({
+    resolveCountryPricingForCheckout: vi.fn().mockResolvedValue({
+        code: 'AE',
+        shippingFee: 0,
+        taxRate: 0,
+        pricesIncludeTax: false,
+    }),
+    computeCheckoutPricingBreakdown: vi.fn(({ subtotalAed }: { subtotalAed: number }) => ({
+        subtotal: subtotalAed,
+        shipping: 0,
+        vat: 0,
+        vatRatePercent: 0,
+        vatIncludedInPrice: false,
+        countryCode: 'AE',
+        total: subtotalAed,
+    })),
 }));
 
 // Mock Currency Service
@@ -97,6 +132,7 @@ describe('Tabby Checkout Session API', () => {
         });
 
         process.env.TABBY_PUBLIC_KEY = 'test_public_key';
+        process.env.TABBY_SECRET_KEY = 'test_secret_key';
         process.env.TABBY_MERCHANT_CODE = 'test_merchant_code';
 
         const mod = await import('@/app/api/tabby/checkout_session/route');
@@ -144,9 +180,9 @@ describe('Tabby Checkout Session API', () => {
         expect(fetchMock).toHaveBeenCalledWith('https://api.tabby.ai/api/v2/checkout', expect.objectContaining({
             method: 'POST',
             headers: expect.objectContaining({
-                'Authorization': 'Bearer test_public_key'
+                'Authorization': 'Bearer test_secret_key'
             }),
-            body: expect.stringContaining('buy-now-prod-1')
+            body: expect.stringContaining('"type":"buy_now"')
         }));
     });
 
@@ -177,7 +213,7 @@ describe('Tabby Checkout Session API', () => {
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.tabby.ai/api/v2/checkout', expect.objectContaining({
             method: 'POST',
-            body: expect.stringContaining('cart-prod-1')
+            body: expect.stringContaining('"reference_id"')
         }));
     });
 
@@ -186,7 +222,13 @@ describe('Tabby Checkout Session API', () => {
             ok: true, // API call succeeds but Tabby returns rejection
             json: async () => ({
                 status: 'rejected',
-                rejection_reason: 'not_eligible'
+                configuration: {
+                    products: {
+                        installments: {
+                            rejection_reason: 'not_eligible',
+                        },
+                    },
+                },
             })
         });
 
@@ -199,7 +241,7 @@ describe('Tabby Checkout Session API', () => {
         const res = await POST(req);
         expect(res.status).toBe(400);
         const body = await res.json();
-        expect(body.error).toBe('Tabby session creation failed');
+        expect(body.error).toBe('Tabby rejected the payment session');
         expect(body.reason).toBe('not_eligible');
     });
 

@@ -1,10 +1,70 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const emailMocks = vi.hoisted(() => ({
+    sendCustomerOrderEmail: vi.fn().mockResolvedValue(undefined),
+    sendAdminOrderEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
+const refundMocks = vi.hoisted(() => ({
+    queueRefundForApprovedCancellation: vi.fn().mockResolvedValue({
+        queued: true,
+        code: 'REFUND_CREATED',
+        provider: 'stripe',
+        externalRefundId: 're_test_1',
+        requestedAt: new Date('2026-03-28T10:00:00.000Z'),
+        amount: 100,
+        currency: 'usd',
+    }),
+    queueRefundForOrder: vi.fn().mockResolvedValue({
+        queued: true,
+        code: 'REFUND_CREATED',
+        provider: 'stripe',
+        externalRefundId: 're_test_2',
+        requestedAt: new Date('2026-03-28T11:00:00.000Z'),
+        amount: 100,
+        currency: 'usd',
+    }),
+}));
+
+const shippingMocks = vi.hoisted(() => ({
+    createB2cShipment: vi.fn().mockResolvedValue({
+        sawb: 'SHIP-001',
+        waybills: [{ awb: 'SHIP-001', awbFile: 'label-data' }],
+    }),
+}));
+
+vi.mock('@/lib/email/email.service', () => ({
+    sendCustomerOrderEmail: emailMocks.sendCustomerOrderEmail,
+    sendAdminOrderEmail: emailMocks.sendAdminOrderEmail,
+}));
+
+vi.mock('@/lib/refund/refund.service', async () => {
+    const actual = await vi.importActual<typeof import('@/lib/refund/refund.service')>('@/lib/refund/refund.service');
+    return {
+        ...actual,
+        queueRefundForApprovedCancellation: refundMocks.queueRefundForApprovedCancellation,
+        queueRefundForOrder: refundMocks.queueRefundForOrder,
+    };
+});
+
+vi.mock('@/lib/shipping/shipping.service', async () => {
+    const actual = await vi.importActual<typeof import('@/lib/shipping/shipping.service')>('@/lib/shipping/shipping.service');
+    return {
+        ...actual,
+        createB2cShipment: shippingMocks.createB2cShipment,
+    };
+});
 
 import { clear } from '../test-db';
 import {
     createOrder,
     getOrderById,
     listOrders,
+    proceedOrderRefundByAdmin,
+    requestOrderCancellationByCustomer,
+    requestOrderReturnByCustomer,
+    reviewOrderCancellationByAdmin,
+    reviewOrderReturnByAdmin,
     updateOrderStatusById,
 } from '@/lib/order/order.service';
 import type { OrderDocument, OrderStatus } from '@/lib/order/model/order.model';
@@ -41,6 +101,11 @@ const BASE_ORDER_DATA: Omit<OrderDocument, '_id' | 'createdAt' | 'updatedAt'> = 
 describe('Order service (admin helpers)', () => {
     beforeEach(async () => {
         await clear();
+        emailMocks.sendCustomerOrderEmail.mockClear();
+        emailMocks.sendAdminOrderEmail.mockClear();
+        refundMocks.queueRefundForApprovedCancellation.mockClear();
+        refundMocks.queueRefundForOrder.mockClear();
+        shippingMocks.createB2cShipment.mockClear();
     });
 
     it('creates and retrieves an order by id', async () => {
@@ -88,5 +153,141 @@ describe('Order service (admin helpers)', () => {
         const fetched = await getOrderById(created.id);
         expect(fetched.status).toBe('paid');
         expect(fetched.billingDetails).toEqual(expect.objectContaining(BILLING_DETAILS));
+        expect(emailMocks.sendCustomerOrderEmail).toHaveBeenCalledWith('order_paid', expect.objectContaining({ id: created.id, status: 'paid' }));
+        expect(emailMocks.sendAdminOrderEmail).toHaveBeenCalledWith('admin_new_order', expect.objectContaining({ id: created.id, status: 'paid' }));
+    });
+
+    it('notifies admin when a cancellation request is submitted', async () => {
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            status: 'paid',
+        });
+
+        const requested = await requestOrderCancellationByCustomer(
+            created.id,
+            { sessionId: created.sessionId },
+            'Need to return this item',
+        );
+
+        expect(requested.status).toBe('cancellation_requested');
+        expect(emailMocks.sendAdminOrderEmail).toHaveBeenCalledWith(
+            'admin_cancellation_requested',
+            expect.objectContaining({ id: created.id, status: 'cancellation_requested' }),
+        );
+    });
+
+    it('notifies the customer when cancellation is approved', async () => {
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            status: 'paid',
+        });
+
+        await requestOrderCancellationByCustomer(created.id, { sessionId: created.sessionId }, 'Need to return this item');
+
+        const reviewed = await reviewOrderCancellationByAdmin(created.id, { decision: 'approve' });
+        expect(reviewed.status).toBe('cancellation_approved');
+        expect(emailMocks.sendCustomerOrderEmail).toHaveBeenCalledWith(
+            'cancellation_approved',
+            expect.objectContaining({ id: created.id, status: 'cancellation_approved' }),
+        );
+    });
+
+    it('can deny cancellation and proceed to shipment', async () => {
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            paymentProvider: 'stripe',
+            paymentProviderOrderId: 'pi_123',
+            status: 'paid',
+        });
+
+        await requestOrderCancellationByCustomer(created.id, { sessionId: created.sessionId }, 'Changed my mind');
+
+        const reviewed = await reviewOrderCancellationByAdmin(created.id, {
+            decision: 'reject',
+            proceedToShipment: true,
+            note: 'Shipping now',
+        });
+
+        expect(reviewed.status).toBe('requested_shipment');
+        expect(reviewed.shipping?.awb).toBe('SHIP-001');
+        expect(shippingMocks.createB2cShipment).toHaveBeenCalled();
+        expect(reviewed.cancellation?.adminDecision).toBe('rejected');
+    });
+
+    it('allows return request after shipment starts', async () => {
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            status: 'OD',
+            shipping: {
+                provider: 'smsa',
+                awb: 'OUT-1',
+                createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                status: 'Out for Delivery',
+            },
+        });
+
+        const requested = await requestOrderReturnByCustomer(
+            created.id,
+            { sessionId: created.sessionId },
+            'Returning after delivery attempt',
+        );
+
+        expect(requested.status).toBe('return_requested');
+        expect(requested.returnRequest?.requestedFromStatus).toBe('OD');
+        expect(emailMocks.sendAdminOrderEmail).toHaveBeenCalledWith(
+            'admin_return_requested',
+            expect.objectContaining({ id: created.id, status: 'return_requested' }),
+        );
+    });
+
+    it('approves return without initiating refund immediately', async () => {
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            status: 'DL',
+            shipping: {
+                provider: 'smsa',
+                awb: 'DEL-1',
+                createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                status: 'Delivered',
+            },
+        });
+
+        await requestOrderReturnByCustomer(created.id, { sessionId: created.sessionId }, 'Wrong fit');
+        const reviewed = await reviewOrderReturnByAdmin(created.id, { decision: 'approve' });
+
+        expect(reviewed.status).toBe('return_approved');
+        expect(reviewed.returnRequest?.shipment?.awb).toBe('SHIP-001');
+        expect(refundMocks.queueRefundForOrder).not.toHaveBeenCalled();
+        expect(emailMocks.sendCustomerOrderEmail).toHaveBeenCalledWith(
+            'return_approved',
+            expect.objectContaining({ id: created.id, status: 'return_approved' }),
+        );
+    });
+
+    it('initiates refund manually for approved returns', async () => {
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            paymentProvider: 'stripe',
+            paymentProviderOrderId: 'pi_return_123',
+            status: 'return_approved',
+            shipping: {
+                provider: 'smsa',
+                awb: 'DEL-2',
+                createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                status: 'Delivered',
+            },
+            returnRequest: {
+                requestedAt: new Date('2026-03-28T09:30:00.000Z'),
+                approvedAt: new Date('2026-03-28T10:00:00.000Z'),
+                adminDecision: 'approved',
+                requestReason: 'Damaged on arrival',
+                requestedBySessionId: 'session-1',
+            },
+        });
+
+        const refunded = await proceedOrderRefundByAdmin(created.id);
+        expect(refunded.status).toBe('refund_approved');
+        expect(refunded.refund?.externalRefundId).toBe('re_test_2');
+        expect(refundMocks.queueRefundForOrder).toHaveBeenCalled();
     });
 });

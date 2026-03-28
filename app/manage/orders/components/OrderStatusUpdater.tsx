@@ -17,10 +17,6 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
     { value: 'AF', label: 'AF (Arrived Facility)' },
     { value: 'OD', label: 'OD (Out for Delivery)' },
     { value: 'DL', label: 'DL (Delivered)' },
-    { value: 'cancellation_requested', label: 'Cancellation Requested' },
-    { value: 'cancellation_approved', label: 'Cancellation Approved' },
-    { value: 'cancelled', label: 'Cancelled' },
-    { value: 'refund_failed', label: 'Refund Failed' },
     { value: 'failed', label: 'Failed' },
 ];
 

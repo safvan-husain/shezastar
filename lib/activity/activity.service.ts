@@ -27,10 +27,14 @@ const RECENT_ACTIVITY_LIMIT = 8;
 const NON_SALES_ORDER_STATUSES = new Set([
     'pending',
     'cancelled',
+    'refunded',
     'failed',
     'refund_failed',
     'cancellation_requested',
     'cancellation_approved',
+    'return_requested',
+    'return_approved',
+    'refund_approved',
 ]);
 
 let indexesEnsured = false;

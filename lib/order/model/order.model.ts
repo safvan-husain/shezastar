@@ -5,9 +5,14 @@ import type { InstallationOption } from '@/lib/cart/cart.schema';
 export type OrderStatus =
     | 'pending'
     | 'paid'
+    | 'requested_shipment'
     | 'shipped'
     | 'cancellation_requested'
     | 'cancellation_approved'
+    | 'return_requested'
+    | 'return_approved'
+    | 'refund_approved'
+    | 'refunded'
     | 'cancelled'
     | 'refund_failed'
     | 'failed'
@@ -25,6 +30,22 @@ export interface OrderCancellationDocument {
     adminNote?: string;
     requestedBySessionId?: string;
     requestedByUserId?: ObjectId;
+}
+
+export type OrderReturnDecision = 'pending' | 'approved' | 'rejected';
+
+export interface OrderReturnDocument {
+    requestedAt?: Date;
+    approvedAt?: Date;
+    completedAt?: Date;
+    rejectedAt?: Date;
+    requestReason?: string;
+    adminDecision?: OrderReturnDecision;
+    adminNote?: string;
+    requestedBySessionId?: string;
+    requestedByUserId?: ObjectId;
+    requestedFromStatus?: string;
+    shipment?: OrderShippingDocument;
 }
 
 export interface OrderRefundDocument {
@@ -82,6 +103,7 @@ export interface OrderDocument {
     status: OrderStatus;
     shipping?: OrderShippingDocument;
     cancellation?: OrderCancellationDocument;
+    returnRequest?: OrderReturnDocument;
     refund?: OrderRefundDocument;
     billingDetails?: BillingDetails;
     userId?: ObjectId;
@@ -139,6 +161,26 @@ export interface Order {
         adminNote?: string;
         requestedBySessionId?: string;
         requestedByUserId?: string;
+    };
+    returnRequest?: {
+        requestedAt?: string;
+        approvedAt?: string;
+        completedAt?: string;
+        rejectedAt?: string;
+        requestReason?: string;
+        adminDecision?: OrderReturnDecision;
+        adminNote?: string;
+        requestedBySessionId?: string;
+        requestedByUserId?: string;
+        requestedFromStatus?: string;
+        shipment?: {
+            provider: 'smsa';
+            awb: string;
+            createdAt: string;
+            labelPdf?: string;
+            status?: string;
+            lastTrackedAt?: string;
+        };
     };
     refund?: {
         status: 'not_requested' | 'pending' | 'partial' | 'succeeded' | 'failed';
@@ -213,6 +255,30 @@ export function toOrder(doc: OrderDocument): Order {
                 adminNote: doc.cancellation.adminNote,
                 requestedBySessionId: doc.cancellation.requestedBySessionId,
                 requestedByUserId: doc.cancellation.requestedByUserId?.toHexString(),
+            }
+            : undefined,
+        returnRequest: doc.returnRequest
+            ? {
+                requestedAt: toIso(doc.returnRequest.requestedAt),
+                approvedAt: toIso(doc.returnRequest.approvedAt),
+                completedAt: toIso(doc.returnRequest.completedAt),
+                rejectedAt: toIso(doc.returnRequest.rejectedAt),
+                requestReason: doc.returnRequest.requestReason,
+                adminDecision: doc.returnRequest.adminDecision,
+                adminNote: doc.returnRequest.adminNote,
+                requestedBySessionId: doc.returnRequest.requestedBySessionId,
+                requestedByUserId: doc.returnRequest.requestedByUserId?.toHexString(),
+                requestedFromStatus: doc.returnRequest.requestedFromStatus,
+                shipment: doc.returnRequest.shipment
+                    ? {
+                        provider: doc.returnRequest.shipment.provider,
+                        awb: doc.returnRequest.shipment.awb,
+                        createdAt: doc.returnRequest.shipment.createdAt.toISOString(),
+                        labelPdf: doc.returnRequest.shipment.labelPdf,
+                        status: doc.returnRequest.shipment.status,
+                        lastTrackedAt: toIso(doc.returnRequest.shipment.lastTrackedAt),
+                    }
+                    : undefined,
             }
             : undefined,
         refund: doc.refund

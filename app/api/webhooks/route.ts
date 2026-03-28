@@ -271,7 +271,7 @@ async function handleRefundLifecycleEvent(event: Stripe.Event): Promise<void> {
 
     if (event.type === 'refund.failed') {
         const orderId = orderDoc._id.toHexString();
-        await updateOrderStatusById(orderId, 'refund_failed');
+        await updateOrderStatusById(orderId, 'refund_failed', { allowWorkflowStatuses: true });
         
         updateSet['refund.status'] = 'failed';
         updateSet['refund.processedAt'] = now;
@@ -347,11 +347,14 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
     if (isFullyRefunded) {
         updateSet['refund.processedAt'] = now;
 
-        const cancellableStatuses: OrderStatus[] = ['cancellation_approved', 'refund_failed'];
-        if (cancellableStatuses.includes(orderDoc.status)) {
-            await updateOrderStatusById(orderDoc._id.toHexString(), 'cancelled');
+        const refundableStatuses: OrderStatus[] = ['cancellation_approved', 'refund_approved', 'refund_failed'];
+        if (refundableStatuses.includes(orderDoc.status)) {
+            await updateOrderStatusById(orderDoc._id.toHexString(), 'refunded', { allowWorkflowStatuses: true });
             if (!orderDoc.cancellation?.completedAt) {
                 updateSet['cancellation.completedAt'] = now;
+            }
+            if (!orderDoc.returnRequest?.completedAt) {
+                updateSet['returnRequest.completedAt'] = now;
             }
         }
     }

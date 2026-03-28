@@ -134,29 +134,21 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
     const skip = (page - 1) * limit;
     let filter: Record<string, any> = {};
 
-    // Get lineage map once for all uses if needed
-    const lineageMap = (categoryId || originId) ? await getCategoryLineageMap() : null;
+    // Get lineage map once for uses that need ancestry-based scoring.
+    const lineageMap = originId ? await getCategoryLineageMap() : null;
 
-    if (categoryId && lineageMap) {
+    if (categoryId) {
         const ids = Array.isArray(categoryId) ? categoryId : [categoryId];
-        
-        // Resolve all hierarchy IDs using the lineage map instead of repeated DB queries
         const flatHierarchyIds = new Set<string>();
-        for (const id of ids) {
-            // Check if it's a category/sub/sub-sub ID
-            if (lineageMap.has(id)) {
-                // To get hierarchy for id, we want all IDs that have this id in their lineage
-                for (const [mid, lineage] of lineageMap.entries()) {
-                    if (lineage.includes(id)) {
-                        flatHierarchyIds.add(mid);
-                    }
-                }
+
+        for (const identifier of ids) {
+            const hierarchyIds = await getCategoryHierarchyIds(identifier);
+            for (const resolvedId of hierarchyIds) {
+                flatHierarchyIds.add(resolvedId);
             }
         }
-        
-        if (flatHierarchyIds.size > 0) {
-            filter = { ...filter, subCategoryIds: { $in: Array.from(flatHierarchyIds) } };
-        }
+
+        filter = { ...filter, subCategoryIds: { $in: Array.from(flatHierarchyIds) } };
     }
 
     if (originId) {

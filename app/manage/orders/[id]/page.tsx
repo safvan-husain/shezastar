@@ -4,6 +4,8 @@ import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToa
 import type { Order } from '@/lib/order/model/order.model';
 import { OrderStatusUpdater } from '../components/OrderStatusUpdater';
 import { OrderCancellationReview } from '../components/OrderCancellationReview';
+import { OrderReturnReview } from '../components/OrderReturnReview';
+import { ProceedRefundButton } from '../components/ProceedRefundButton';
 import { ProceedToShippingButton } from '../components/ProceedToShippingButton';
 
 interface OrderDetailPageProps {
@@ -371,6 +373,84 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                                 {order.status === "cancellation_requested" && (
                                     <div className="mt-5 border-t border-[var(--border-subtle)] pt-5">
                                         <OrderCancellationReview orderId={order.id} />
+                                    </div>
+                                )}
+                            </Card>
+                        )}
+
+                        {(order.returnRequest || order.status === "return_requested") && (
+                            <Card>
+                                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
+                                    Return
+                                </h2>
+                                {order.returnRequest ? (
+                                    <div className="space-y-3 text-sm">
+                                        <p className="text-[var(--text-secondary)]">
+                                            Decision:{" "}
+                                            <span className="font-semibold text-[var(--text-primary)]">
+                                                {formatStatus(order.returnRequest.adminDecision ?? "pending")}
+                                            </span>
+                                        </p>
+                                        {order.returnRequest.requestReason && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Request reason:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {order.returnRequest.requestReason}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.returnRequest.requestedAt && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Requested:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {formatDate(order.returnRequest.requestedAt)}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.returnRequest.approvedAt && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Approved:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {formatDate(order.returnRequest.approvedAt)}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.returnRequest.rejectedAt && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Rejected:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {formatDate(order.returnRequest.rejectedAt)}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.returnRequest.shipment?.awb && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Return shipment AWB:{" "}
+                                                <span className="font-mono text-[var(--text-primary)]">
+                                                    {order.returnRequest.shipment.awb}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {order.returnRequest.adminNote && (
+                                            <p className="text-[var(--text-secondary)]">
+                                                Admin note:{" "}
+                                                <span className="text-[var(--text-primary)]">
+                                                    {order.returnRequest.adminNote}
+                                                </span>
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : null}
+
+                                {order.status === "return_requested" && (
+                                    <div className="mt-5 border-t border-[var(--border-subtle)] pt-5">
+                                        <OrderReturnReview orderId={order.id} />
+                                    </div>
+                                )}
+
+                                {order.status === "return_approved" && (
+                                    <div className="mt-5 border-t border-[var(--border-subtle)] pt-5">
+                                        <ProceedRefundButton orderId={order.id} />
                                     </div>
                                 )}
                             </Card>

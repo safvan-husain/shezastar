@@ -16,6 +16,29 @@ export const OrderCancellationSchema = z.object({
     requestedByUserId: z.string().optional(),
 });
 
+export const OrderShippingSchema = z.object({
+    provider: z.literal('smsa'),
+    awb: z.string().min(1),
+    createdAt: z.string().min(1),
+    labelPdf: z.string().optional(),
+    status: z.string().optional(),
+    lastTrackedAt: z.string().optional(),
+});
+
+export const OrderReturnSchema = z.object({
+    requestedAt: z.string().min(1).optional(),
+    approvedAt: z.string().min(1).optional(),
+    completedAt: z.string().min(1).optional(),
+    rejectedAt: z.string().min(1).optional(),
+    requestReason: z.string().optional(),
+    adminDecision: z.enum(['pending', 'approved', 'rejected']).optional(),
+    adminNote: z.string().optional(),
+    requestedBySessionId: z.string().optional(),
+    requestedByUserId: z.string().optional(),
+    requestedFromStatus: z.string().optional(),
+    shipment: OrderShippingSchema.optional(),
+});
+
 export const OrderRefundSchema = z.object({
     status: z.enum(['not_requested', 'pending', 'partial', 'succeeded', 'failed']),
     provider: z.enum(['stripe', 'tabby']).optional(),
@@ -43,15 +66,6 @@ export const OrderItemSchema = z.object({
     installationAddOnPrice: z.number().min(0).default(0),
 });
 
-export const OrderShippingSchema = z.object({
-    provider: z.literal('smsa'),
-    awb: z.string().min(1),
-    createdAt: z.string().min(1),
-    labelPdf: z.string().optional(),
-    status: z.string().optional(),
-    lastTrackedAt: z.string().optional(),
-});
-
 export const OrderSchema = z.object({
     id: z.string().min(1),
     sessionId: z.string().min(1),
@@ -68,6 +82,7 @@ export const OrderSchema = z.object({
     status: OrderStatusSchema,
     shipping: OrderShippingSchema.optional(),
     cancellation: OrderCancellationSchema.optional(),
+    returnRequest: OrderReturnSchema.optional(),
     refund: OrderRefundSchema.optional(),
     billingDetails: BillingDetailsSchema.optional(),
     createdAt: z.string().min(1),
@@ -83,6 +98,16 @@ export const RequestOrderCancellationSchema = z.object({
 });
 
 export const ReviewOrderCancellationSchema = z.object({
+    decision: z.enum(['approve', 'reject']),
+    proceedToShipment: z.boolean().optional(),
+    note: z.string().trim().min(1).max(1000).optional(),
+});
+
+export const RequestOrderReturnSchema = z.object({
+    reason: z.string().trim().min(1).max(1000),
+});
+
+export const ReviewOrderReturnSchema = z.object({
     decision: z.enum(['approve', 'reject']),
     note: z.string().trim().min(1).max(1000).optional(),
 });
@@ -102,4 +127,6 @@ export type OrderDto = z.infer<typeof OrderSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof UpdateOrderStatusSchema>;
 export type RequestOrderCancellationInput = z.infer<typeof RequestOrderCancellationSchema>;
 export type ReviewOrderCancellationInput = z.infer<typeof ReviewOrderCancellationSchema>;
+export type RequestOrderReturnInput = z.infer<typeof RequestOrderReturnSchema>;
+export type ReviewOrderReturnInput = z.infer<typeof ReviewOrderReturnSchema>;
 export type AdminOrderListResponse = z.infer<typeof AdminOrderListResponseSchema>;

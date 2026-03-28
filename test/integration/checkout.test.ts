@@ -24,9 +24,16 @@ vi.mock('stripe', () => {
 });
 
 // Mock Session to avoid actual DB calls for session management
-vi.mock('@/lib/storefront-session', () => ({
-    getStorefrontSessionId: vi.fn().mockResolvedValue('test-session-id'),
-}));
+vi.mock('@/lib/storefront-session', async () => {
+    const actual = await vi.importActual<typeof import('@/lib/storefront-session')>('@/lib/storefront-session');
+    return {
+        ...actual,
+        getStorefrontSession: vi.fn().mockResolvedValue({
+            sessionId: 'test-session-id',
+            userId: undefined,
+        }),
+    };
+});
 
 const getCartForCurrentSessionMock = vi.fn().mockResolvedValue({
     items: [{ productId: 'cart-prod-1', quantity: 1, unitPrice: 100, selectedVariantItemIds: [] }],
@@ -62,6 +69,33 @@ const validateStockAvailabilityMock = vi.fn().mockResolvedValue({
 
 vi.mock('@/lib/product/product.service-stock', () => ({
     validateStockAvailability: validateStockAvailabilityMock,
+}));
+
+vi.mock('@/lib/product/product.service', () => ({
+    getProduct: vi.fn(async (id: string) => ({
+        id,
+        name: id,
+        images: [],
+        variants: [],
+    })),
+}));
+
+vi.mock('@/lib/checkout/country-pricing.service', () => ({
+    resolveCountryPricingForCheckout: vi.fn().mockResolvedValue({
+        code: 'AE',
+        shippingFee: 0,
+        taxRate: 0,
+        pricesIncludeTax: false,
+    }),
+    computeCheckoutPricingBreakdown: vi.fn(({ subtotalAed }: { subtotalAed: number }) => ({
+        subtotal: subtotalAed,
+        shipping: 0,
+        vat: 0,
+        vatRatePercent: 0,
+        vatIncludedInPrice: false,
+        countryCode: 'AE',
+        total: subtotalAed,
+    })),
 }));
 
 // Mock Currency Service

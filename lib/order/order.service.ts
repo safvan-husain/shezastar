@@ -3,16 +3,23 @@ import { enforceServerOnly } from '@/lib/utils/server-only';
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { Order, OrderDocument, toOrder, OrderStatus } from './model/order.model';
-import { buildPendingRefundFromOrder, queueRefundForApprovedCancellation } from '@/lib/refund/refund.service';
+import { buildPendingRefundFromOrder, queueRefundForApprovedCancellation, queueRefundForOrder } from '@/lib/refund/refund.service';
+import { sendAdminOrderEmail, sendCustomerOrderEmail } from '@/lib/email/email.service';
+import { createB2cShipment } from '@/lib/shipping/shipping.service';
+import type { CreateShipmentInput } from '@/lib/shipping/shipping.schema';
 
 const COLLECTION = 'orders';
 const NON_SUCCESS_ORDER_STATUSES: OrderStatus[] = [
     'pending',
     'cancelled',
+    'refunded',
     'failed',
     'refund_failed',
     'cancellation_requested',
     'cancellation_approved',
+    'return_requested',
+    'return_approved',
+    'refund_approved',
 ];
 
 let indexesEnsured = false;
@@ -23,6 +30,12 @@ export interface OrderCancellationActor {
 }
 
 export interface AdminReviewCancellationInput {
+    decision: 'approve' | 'reject';
+    proceedToShipment?: boolean;
+    note?: string;
+}
+
+export interface AdminReviewReturnInput {
     decision: 'approve' | 'reject';
     note?: string;
 }
@@ -49,6 +62,101 @@ function parseOptionalObjectId(id?: string): ObjectId | undefined {
 function normalizeOptionalText(value?: string): string | undefined {
     const trimmed = value?.trim();
     return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function isWorkflowManagedStatus(status: OrderStatus): boolean {
+    return [
+        'cancellation_requested',
+        'cancellation_approved',
+        'return_requested',
+        'return_approved',
+        'refund_approved',
+        'refund_failed',
+        'refunded',
+    ].includes(status);
+}
+
+function canRequestReturn(doc: OrderDocument): boolean {
+    if (!doc.shipping?.awb) {
+        return false;
+    }
+
+    return ![
+        'pending',
+        'paid',
+        'cancelled',
+        'cancellation_requested',
+        'cancellation_approved',
+        'return_requested',
+        'return_approved',
+        'refund_approved',
+        'refunded',
+        'failed',
+        'refund_failed',
+    ].includes(doc.status);
+}
+
+function applyQueuedRefundToPendingRefund(
+    pendingRefund: ReturnType<typeof buildPendingRefundFromOrder>,
+    queuedRefund: Awaited<ReturnType<typeof queueRefundForOrder>>,
+) {
+    if (queuedRefund.externalRefundId) {
+        pendingRefund.externalRefundId = queuedRefund.externalRefundId;
+    }
+    if (queuedRefund.requestedAt) {
+        pendingRefund.requestedAt = queuedRefund.requestedAt;
+    }
+    if (typeof queuedRefund.amount === 'number') {
+        pendingRefund.amount = queuedRefund.amount;
+    }
+    if (queuedRefund.currency) {
+        pendingRefund.currency = queuedRefund.currency;
+    }
+    return pendingRefund;
+}
+
+async function createShipmentDocument(order: Order, input: CreateShipmentInput = {}): Promise<NonNullable<OrderDocument['shipping']>> {
+    const response = await createB2cShipment(order, input);
+    const awb = response.waybills?.[0]?.awb?.trim() || response.sawb.trim();
+
+    return {
+        provider: 'smsa',
+        awb,
+        createdAt: new Date(),
+        status: 'created',
+        labelPdf: response.waybills?.[0]?.awbFile,
+    };
+}
+
+function emitOrderStatusEmails(previousStatus: OrderStatus, updatedOrder: Order) {
+    if (previousStatus === updatedOrder.status) {
+        return;
+    }
+
+    if (updatedOrder.status === 'paid') {
+        void sendCustomerOrderEmail('order_paid', updatedOrder);
+        void sendAdminOrderEmail('admin_new_order', updatedOrder);
+    }
+
+    if (updatedOrder.status === 'requested_shipment' || updatedOrder.status === 'shipped') {
+        void sendCustomerOrderEmail('shipment_approved', updatedOrder);
+    }
+
+    if (updatedOrder.status === 'cancellation_approved') {
+        void sendCustomerOrderEmail('cancellation_approved', updatedOrder);
+    }
+
+    if (updatedOrder.status === 'return_approved') {
+        void sendCustomerOrderEmail('return_approved', updatedOrder);
+    }
+
+    if (updatedOrder.status === 'refunded') {
+        void sendCustomerOrderEmail('refunded', updatedOrder);
+    }
+
+    if (updatedOrder.status === 'cancelled') {
+        void sendCustomerOrderEmail('order_cancelled', updatedOrder);
+    }
 }
 
 async function getOrderCollection() {
@@ -188,7 +296,11 @@ export async function listOrders(params: {
     };
 }
 
-export async function updateOrderStatusById(id: string, status: OrderStatus): Promise<Order> {
+export async function updateOrderStatusById(
+    id: string,
+    status: OrderStatus,
+    options?: { allowWorkflowStatuses?: boolean },
+): Promise<Order> {
     const objectId = parseOrderObjectId(id);
 
     const collection = await getOrderCollection();
@@ -198,14 +310,11 @@ export async function updateOrderStatusById(id: string, status: OrderStatus): Pr
         throw new AppError(404, 'ORDER_NOT_FOUND', { id });
     }
 
-    if (
-        existing.status === 'cancellation_requested'
-        || existing.status === 'cancellation_approved'
-        || existing.status === 'refund_failed'
-    ) {
-        throw new AppError(409, 'CANCELLATION_STATUS_MANAGED_SEPARATELY', {
+    if (!options?.allowWorkflowStatuses && (isWorkflowManagedStatus(existing.status) || isWorkflowManagedStatus(status))) {
+        throw new AppError(409, 'ORDER_STATUS_MANAGED_SEPARATELY', {
             id,
             currentStatus: existing.status,
+            nextStatus: status,
         });
     }
 
@@ -222,7 +331,11 @@ export async function updateOrderStatusById(id: string, status: OrderStatus): Pr
         { returnDocument: 'after' }
     );
 
-    return toOrder(result ?? existing);
+    const updatedOrder = toOrder(result ?? existing);
+
+    emitOrderStatusEmails(existing.status, updatedOrder);
+
+    return updatedOrder;
 }
 
 export async function setOrderShipping(id: string, shipping: NonNullable<OrderDocument['shipping']>): Promise<Order> {
@@ -238,6 +351,28 @@ export async function setOrderShipping(id: string, shipping: NonNullable<OrderDo
             },
         },
         { returnDocument: 'after' }
+    );
+
+    if (!result) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    return toOrder(result);
+}
+
+export async function setOrderReturnShipment(id: string, shipment: NonNullable<NonNullable<OrderDocument['returnRequest']>['shipment']>): Promise<Order> {
+    const objectId = parseOrderObjectId(id);
+    const collection = await getOrderCollection();
+
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: {
+                'returnRequest.shipment': shipment,
+                updatedAt: new Date(),
+            },
+        },
+        { returnDocument: 'after' },
     );
 
     if (!result) {
@@ -341,7 +476,65 @@ export async function requestOrderCancellationByCustomer(
         throw new AppError(404, 'ORDER_NOT_FOUND', { id });
     }
 
-    return toOrder(result);
+    const updatedOrder = toOrder(result);
+    void sendAdminOrderEmail('admin_cancellation_requested', updatedOrder);
+
+    return updatedOrder;
+}
+
+export async function requestOrderReturnByCustomer(
+    id: string,
+    actor: OrderCancellationActor,
+    reason: string,
+): Promise<Order> {
+    const objectId = parseOrderObjectId(id);
+    const collection = await getOrderCollection();
+    const doc = await collection.findOne({ _id: objectId });
+
+    if (!doc) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    assertOrderOwnership(doc, actor, id);
+
+    if (doc.returnRequest?.requestedAt && doc.status === 'return_requested') {
+        throw new AppError(409, 'RETURN_REQUEST_ALREADY_SUBMITTED', { id });
+    }
+
+    if (!canRequestReturn(doc)) {
+        throw new AppError(409, 'ORDER_NOT_RETURNABLE', { id, status: doc.status });
+    }
+
+    const now = new Date();
+    const returnRequest: NonNullable<OrderDocument['returnRequest']> = {
+        requestedAt: now,
+        requestReason: reason.trim(),
+        adminDecision: 'pending',
+        requestedBySessionId: actor.sessionId,
+        requestedByUserId: parseOptionalObjectId(actor.userId),
+        requestedFromStatus: doc.status,
+    };
+
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: {
+                status: 'return_requested',
+                returnRequest,
+                updatedAt: now,
+            },
+        },
+        { returnDocument: 'after' },
+    );
+
+    if (!result) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    const updatedOrder = toOrder(result);
+    void sendAdminOrderEmail('admin_return_requested', updatedOrder);
+
+    return updatedOrder;
 }
 
 export async function reviewOrderCancellationByAdmin(
@@ -382,7 +575,11 @@ export async function reviewOrderCancellationByAdmin(
         cancellation.rejectedAt = now;
     }
 
-    const nextStatus: OrderStatus = input.decision === 'approve' ? 'cancellation_approved' : 'paid';
+    const nextStatus: OrderStatus = input.decision === 'approve'
+        ? 'cancellation_approved'
+        : input.proceedToShipment
+            ? 'requested_shipment'
+            : 'paid';
     const updatePayload: Partial<OrderDocument> = {
         status: nextStatus,
         cancellation,
@@ -393,27 +590,122 @@ export async function reviewOrderCancellationByAdmin(
         const order = toOrder(doc);
         const pendingRefund = buildPendingRefundFromOrder(order);
         const queuedRefund = await queueRefundForApprovedCancellation(order);
+        updatePayload.refund = applyQueuedRefundToPendingRefund(pendingRefund, queuedRefund);
+    }
 
-        if (queuedRefund.externalRefundId) {
-            pendingRefund.externalRefundId = queuedRefund.externalRefundId;
-        }
-        if (queuedRefund.requestedAt) {
-            pendingRefund.requestedAt = queuedRefund.requestedAt;
-        }
-        if (typeof queuedRefund.amount === 'number') {
-            pendingRefund.amount = queuedRefund.amount;
-        }
-        if (queuedRefund.currency) {
-            pendingRefund.currency = queuedRefund.currency;
-        }
-
-        updatePayload.refund = pendingRefund;
+    if (input.decision === 'reject' && input.proceedToShipment) {
+        const order = toOrder(doc);
+        updatePayload.shipping = await createShipmentDocument(order);
     }
 
     const result = await collection.findOneAndUpdate(
         { _id: objectId },
         {
             $set: updatePayload,
+        },
+        { returnDocument: 'after' },
+    );
+
+    if (!result) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    const updatedOrder = toOrder(result);
+    emitOrderStatusEmails(doc.status, updatedOrder);
+
+    return updatedOrder;
+}
+
+export async function reviewOrderReturnByAdmin(
+    id: string,
+    input: AdminReviewReturnInput,
+): Promise<Order> {
+    const objectId = parseOrderObjectId(id);
+    const collection = await getOrderCollection();
+    const doc = await collection.findOne({ _id: objectId });
+
+    if (!doc) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    if (!doc.returnRequest?.requestedAt) {
+        throw new AppError(409, 'RETURN_REQUEST_NOT_FOUND', { id });
+    }
+
+    if (doc.status !== 'return_requested') {
+        throw new AppError(409, 'ORDER_NOT_IN_RETURN_REVIEW', { id, status: doc.status });
+    }
+
+    const now = new Date();
+    const adminNote = normalizeOptionalText(input.note);
+    const returnRequest: NonNullable<OrderDocument['returnRequest']> = {
+        ...doc.returnRequest,
+        adminDecision: input.decision === 'approve' ? 'approved' : 'rejected',
+    };
+
+    if (adminNote) {
+        returnRequest.adminNote = adminNote;
+    }
+
+    const updatePayload: Partial<OrderDocument> = {
+        updatedAt: now,
+    };
+
+    if (input.decision === 'approve') {
+        returnRequest.approvedAt = now;
+        returnRequest.shipment = await createShipmentDocument(toOrder(doc));
+        updatePayload.status = 'return_approved';
+    } else {
+        returnRequest.rejectedAt = now;
+        updatePayload.status = doc.returnRequest.requestedFromStatus || 'requested_shipment';
+    }
+
+    updatePayload.returnRequest = returnRequest;
+
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: updatePayload,
+        },
+        { returnDocument: 'after' },
+    );
+
+    if (!result) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    const updatedOrder = toOrder(result);
+    emitOrderStatusEmails(doc.status, updatedOrder);
+    return updatedOrder;
+}
+
+export async function proceedOrderRefundByAdmin(id: string): Promise<Order> {
+    const objectId = parseOrderObjectId(id);
+    const collection = await getOrderCollection();
+    const doc = await collection.findOne({ _id: objectId });
+
+    if (!doc) {
+        throw new AppError(404, 'ORDER_NOT_FOUND', { id });
+    }
+
+    if (doc.status !== 'return_approved') {
+        throw new AppError(409, 'ORDER_NOT_READY_FOR_REFUND', { id, status: doc.status });
+    }
+
+    const order = toOrder(doc);
+    const pendingRefund = buildPendingRefundFromOrder(order);
+    const queuedRefund = await queueRefundForOrder(order);
+    const refund = applyQueuedRefundToPendingRefund(pendingRefund, queuedRefund);
+    const now = new Date();
+
+    const result = await collection.findOneAndUpdate(
+        { _id: objectId },
+        {
+            $set: {
+                status: 'refund_approved',
+                refund,
+                updatedAt: now,
+            },
         },
         { returnDocument: 'after' },
     );

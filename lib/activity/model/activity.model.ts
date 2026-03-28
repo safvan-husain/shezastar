@@ -8,7 +8,10 @@ export type ActivityActionType =
     | 'order.created'
     | 'order.status_updated'
     | 'order.shipment_created'
-    | 'order.cancellation_reviewed';
+    | 'order.cancellation_reviewed'
+    | 'order.return_requested'
+    | 'order.return_reviewed'
+    | 'order.refund_initiated';
 
 export type ActivityActorType = 'admin' | 'system' | 'customer';
 export type ActivityEntityKind = 'product' | 'order';

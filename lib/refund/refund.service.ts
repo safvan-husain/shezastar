@@ -124,11 +124,12 @@ function resolveTabbyPaymentId(order: Order): string | undefined {
     return order.paymentProviderSessionId ?? order.paymentProviderOrderId;
 }
 
-function buildTabbyRefundReason(order: Order): string {
-    const requestReason = order.cancellation?.requestReason?.trim();
+function buildRefundReason(order: Order): string {
+    const requestReason = order.returnRequest?.requestReason?.trim()
+        || order.cancellation?.requestReason?.trim();
     return requestReason && requestReason.length > 0
         ? requestReason
-        : 'Admin approved order cancellation';
+        : 'Admin approved order refund';
 }
 
 async function assertTabbyPaymentIsClosed(
@@ -163,7 +164,7 @@ async function assertTabbyPaymentIsClosed(
     }
 }
 
-async function queueTabbyRefundForApprovedCancellation(order: Order): Promise<RefundQueueResult> {
+async function queueTabbyRefundForOrder(order: Order): Promise<RefundQueueResult> {
     const tabbySecretKey = process.env.TABBY_SECRET_KEY;
 
     if (!tabbySecretKey) {
@@ -188,7 +189,7 @@ async function queueTabbyRefundForApprovedCancellation(order: Order): Promise<Re
     const refundPayload = {
         amount,
         reference_id: referenceId,
-        reason: buildTabbyRefundReason(order),
+        reason: buildRefundReason(order),
         // Full-refund only: send a single summary line that equals total order amount.
         items: [
             {
@@ -250,9 +251,9 @@ async function queueTabbyRefundForApprovedCancellation(order: Order): Promise<Re
     };
 }
 
-export async function queueRefundForApprovedCancellation(order: Order): Promise<RefundQueueResult> {
+export async function queueRefundForOrder(order: Order): Promise<RefundQueueResult> {
     if (order.paymentProvider === 'tabby') {
-        return queueTabbyRefundForApprovedCancellation(order);
+        return queueTabbyRefundForOrder(order);
     }
 
     if (order.paymentProvider !== 'stripe') {
@@ -288,7 +289,7 @@ export async function queueRefundForApprovedCancellation(order: Order): Promise<
             payment_intent: paymentIntentId,
         },
         {
-            idempotencyKey: `order-cancel-refund:${order.id}`,
+            idempotencyKey: `order-refund:${order.id}`,
         },
     );
 
@@ -312,5 +313,9 @@ export async function queueRefundForApprovedCancellation(order: Order): Promise<
         amount: toMajorUnitAmount(stripeRefund.amount, stripeRefund.currency),
         currency: stripeRefund.currency,
     };
+}
+
+export async function queueRefundForApprovedCancellation(order: Order): Promise<RefundQueueResult> {
+    return queueRefundForOrder(order);
 }
 enforceServerOnly('refund.service');

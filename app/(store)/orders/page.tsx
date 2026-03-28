@@ -3,6 +3,7 @@ import { getOrdersBySessionId } from '@/lib/order/order.service';
 import Link from 'next/link';
 import Image from 'next/image';
 import { OrderCancellationRequestButton } from './components/OrderCancellationRequestButton';
+import { OrderReturnRequestButton } from './components/OrderReturnRequestButton';
 import { OrderShipmentTracking } from './components/OrderShipmentTracking';
 
 function formatStatus(status: string) {
@@ -66,6 +67,7 @@ export default async function OrdersPage() {
                             const hasCancellationRequest = Boolean(
                                 order.cancellation?.requestedAt,
                             );
+                            const hasReturnRequest = ['return_requested', 'return_approved', 'refund_approved', 'refunded'].includes(order.status);
                             
                             return (
                                 <div
@@ -92,6 +94,10 @@ export default async function OrdersPage() {
                                 order.status === 'requested_shipment' ? 'bg-violet-100 text-violet-800' :
                                 order.status === 'cancellation_requested' ? 'bg-amber-100 text-amber-800' :
                                 order.status === 'cancellation_approved' ? 'bg-blue-100 text-blue-800' :
+                                order.status === 'return_requested' ? 'bg-orange-100 text-orange-800' :
+                                order.status === 'return_approved' ? 'bg-cyan-100 text-cyan-800' :
+                                order.status === 'refund_approved' ? 'bg-teal-100 text-teal-800' :
+                                order.status === 'refunded' ? 'bg-emerald-100 text-emerald-800' :
                                 order.status === 'refund_failed' ? 'bg-red-100 text-red-800' :
                                 order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                                     'bg-gray-100 text-gray-800'}`}
@@ -165,6 +171,12 @@ export default async function OrdersPage() {
                                             <OrderCancellationRequestButton orderId={order.id} />
                                         )}
 
+                                        {order.shipping?.awb && !hasReturnRequest && !['return_approved', 'refund_approved', 'refunded'].includes(order.status) && order.status !== 'cancellation_requested' && order.status !== 'cancellation_approved' && order.status !== 'cancelled' && (
+                                            <div className="mt-3">
+                                                <OrderReturnRequestButton orderId={order.id} />
+                                            </div>
+                                        )}
+
                                         {order.status === 'cancellation_requested' && (
                                             <p className="text-xs text-amber-700">
                                                 Cancellation requested. Waiting for admin review.
@@ -178,6 +190,30 @@ export default async function OrdersPage() {
                                             </p>
                                         )}
 
+                                        {order.status === 'return_requested' && (
+                                            <p className="text-xs text-orange-700">
+                                                Return requested. Waiting for admin review.
+                                            </p>
+                                        )}
+
+                                        {order.status === 'return_approved' && (
+                                            <p className="text-xs text-cyan-700">
+                                                Return approved. Admin will initiate the refund after return processing.
+                                            </p>
+                                        )}
+
+                                        {order.status === 'refund_approved' && (
+                                            <p className="text-xs text-teal-700">
+                                                Refund initiated. Waiting for payment provider confirmation.
+                                            </p>
+                                        )}
+
+                                        {order.status === 'refunded' && (
+                                            <p className="text-xs text-emerald-700">
+                                                Refund completed successfully.
+                                            </p>
+                                        )}
+
                                         {order.status === 'refund_failed' && (
                                             <p className="text-xs text-red-700">
                                                 Refund failed at the payment provider. Please contact
@@ -188,6 +224,12 @@ export default async function OrdersPage() {
                                         {order.cancellation?.adminDecision === 'rejected' && (
                                             <p className="text-xs text-red-700">
                                                 Your cancellation request was rejected.
+                                            </p>
+                                        )}
+
+                                        {order.returnRequest?.adminDecision === 'rejected' && (
+                                            <p className="text-xs text-red-700">
+                                                Your return request was rejected.
                                             </p>
                                         )}
                                     </div>

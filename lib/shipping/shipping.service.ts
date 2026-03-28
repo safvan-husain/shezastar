@@ -351,7 +351,15 @@ export async function getShipmentLabel(awb: string): Promise<Buffer> {
 }
 
 type SmsaTrackingWebhookScan = NonNullable<SmsaTrackingWebhookItem['Scans']>[number];
-const cancellationManagedStatuses = new Set(['cancellation_requested', 'cancellation_approved', 'cancelled']);
+const cancellationManagedStatuses = new Set([
+    'cancellation_requested',
+    'cancellation_approved',
+    'return_requested',
+    'return_approved',
+    'refund_approved',
+    'refunded',
+    'cancelled',
+]);
 
 function resolveLatestScan(shipment: { Scans?: SmsaTrackingWebhookItem['Scans'] }): SmsaTrackingWebhookScan | undefined {
     if (!shipment.Scans || shipment.Scans.length === 0) {
