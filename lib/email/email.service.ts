@@ -18,29 +18,41 @@ type OrderNotificationKind =
     | 'admin_cancellation_requested'
     | 'admin_return_requested';
 
-const DEFAULT_SENDER_NAME = 'Sheza Star';
-const DEFAULT_SENDER_EMAIL = 'info@shezastar.com';
-const DEFAULT_ADMIN_NAME = 'Sheza Star Admin';
-const DEFAULT_ADMIN_EMAIL = 'info@shezastar.com';
+if (!process.env.BREVO_API_KEY) {
+    throw new Error('BREVO_API_KEY is not defined');
+}
+
+if (!process.env.BREVO_SENDER_NAME) {
+    throw new Error('BREVO_SENDER_NAME is not defined');
+}
+
+if (!process.env.BREVO_SENDER_EMAIL) {
+    throw new Error('BREVO_SENDER_EMAIL is not defined');
+}
+
+if (!process.env.DEFAULT_ADMIN_NAME) {
+    throw new Error('DEFAULT_ADMIN_NAME is not defined');
+}
+
+if (!process.env.DEFAULT_ADMIN_EMAIL) {
+    throw new Error('DEFAULT_ADMIN_EMAIL is not defined');
+}
 
 function getBrevoApiKey(): string | undefined {
-    return process.env.BRAVO_API_KEY || process.env.BREVO_API_KEY;
+    return process.env.BREVO_API_KEY;
 }
 
 function getSender(): EmailRecipient {
     return {
-        name: process.env.BRAVO_SENDER_NAME || process.env.BREVO_SENDER_NAME || DEFAULT_SENDER_NAME,
-        email: process.env.BRAVO_SENDER_EMAIL || process.env.BREVO_SENDER_EMAIL || DEFAULT_SENDER_EMAIL,
+        name: process.env.BREVO_SENDER_NAME,
+        email: process.env.BREVO_SENDER_EMAIL!,
     };
 }
 
 function getAdminRecipient(): EmailRecipient {
     return {
-        name: process.env.BRAVO_ADMIN_NAME || process.env.BREVO_ADMIN_NAME || DEFAULT_ADMIN_NAME,
-        email: process.env.BRAVO_ADMIN_EMAIL
-            || process.env.BREVO_ADMIN_EMAIL
-            || process.env.ORDER_NOTIFICATION_ADMIN_EMAIL
-            || DEFAULT_ADMIN_EMAIL,
+        name: process.env.DEFAULT_ADMIN_NAME,
+        email: process.env.DEFAULT_ADMIN_EMAIL!,
     };
 }
 
