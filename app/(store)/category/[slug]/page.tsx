@@ -2,6 +2,7 @@ import { ProductGrid } from '@/components/ProductGrid';
 import { getAllCategories } from '@/lib/category/category.service';
 import { Category } from '@/lib/category/model/category.model';
 import { Product } from '@/lib/product/model/product.model';
+import { getAllProducts } from '@/lib/product/product.service';
 import { AppError } from '@/lib/errors/app-error';
 import { CategoryErrorHandler, CategoryPageError } from '../components/CategoryErrorHandler';
 import { Breadcrumbs, BreadcrumbItem } from '../components/Breadcrumbs';
@@ -42,55 +43,17 @@ function createErrorPayload(error: unknown, override?: Partial<CategoryPageError
 }
 
 async function fetchProducts(categoryId: string): Promise<{ products: Product[]; error: CategoryPageError | null }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  const url = `${baseUrl}/api/products?categoryId=${encodeURIComponent(categoryId)}&limit=200`;
-  const timeoutMs = Number(process.env.CATEGORY_FETCH_TIMEOUT_MS ?? 5000);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
-    if (!res.ok) {
-      let body: any;
-      try {
-        body = await res.json();
-      } catch {
-        body = { error: 'Failed to parse response body' };
-      }
-
-      return {
-        products: [],
-        error: {
-          message: body.message || body.error || 'Failed to load products for this category',
-          status: res.status,
-          body,
-          url: res.url,
-          method: 'GET',
-        },
-      };
-    }
-
-    const data = await res.json();
+    const data = await getAllProducts(1, 200, categoryId);
     return { products: data.products ?? [], error: null };
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      return {
-        products: [],
-        error: createErrorPayload(error, {
-          message: 'Timed out while loading products for this category',
-          url,
-        }),
-      };
-    }
     return {
       products: [],
       error: createErrorPayload(error, {
         message: error instanceof Error ? error.message : 'Failed to load products for this category',
-        url,
+        url: `service:product:getAllProducts?categoryId=${encodeURIComponent(categoryId)}&limit=200`,
       }),
     };
-  } finally {
-    clearTimeout(timer);
   }
 }
 

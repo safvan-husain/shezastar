@@ -2,6 +2,7 @@ import { Product } from "@/lib/product/model/product.model";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ErrorToastHandler, type ToastErrorPayload } from "@/components/ErrorToastHandler";
 import { Pagination } from "@/components/storefront/Pagination";
+import { getAllProducts } from "@/lib/product/product.service";
 
 interface ProductsPageProps {
     searchParams: Promise<{ page?: string }>;
@@ -12,32 +13,8 @@ async function fetchProducts(page = 1, limit = 24): Promise<{
     pagination?: { total: number; totalPages: number; page: number; limit: number };
     error: ToastErrorPayload | null
 }> {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-    const url = `${baseUrl}/api/products?page=${page}&limit=${limit}`;
-
     try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) {
-            let body = {};
-            try {
-                body = await res.json();
-            } catch {
-                body = { error: "Failed to parse response body" };
-            }
-
-            return {
-                products: [],
-                error: {
-                    message: "Failed to load products",
-                    status: res.status,
-                    body,
-                    url: res.url,
-                    method: "GET",
-                },
-            };
-        }
-
-        const data = await res.json();
+        const data = await getAllProducts(page, limit);
         return {
             products: data.products ?? [],
             pagination: data.pagination,
@@ -49,7 +26,7 @@ async function fetchProducts(page = 1, limit = 24): Promise<{
             error: {
                 message: error instanceof Error ? error.message : "Failed to load products",
                 body: error instanceof Error ? { stack: error.stack } : { error },
-                url: url,
+                url: `service:product:getAllProducts?page=${page}&limit=${limit}`,
                 method: "GET",
             },
         };

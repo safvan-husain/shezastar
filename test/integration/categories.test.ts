@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { POST as createCategory } from '@/app/api/categories/route';
+import { GET as listCategories, POST as createCategory } from '@/app/api/categories/route';
 import { GET as getCategory, DELETE as deleteCategory } from '@/app/api/categories/[id]/route';
 import { POST as addSubCategory } from '@/app/api/categories/[id]/subcategories/route';
 import { PUT as updateSubCategory, DELETE as removeSubCategory } from '@/app/api/categories/[id]/subcategories/[subId]/route';
@@ -109,6 +109,14 @@ describe('Category API Integration - Three Level Categories', () => {
         const slugGetBody = await slugGetRes.json();
         expect(slugGetRes.status).toBe(200);
         expect(slugGetBody.id).toBe(categoryId);
+
+        const listRes = await listCategories();
+        const listBody = await listRes.json();
+        expect(listRes.status).toBe(200);
+        expect(listRes.headers.get('cache-control')).toBe('private, no-cache, no-store, max-age=0, must-revalidate');
+        expect(listRes.headers.get('pragma')).toBe('no-cache');
+        expect(Array.isArray(listBody)).toBe(true);
+        expect(listBody.some((category: any) => category.id === categoryId)).toBe(true);
 
         const deleteReq = new Request(`http://localhost/api/categories/${categoryId}`, {
             method: 'DELETE',

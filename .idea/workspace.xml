@@ -4,30 +4,40 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment="." />
+    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment=".">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(store)/category/[slug]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(store)/category/[slug]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(store)/product/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(store)/product/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(store)/products/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(store)/products/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/categories/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/categories/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/products/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/products/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/product/product.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/integration/categories.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/integration/categories.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/integration/products.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/integration/products.test.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="412" />
+    <option name="cachedIndexableFilesCount" value="431" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "safvan-husain"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;safvan-husain&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/safvan-husain/shezastar.git",
-    "accountId": "d7b64440-ed43-4ab7-be15-a612c6ce11ca"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/safvan-husain/shezastar.git&quot;,
+    &quot;accountId&quot;: &quot;d7b64440-ed43-4ab7-be15-a612c6ce11ca&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -40,32 +50,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "javascript.preferred.runtime.type.id": "node",
-    "js.debugger.nextJs.config.created.client": "true",
-    "js.debugger.nextJs.config.created.server": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "/Users/safvanhusain/code/bliz/shezastar",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "npm.Next.js: server-side.executor": "Debug",
-    "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "/Users/safvanhusain/code/bliz/shezastar/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/safvanhusain/code/bliz/shezastar&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.Next.js: server-side.executor&quot;: &quot;Debug&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/safvanhusain/code/bliz/shezastar/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="npm.Next.js: server-side">
     <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
       <method v="2" />
@@ -98,6 +108,7 @@
       <workItem from="1771513674270" duration="632000" />
       <workItem from="1771556521836" duration="4081000" />
       <workItem from="1774433657770" duration="16263000" />
+      <workItem from="1774850863447" duration="2059000" />
     </task>
     <task id="LOCAL-00001" summary="feat: shipment v1">
       <option name="closed" value="true" />
@@ -156,14 +167,30 @@
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/app/api/admin/orders/[id]/shipment/route.ts</url>
           <line>24</line>
-          <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/app/(store)/orders/components/OrderShipmentTracking.tsx</url>
           <line>45</line>
-          <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/lib/product/product.service.ts</url>
+          <line>165</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/lib/product/product.service.ts</url>
+          <line>171</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/lib/product/product.service.ts</url>
+          <line>179</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="7" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

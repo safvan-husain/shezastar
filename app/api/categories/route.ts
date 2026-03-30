@@ -5,9 +5,17 @@ import {
     handleCreateCategory,
 } from '@/lib/category/category.controller';
 
+function withNoStoreHeaders(headers?: HeadersInit) {
+    return {
+        'Cache-Control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+        Pragma: 'no-cache',
+        ...headers,
+    };
+}
+
 export async function GET() {
     const { status, body } = await handleGetAllCategories();
-    return NextResponse.json(body, { status });
+    return NextResponse.json(body, { status, headers: withNoStoreHeaders() });
 }
 
 export async function POST(req: Request) {

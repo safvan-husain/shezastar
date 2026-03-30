@@ -14,6 +14,11 @@ import type { ActivityActor, ActivityEntity } from '@/lib/activity/model/activit
 
 const COLLECTION = 'products';
 
+export interface ResolvedCategoryFilter {
+    requestedIds: string[];
+    hierarchyIds: string[];
+}
+
 function buildProductEntity(product: { id: string; name: string }): ActivityEntity {
     return {
         kind: 'product',
@@ -138,17 +143,10 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
     const lineageMap = originId ? await getCategoryLineageMap() : null;
 
     if (categoryId) {
-        const ids = Array.isArray(categoryId) ? categoryId : [categoryId];
-        const flatHierarchyIds = new Set<string>();
-
-        for (const identifier of ids) {
-            const hierarchyIds = await getCategoryHierarchyIds(identifier);
-            for (const resolvedId of hierarchyIds) {
-                flatHierarchyIds.add(resolvedId);
-            }
+        const resolvedFilter = await resolveCategoryFilter(categoryId);
+        if (resolvedFilter) {
+            filter = { ...filter, subCategoryIds: { $in: resolvedFilter.hierarchyIds } };
         }
-
-        filter = { ...filter, subCategoryIds: { $in: Array.from(flatHierarchyIds) } };
     }
 
     if (originId) {
@@ -234,6 +232,27 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
             total,
             totalPages: Math.ceil(total / limit),
         },
+    };
+}
+
+export async function resolveCategoryFilter(categoryId?: string | string[]): Promise<ResolvedCategoryFilter | null> {
+    if (!categoryId) {
+        return null;
+    }
+
+    const ids = Array.isArray(categoryId) ? categoryId : [categoryId];
+    const flatHierarchyIds = new Set<string>();
+
+    for (const identifier of ids) {
+        const hierarchyIds = await getCategoryHierarchyIds(identifier);
+        for (const resolvedId of hierarchyIds) {
+            flatHierarchyIds.add(resolvedId);
+        }
+    }
+
+    return {
+        requestedIds: ids,
+        hierarchyIds: Array.from(flatHierarchyIds),
     };
 }
 

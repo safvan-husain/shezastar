@@ -4,12 +4,27 @@ import { ProductDetails } from '../components/ProductDetails';
 import { RelatedProducts } from '../components/RelatedProducts';
 import { RecentlyViewed } from '@/components/storefront/RecentlyViewed';
 import { getBroaderCategoryContextIds } from '@/lib/category/category.service';
+import { getAllProducts, getProduct } from '@/lib/product/product.service';
+import { AppError } from '@/lib/errors/app-error';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
 }
 
 function createErrorPayload(error: unknown, override?: Partial<ProductPageError>): ProductPageError {
+  if (error instanceof AppError) {
+    return {
+      message: error.details?.message || error.message || error.code,
+      status: error.status,
+      body: {
+        code: error.code,
+        details: error.details,
+      },
+      method: 'GET',
+      ...override,
+    };
+  }
+
   if (error instanceof Error) {
     return {
       message: error.message,
@@ -28,56 +43,17 @@ function createErrorPayload(error: unknown, override?: Partial<ProductPageError>
 }
 
 async function fetchProduct(id: string): Promise<{ product: Product | null; error: ProductPageError | null }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  const url = `${baseUrl}/api/products/${encodeURIComponent(id)}`;
-  const timeoutMs = Number(process.env.PRODUCT_FETCH_TIMEOUT_MS ?? 5000);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
-    if (!res.ok) {
-      let body: any;
-      try {
-        body = await res.json();
-
-      } catch {
-        body = { error: 'Failed to parse response body' };
-      }
-
-      return {
-        product: null,
-        error: {
-          message: body.message || body.error || 'Failed to load product',
-          status: res.status,
-          body,
-          url: res.url,
-          method: 'GET',
-        },
-      };
-    }
-
-    const data = await res.json();
-    return { product: data ?? null, error: null };
+    const product = await getProduct(id);
+    return { product, error: null };
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      return {
-        product: null,
-        error: createErrorPayload(error, {
-          message: 'Timed out while loading product',
-          url,
-        }),
-      };
-    }
     return {
       product: null,
       error: createErrorPayload(error, {
         message: error instanceof Error ? error.message : 'Failed to load product',
-        url,
+        url: `service:product:getProduct:${encodeURIComponent(id)}`,
       }),
     };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -86,61 +62,21 @@ async function fetchRelatedProducts(categoryIds: string[], originId?: string): P
     return { products: [], error: null };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-  const params = new URLSearchParams();
-  categoryIds.forEach(id => params.append('categoryId', id));
-  if (originId) params.append('originId', originId);
-  params.append('limit', '8');
-
-  const url = `${baseUrl}/api/products?${params.toString()}`;
-  const timeoutMs = Number(process.env.PRODUCT_FETCH_TIMEOUT_MS ?? 5000);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
-    if (!res.ok) {
-      let body: any;
-      try {
-        body = await res.json();
-      } catch {
-        body = { error: 'Failed to parse response body' };
-      }
-
-      return {
-        products: [],
-        error: {
-          message: body.message || body.error || 'Failed to load related products',
-          status: res.status,
-          body,
-          url: res.url,
-          method: 'GET',
-        },
-      };
-    }
-
-    const data = await res.json();
+    const data = await getAllProducts(1, 8, categoryIds, originId);
     return { products: data.products ?? [], error: null };
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      return {
-        products: [],
-        error: createErrorPayload(error, {
-          message: 'Timed out while loading related products',
-          url,
-        }),
-      };
-    }
+    const params = new URLSearchParams();
+    categoryIds.forEach(id => params.append('categoryId', id));
+    if (originId) params.append('originId', originId);
+    params.append('limit', '8');
     return {
       products: [],
       error: createErrorPayload(error, {
         message: error instanceof Error ? error.message : 'Failed to load related products',
-        url,
+        url: `service:product:getAllProducts?${params.toString()}`,
       }),
     };
-  } finally {
-    clearTimeout(timer);
   }
 }
 

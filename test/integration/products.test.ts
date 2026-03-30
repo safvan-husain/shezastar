@@ -52,6 +52,8 @@ describe('Products API Integration', () => {
         const body = await res.json();
 
         expect(res.status).toBe(200);
+        expect(res.headers.get('cache-control')).toBe('private, no-cache, no-store, max-age=0, must-revalidate');
+        expect(res.headers.get('pragma')).toBe('no-cache');
         expect(Array.isArray(body.products)).toBe(true);
         expect(body.products.length).toBeGreaterThan(0);
         const found = body.products.find((p: any) => p.id === createdProductId);
@@ -161,6 +163,8 @@ describe('Products API Integration - Category filtering', () => {
         const res = await getProducts(req);
         const body = await res.json();
 
+        expect(res.headers.get('x-catalog-category-requested')).toBe(categorySlug);
+        expect(Number(res.headers.get('x-catalog-category-match-count'))).toBeGreaterThanOrEqual(3);
         const names = body.products.map((product: any) => product.name);
         expect(names).toContain('Integration Parent Product');
         expect(names).toContain('Integration Leaf Product');

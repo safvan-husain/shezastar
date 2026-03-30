@@ -7,9 +7,18 @@ import {
 import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
 import { searchProducts } from '@/lib/product/product.service';
+import { resolveCategoryFilter } from '@/lib/product/product.service';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
+
+function withNoStoreHeaders(headers?: HeadersInit) {
+    return {
+        'Cache-Control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+        Pragma: 'no-cache',
+        ...headers,
+    };
+}
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -33,11 +42,11 @@ export async function GET(req: Request) {
                     total,
                     totalPages: Math.ceil(total / limit),
                 },
-            });
+            }, { headers: withNoStoreHeaders() });
         } catch (error: any) {
             return NextResponse.json(
                 { error: error.message || 'Failed to search products' },
-                { status: 500 }
+                { status: 500, headers: withNoStoreHeaders() }
             );
         }
     }
@@ -51,9 +60,25 @@ export async function GET(req: Request) {
         : (legacySubCategoryId ? [legacySubCategoryId] : undefined);
 
     const originId = searchParams.get('originId') || undefined;
+    let resolvedFilter = null;
+    try {
+        resolvedFilter = await resolveCategoryFilter(finalCategoryIds);
+    } catch {
+        // Diagnostics must not change the route's normal error semantics.
+    }
 
     const { status, body } = await handleGetAllProducts(page, limit, finalCategoryIds, originId);
-    return NextResponse.json(body, { status });
+    return NextResponse.json(body, {
+        status,
+        headers: withNoStoreHeaders(
+            resolvedFilter
+                ? {
+                    'X-Catalog-Category-Requested': resolvedFilter.requestedIds.join(','),
+                    'X-Catalog-Category-Match-Count': String(resolvedFilter.hierarchyIds.length),
+                }
+                : undefined
+        ),
+    });
 }
 
 export async function POST(req: Request) {
