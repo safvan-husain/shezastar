@@ -18,24 +18,12 @@ type OrderNotificationKind =
     | 'admin_cancellation_requested'
     | 'admin_return_requested';
 
-if (!process.env.BREVO_API_KEY) {
-    throw new Error('BREVO_API_KEY is not defined');
-}
-
-if (!process.env.BREVO_SENDER_NAME) {
-    throw new Error('BREVO_SENDER_NAME is not defined');
-}
-
-if (!process.env.BREVO_SENDER_EMAIL) {
-    throw new Error('BREVO_SENDER_EMAIL is not defined');
-}
-
-if (!process.env.DEFAULT_ADMIN_NAME) {
-    throw new Error('DEFAULT_ADMIN_NAME is not defined');
-}
-
-if (!process.env.DEFAULT_ADMIN_EMAIL) {
-    throw new Error('DEFAULT_ADMIN_EMAIL is not defined');
+function getRequiredEnv(name: string): string {
+    const value = process.env[name]?.trim();
+    if (!value) {
+        throw new Error(`${name} is not defined`);
+    }
+    return value;
 }
 
 function getBrevoApiKey(): string | undefined {
@@ -44,15 +32,15 @@ function getBrevoApiKey(): string | undefined {
 
 function getSender(): EmailRecipient {
     return {
-        name: process.env.BREVO_SENDER_NAME,
-        email: process.env.BREVO_SENDER_EMAIL!,
+        name: getRequiredEnv('BREVO_SENDER_NAME'),
+        email: getRequiredEnv('BREVO_SENDER_EMAIL'),
     };
 }
 
 function getAdminRecipient(): EmailRecipient {
     return {
-        name: process.env.DEFAULT_ADMIN_NAME,
-        email: process.env.DEFAULT_ADMIN_EMAIL!,
+        name: getRequiredEnv('DEFAULT_ADMIN_NAME'),
+        email: getRequiredEnv('DEFAULT_ADMIN_EMAIL'),
     };
 }
 

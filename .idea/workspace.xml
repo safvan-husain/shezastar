@@ -4,16 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment=".">
+    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment="cache prevention.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(store)/category/[slug]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(store)/category/[slug]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(store)/product/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(store)/product/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(store)/products/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(store)/products/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/categories/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/categories/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/products/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/products/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/product/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/product/product.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/integration/categories.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/integration/categories.test.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/integration/products.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/test/integration/products.test.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -108,7 +100,7 @@
       <workItem from="1771513674270" duration="632000" />
       <workItem from="1771556521836" duration="4081000" />
       <workItem from="1774433657770" duration="16263000" />
-      <workItem from="1774850863447" duration="2059000" />
+      <workItem from="1774850863447" duration="3031000" />
     </task>
     <task id="LOCAL-00001" summary="feat: shipment v1">
       <option name="closed" value="true" />
@@ -150,16 +142,36 @@
       <option name="project" value="LOCAL" />
       <updated>1774524834819</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="cache prevention.">
+      <option name="closed" value="true" />
+      <created>1774854317323</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1774854317323</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat: shipment v1" />
     <MESSAGE value="." />
-    <option name="LAST_COMMIT_MESSAGE" value="." />
+    <MESSAGE value="cache prevention." />
+    <option name="LAST_COMMIT_MESSAGE" value="cache prevention." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
