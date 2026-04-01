@@ -11,6 +11,7 @@ import { resolveCategoryFilter } from '@/lib/product/product.service';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 function withNoStoreHeaders(headers?: HeadersInit) {
     return {
@@ -20,7 +21,7 @@ function withNoStoreHeaders(headers?: HeadersInit) {
     };
 }
 
-export async function GET(req: Request) {
+async function GETHandler(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -81,7 +82,7 @@ export async function GET(req: Request) {
     });
 }
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
     try {
         const admin = await requireAdminApiAuth();
         const actor = buildAdminActivityActor(admin);
@@ -165,3 +166,6 @@ export async function POST(req: Request) {
         );
     }
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const POST = withRequestLogging(POSTHandler);

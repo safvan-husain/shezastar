@@ -6,8 +6,9 @@ import { ensureStorefrontSession, bindSessionToUser } from '@/lib/storefront-ses
 import { mergeCarts } from '@/lib/cart/cart.service';
 import { mergeWishlists } from '@/lib/wishlist/wishlist.service';
 import { mergeRecentlyViewed } from '@/lib/product/recently-viewed.service';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     try {
         const body = await req.json();
         const { email, password } = RegisterSchema.parse(body);
@@ -38,3 +39,5 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(body, { status });
     }
 }
+
+export const POST = withRequestLogging(POSTHandler);

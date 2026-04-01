@@ -10,8 +10,9 @@ import { nanoid } from 'nanoid';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET(
+async function GETHandler(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -20,7 +21,7 @@ export async function GET(
     return NextResponse.json(body, { status });
 }
 
-export async function PUT(
+async function PUTHandler(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -108,7 +109,7 @@ export async function PUT(
     }
 }
 
-export async function DELETE(
+async function DELETEHandler(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -123,3 +124,7 @@ export async function DELETE(
         return NextResponse.json(handled.body, { status: handled.status });
     }
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const PUT = withRequestLogging(PUTHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

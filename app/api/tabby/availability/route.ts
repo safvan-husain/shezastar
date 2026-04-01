@@ -13,10 +13,11 @@ import {
     resolveCountryPricingForCheckout,
 } from '@/lib/checkout/country-pricing.service';
 import { AppError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 const TABBY_API_URL = 'https://api.tabby.ai/api/v2/checkout';
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY;
     const tabbySecretKey = process.env.TABBY_SECRET_KEY;
     const tabbyMerchantCode = process.env.TABBY_MERCHANT_CODE;
@@ -358,3 +359,5 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
+export const POST = withRequestLogging(POSTHandler);

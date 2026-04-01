@@ -33,7 +33,11 @@ describe('Variant Types API Integration', () => {
 
     it('should get all variant types', async () => {
         // The GET handler for variant types doesn't use the request object
-        const res = await getVariantTypes();
+        const res = await getVariantTypes(
+            new Request('http://localhost/api/variant-types', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);

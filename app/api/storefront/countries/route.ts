@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { handleGetActiveCountryPricings } from '@/lib/app-settings/app-settings.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET() {
+async function GETHandler(_req: Request) {
   const { status, body } = await handleGetActiveCountryPricings();
   return NextResponse.json(body, {
     status,
@@ -10,3 +11,5 @@ export async function GET() {
     },
   });
 }
+
+export const GET = withRequestLogging(GETHandler);

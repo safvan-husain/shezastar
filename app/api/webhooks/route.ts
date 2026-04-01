@@ -7,6 +7,7 @@ import { AppError } from '@/lib/errors/app-error';
 import type { OrderDocument, OrderStatus } from '@/lib/order/model/order.model';
 import { getOrderById, updateOrderStatusById } from '@/lib/order/order.service';
 import { getStorefrontSessionBySessionId } from '@/lib/storefront-session';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -368,7 +369,7 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
     );
 }
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     if (!endpointSecret || !stripe) {
         return webhookError(500, 'WEBHOOK_CONFIG_MISSING', 'Webhook secret or Stripe key not configured');
     }
@@ -425,3 +426,5 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
 }
+
+export const POST = withRequestLogging(POSTHandler);

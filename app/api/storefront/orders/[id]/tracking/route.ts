@@ -3,8 +3,9 @@ import { handleTrackShipment } from '@/lib/shipping/shipping.controller';
 import { getStorefrontSession } from '@/lib/storefront-session';
 import { getOrderById } from '@/lib/order/order.service';
 import { catchError, AppError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function GETHandler(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     try {
         const session = await getStorefrontSession();
@@ -28,3 +29,5 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json(body, { status });
     }
 }
+
+export const GET = withRequestLogging(GETHandler);

@@ -2,14 +2,15 @@
 import { NextResponse } from 'next/server';
 import { handleGetBrand, handleUpdateBrand, handleDeleteBrand } from '@/lib/brand/brand.controller';
 import { saveImage } from '@/lib/utils/file-upload';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function GETHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const { status, body } = await handleGetBrand(id);
     return NextResponse.json(body, { status });
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function PUTHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     try {
         const contentType = req.headers.get('content-type');
@@ -38,8 +39,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function DELETEHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const { status, body } = await handleDeleteBrand(id);
     return NextResponse.json(body, { status });
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const PUT = withRequestLogging(PUTHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

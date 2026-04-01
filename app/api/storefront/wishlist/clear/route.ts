@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 
 import { getStorefrontSessionId } from '@/lib/storefront-session';
 import { handleClearWishlist } from '@/lib/wishlist/wishlist.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 type RouteParams = { params: Promise<Record<string, string>> };
 
@@ -14,7 +15,7 @@ async function requireSessionId() {
     return sessionId;
 }
 
-export async function PATCH(req: Request, ctx: RouteParams) {
+async function PATCHHandler(req: Request, ctx: RouteParams) {
     await ctx.params;
 
     const sessionId = await requireSessionId();
@@ -34,3 +35,4 @@ export async function PATCH(req: Request, ctx: RouteParams) {
     return NextResponse.json(body, { status, headers: { 'x-request-method': 'PATCH' } });
 }
 
+export const PATCH = withRequestLogging(PATCHHandler);

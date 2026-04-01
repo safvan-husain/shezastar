@@ -3,8 +3,9 @@ import { revalidatePath } from 'next/cache';
 
 import { getStorefrontSession } from '@/lib/storefront-session';
 import { handleRequestOrderReturnByCustomer } from '@/lib/order/order.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function POSTHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const session = await getStorefrontSession();
 
@@ -47,3 +48,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     return NextResponse.json(body, { status });
 }
+
+export const POST = withRequestLogging(POSTHandler);

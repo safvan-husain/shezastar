@@ -305,7 +305,11 @@ describe('Admin activity integration', () => {
             summary: 'Buyer created order',
         });
 
-        const res = await dashboardAnalyticsRoute();
+        const res = await dashboardAnalyticsRoute(
+            new Request('http://localhost/api/admin/dashboard/analytics', {
+                method: 'GET',
+            })
+        );
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.ordersByStatus).toEqual(

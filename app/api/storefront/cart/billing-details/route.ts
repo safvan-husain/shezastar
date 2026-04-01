@@ -4,10 +4,11 @@ import {
     handleGetBillingDetailsForCurrentSession,
     handleSetBillingDetailsForCurrentSession,
 } from '@/lib/cart/cart.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 type RouteParams = { params: Promise<Record<string, string>> };
 
-export async function GET(req: Request, ctx: RouteParams) {
+async function GETHandler(req: Request, ctx: RouteParams) {
     await ctx.params;
     const { status, body } = await handleGetBillingDetailsForCurrentSession();
     return NextResponse.json(body, {
@@ -18,7 +19,7 @@ export async function GET(req: Request, ctx: RouteParams) {
     });
 }
 
-export async function PUT(req: Request, ctx: RouteParams) {
+async function PUTHandler(req: Request, ctx: RouteParams) {
     await ctx.params;
     let payload: unknown = {};
     try {
@@ -34,3 +35,6 @@ export async function PUT(req: Request, ctx: RouteParams) {
         },
     });
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const PUT = withRequestLogging(PUTHandler);

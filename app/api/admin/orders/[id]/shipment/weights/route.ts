@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { handleUpdateShipmentWeights } from '@/lib/shipping/shipping.controller';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { catchError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function PATCHHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         await requireAdminApiAuth();
         const { id } = await params;
@@ -22,3 +23,5 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         return NextResponse.json(handled.body, { status: handled.status });
     }
 }
+
+export const PATCH = withRequestLogging(PATCHHandler);

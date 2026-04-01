@@ -4,8 +4,9 @@ import { BulkPriceUpdateSchema } from '@/lib/product/product.schema';
 import { AppError } from '@/lib/errors/app-error';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
     try {
         const admin = await requireAdminApiAuth();
         const body = await req.json();
@@ -34,3 +35,5 @@ export async function POST(req: Request) {
         );
     }
 }
+
+export const POST = withRequestLogging(POSTHandler);

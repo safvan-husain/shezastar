@@ -1,5 +1,8 @@
 // lib/errors/app-error.ts
+import 'server-only';
+
 import { ZodError } from 'zod';
+import { logger } from '@/lib/logging/logger';
 
 export class AppError extends Error {
     constructor(
@@ -37,6 +40,11 @@ export function catchError(err: unknown): { status: number; body: any } {
     }
 
     if (err instanceof Error) {
+        void logger.error('Unhandled application error', {
+            errorMessage: err.message,
+            errorStack: err.stack,
+        });
+
         return {
             status: 500,
             body: {
@@ -46,6 +54,10 @@ export function catchError(err: unknown): { status: number; body: any } {
             },
         };
     }
+
+    void logger.error('Unhandled non-error application failure', {
+        details: err,
+    });
 
     return {
         status: 500,

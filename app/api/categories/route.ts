@@ -4,6 +4,7 @@ import {
     handleGetAllCategories,
     handleCreateCategory,
 } from '@/lib/category/category.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 function withNoStoreHeaders(headers?: HeadersInit) {
     return {
@@ -13,13 +14,16 @@ function withNoStoreHeaders(headers?: HeadersInit) {
     };
 }
 
-export async function GET() {
+async function GETHandler(_req: Request) {
     const { status, body } = await handleGetAllCategories();
     return NextResponse.json(body, { status, headers: withNoStoreHeaders() });
 }
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
     const data = await req.json();
     const { status, body } = await handleCreateCategory(data);
     return NextResponse.json(body, { status });
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const POST = withRequestLogging(POSTHandler);

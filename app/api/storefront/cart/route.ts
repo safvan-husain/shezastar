@@ -7,10 +7,11 @@ import {
     handleRemoveCartItem,
     handleUpdateCartItem,
 } from '@/lib/cart/cart.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 type RouteParams = { params: Promise<Record<string, string>> };
 
-export async function GET(req: Request, ctx: RouteParams) {
+async function GETHandler(req: Request, ctx: RouteParams) {
     await ctx.params;
     const { status, body } = await handleGetCartForCurrentSession();
     return NextResponse.json(body, {
@@ -21,7 +22,7 @@ export async function GET(req: Request, ctx: RouteParams) {
     });
 }
 
-export async function POST(req: Request, ctx: RouteParams) {
+async function POSTHandler(req: Request, ctx: RouteParams) {
     await ctx.params;
     let payload: unknown = {};
     try {
@@ -38,7 +39,7 @@ export async function POST(req: Request, ctx: RouteParams) {
     });
 }
 
-export async function PATCH(req: Request, ctx: RouteParams) {
+async function PATCHHandler(req: Request, ctx: RouteParams) {
     await ctx.params;
     let payload: unknown = {};
     try {
@@ -56,7 +57,7 @@ export async function PATCH(req: Request, ctx: RouteParams) {
     });
 }
 
-export async function DELETE(req: Request, ctx: RouteParams) {
+async function DELETEHandler(req: Request, ctx: RouteParams) {
     await ctx.params;
     let payload: any = {};
     try {
@@ -78,3 +79,7 @@ export async function DELETE(req: Request, ctx: RouteParams) {
     });
 }
 
+export const GET = withRequestLogging(GETHandler);
+export const POST = withRequestLogging(POSTHandler);
+export const PATCH = withRequestLogging(PATCHHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

@@ -7,8 +7,9 @@ import {
     handleDeleteCustomCard
 } from '@/lib/app-settings/app-settings.controller';
 import { saveImage, deleteImage } from '@/lib/utils/file-upload';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET(
+async function GETHandler(
     request: Request,
     { params }: { params: Promise<{ cardKey: string }> }
 ) {
@@ -17,7 +18,7 @@ export async function GET(
     return NextResponse.json(result.body, { status: result.status });
 }
 
-export async function POST(
+async function POSTHandler(
     request: Request,
     { params }: { params: Promise<{ cardKey: string }> }
 ) {
@@ -61,7 +62,7 @@ export async function POST(
     }
 }
 
-export async function PUT(
+async function PUTHandler(
     request: Request,
     { params }: { params: Promise<{ cardKey: string }> }
 ) {
@@ -113,7 +114,7 @@ export async function PUT(
     }
 }
 
-export async function DELETE(
+async function DELETEHandler(
     request: Request,
     { params }: { params: Promise<{ cardKey: string }> }
 ) {
@@ -146,3 +147,8 @@ export async function DELETE(
         return NextResponse.json(errorBody, { status });
     }
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const POST = withRequestLogging(POSTHandler);
+export const PUT = withRequestLogging(PUTHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

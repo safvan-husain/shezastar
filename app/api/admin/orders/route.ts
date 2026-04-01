@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { handleAdminListOrders } from '@/lib/order/order.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET(req: Request) {
+async function GETHandler(req: Request) {
     const url = new URL(req.url);
     const pageParam = url.searchParams.get('page');
     const limitParam = url.searchParams.get('limit');
@@ -22,3 +23,4 @@ export async function GET(req: Request) {
     return NextResponse.json(body, { status: httpStatus });
 }
 
+export const GET = withRequestLogging(GETHandler);

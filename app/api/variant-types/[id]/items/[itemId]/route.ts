@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 import {
     handleRemoveItem,
 } from '@/lib/variant-type/variant-type.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function DELETE(
+async function DELETEHandler(
     req: Request,
     { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
@@ -12,3 +13,5 @@ export async function DELETE(
     const { status, body } = await handleRemoveItem(id, itemId);
     return NextResponse.json(body, { status });
 }
+
+export const DELETE = withRequestLogging(DELETEHandler);

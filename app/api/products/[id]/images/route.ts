@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 import { handleAddImages } from '@/lib/product/product.controller';
 import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function POST(
+async function POSTHandler(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -41,3 +42,5 @@ export async function POST(
         );
     }
 }
+
+export const POST = withRequestLogging(POSTHandler);

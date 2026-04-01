@@ -29,7 +29,11 @@ describe('App Settings API Integration', () => {
     });
 
     it('should get default settings with empty hero banners array via GET', async () => {
-        const res = await GET();
+        const res = await GET(
+            new Request('http://localhost/api/admin/settings', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -38,7 +42,11 @@ describe('App Settings API Integration', () => {
     });
 
     it('should get empty hero banners list via GET /hero-banners', async () => {
-        const res = await GET_BANNERS();
+        const res = await GET_BANNERS(
+            new Request('http://localhost/api/admin/settings/hero-banners', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -74,7 +82,11 @@ describe('App Settings API Integration', () => {
     });
 
     it('should get hero banners list after creation', async () => {
-        const res = await GET_BANNERS();
+        const res = await GET_BANNERS(
+            new Request('http://localhost/api/admin/settings/hero-banners', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -204,7 +216,11 @@ describe('App Settings API Integration', () => {
         await POST(createReq);
 
         // Get settings
-        const res = await GET();
+        const res = await GET(
+            new Request('http://localhost/api/admin/settings', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(body.homeHeroBanners).toHaveLength(1);

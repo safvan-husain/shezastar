@@ -5,8 +5,9 @@ import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { handleAdminReviewOrderCancellationRequest } from '@/lib/order/order.controller';
 import { catchError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function PATCHHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const admin = await requireAdminApiAuth();
         const { id } = await params;
@@ -40,3 +41,5 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         return NextResponse.json(handled.body, { status: handled.status });
     }
 }
+
+export const PATCH = withRequestLogging(PATCHHandler);

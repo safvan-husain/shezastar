@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getInstallationLocations, addInstallationLocation } from '@/lib/app-settings/app-settings.service';
 import { InstallationLocationSchema } from '@/lib/app-settings/app-settings.schema';
 import { AppError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET() {
+async function GETHandler(_req: Request) {
     try {
         const locations = await getInstallationLocations();
         return NextResponse.json(locations);
@@ -16,7 +17,7 @@ export async function GET() {
     }
 }
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     try {
         const body = await req.json();
         const validated = InstallationLocationSchema.omit({ id: true }).parse(body);
@@ -47,3 +48,6 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const POST = withRequestLogging(POSTHandler);

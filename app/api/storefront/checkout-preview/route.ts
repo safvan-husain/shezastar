@@ -8,8 +8,9 @@ import {
   computeCheckoutPricingBreakdown,
   resolveCountryPricingForCheckout,
 } from '@/lib/checkout/country-pricing.service';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   try {
     const cart = await getCartForCurrentSession();
     if (!cart) {
@@ -101,3 +102,5 @@ export async function POST(req: Request) {
     });
   }
 }
+
+export const POST = withRequestLogging(POSTHandler);

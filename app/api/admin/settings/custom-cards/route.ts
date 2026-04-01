@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getCustomCards } from '@/lib/app-settings/app-settings.service';
 import { AppError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET() {
+async function GETHandler(_req: Request) {
     try {
         const cards = await getCustomCards();
         return NextResponse.json(cards);
@@ -20,3 +21,5 @@ export async function GET() {
         );
     }
 }
+
+export const GET = withRequestLogging(GETHandler);

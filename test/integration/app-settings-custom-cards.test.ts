@@ -20,7 +20,11 @@ describe('App Settings Custom Cards Integration', () => {
     });
 
     it('should get default custom cards (all null) via GET /custom-cards', async () => {
-        const res = await GET_CARDS();
+        const res = await GET_CARDS(
+            new Request('http://localhost/api/admin/settings/custom-cards', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);

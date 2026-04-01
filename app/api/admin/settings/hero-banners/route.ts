@@ -3,8 +3,9 @@ import { revalidatePath } from 'next/cache';
 import { handleGetHeroBanners, handleCreateHeroBanner } from '@/lib/app-settings/app-settings.controller';
 import { saveImage } from '@/lib/utils/file-upload';
 import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET() {
+async function GETHandler(_req: Request) {
     try {
         //this is used by storefron tooo, so no auth required
         const { status, body } = await handleGetHeroBanners();
@@ -15,7 +16,7 @@ export async function GET() {
     }
 }
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
     try {
         await requireAdminAuth();
 
@@ -56,3 +57,6 @@ export async function POST(req: Request) {
         );
     }
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const POST = withRequestLogging(POSTHandler);

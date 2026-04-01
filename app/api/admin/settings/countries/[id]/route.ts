@@ -5,8 +5,9 @@ import {
   handleRemoveCountryPricing,
 } from '@/lib/app-settings/app-settings.controller';
 import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function PUT(
+async function PUTHandler(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -30,7 +31,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
+async function DELETEHandler(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -52,3 +53,6 @@ export async function DELETE(
     );
   }
 }
+
+export const PUT = withRequestLogging(PUTHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

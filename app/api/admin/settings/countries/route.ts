@@ -5,8 +5,9 @@ import {
   handleCreateCountryPricing,
 } from '@/lib/app-settings/app-settings.controller';
 import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET() {
+async function GETHandler(_req: Request) {
   try {
     await requireAdminAuth();
     const { status, body } = await handleGetCountryPricings();
@@ -17,7 +18,7 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   try {
     await requireAdminAuth();
     const payload = await req.json().catch(() => ({}));
@@ -35,3 +36,6 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const POST = withRequestLogging(POSTHandler);

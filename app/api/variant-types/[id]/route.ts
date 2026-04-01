@@ -5,8 +5,9 @@ import {
     handleUpdateVariantType,
     handleDeleteVariantType,
 } from '@/lib/variant-type/variant-type.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET(
+async function GETHandler(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -15,7 +16,7 @@ export async function GET(
     return NextResponse.json(body, { status });
 }
 
-export async function PUT(
+async function PUTHandler(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -25,7 +26,7 @@ export async function PUT(
     return NextResponse.json(body, { status });
 }
 
-export async function DELETE(
+async function DELETEHandler(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -33,3 +34,7 @@ export async function DELETE(
     const { status, body } = await handleDeleteVariantType(id);
     return NextResponse.json(body, { status });
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const PUT = withRequestLogging(PUTHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

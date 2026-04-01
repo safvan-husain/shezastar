@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { updateInstallationLocation, removeInstallationLocation } from '@/lib/app-settings/app-settings.service';
 import { InstallationLocationSchema } from '@/lib/app-settings/app-settings.schema';
 import { AppError } from '@/lib/errors/app-error';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function PUT(
+async function PUTHandler(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -39,7 +40,7 @@ export async function PUT(
     }
 }
 
-export async function DELETE(
+async function DELETEHandler(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -63,3 +64,6 @@ export async function DELETE(
         );
     }
 }
+
+export const PUT = withRequestLogging(PUTHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

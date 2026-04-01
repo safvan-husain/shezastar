@@ -110,7 +110,11 @@ describe('Category API Integration - Three Level Categories', () => {
         expect(slugGetRes.status).toBe(200);
         expect(slugGetBody.id).toBe(categoryId);
 
-        const listRes = await listCategories();
+        const listRes = await listCategories(
+            new Request('http://localhost/api/categories', {
+                method: 'GET',
+            })
+        );
         const listBody = await listRes.json();
         expect(listRes.status).toBe(200);
         expect(listRes.headers.get('cache-control')).toBe('private, no-cache, no-store, max-age=0, must-revalidate');

@@ -1,8 +1,9 @@
 // app/api/categories/[id]/subcategories/[subId]/route.ts
 import { NextResponse } from 'next/server';
 import { handleRemoveSubCategory, handleUpdateSubCategory } from '@/lib/category/category.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function DELETE(
+async function DELETEHandler(
     req: Request,
     { params }: { params: Promise<{ id: string; subId: string }> }
 ) {
@@ -11,7 +12,7 @@ export async function DELETE(
     return NextResponse.json(body, { status });
 }
 
-export async function PUT(
+async function PUTHandler(
     req: Request,
     { params }: { params: Promise<{ id: string; subId: string }> }
 ) {
@@ -20,3 +21,6 @@ export async function PUT(
     const { status, body } = await handleUpdateSubCategory(id, subId, data);
     return NextResponse.json(body, { status });
 }
+
+export const DELETE = withRequestLogging(DELETEHandler);
+export const PUT = withRequestLogging(PUTHandler);

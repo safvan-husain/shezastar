@@ -37,6 +37,9 @@ export class AppError {
   }
 }
 
+import 'server-only';
+
+import { logger } from '@/lib/logging/logger';
 import { z } from "zod";
 
 export const catchError = (error: any): { status: number, body: object } => {
@@ -51,7 +54,11 @@ export const catchError = (error: any): { status: number, body: object } => {
       status: error.statusCode, body: { error: error.message, details: error.error }
     }
   }
-  console.error('Unhandled error in catchError:', error);
+  void logger.error('Unhandled error in catchError', {
+    errorMessage: error instanceof Error ? error.message : undefined,
+    errorStack: error instanceof Error ? error.stack : undefined,
+    details: error,
+  });
   return {
     status: 500, body: { error: "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : 'Unknown error' }
   }

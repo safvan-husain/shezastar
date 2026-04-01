@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { handleRemoveFeaturedProduct } from '@/lib/app-settings/app-settings.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function DELETEHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const { status, body: result } = await handleRemoveFeaturedProduct(id);
     try {
@@ -12,3 +13,5 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
     return NextResponse.json(result, { status });
 }
+
+export const DELETE = withRequestLogging(DELETEHandler);

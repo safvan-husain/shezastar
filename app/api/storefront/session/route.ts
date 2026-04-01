@@ -5,6 +5,7 @@ import {
     handleGetStorefrontSession,
     handleRevokeStorefrontSession,
 } from '@/lib/storefront-session/storefront-session.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 type RouteContext = { params: Promise<Record<string, string>> };
 
@@ -16,21 +17,25 @@ async function readBody(req: Request): Promise<unknown> {
     }
 }
 
-export async function GET(_req: Request, ctx: RouteContext) {
+async function GETHandler(_req: Request, ctx: RouteContext) {
     await ctx.params;
     const { status, body } = await handleGetStorefrontSession();
     return NextResponse.json(body, { status });
 }
 
-export async function POST(req: Request, ctx: RouteContext) {
+async function POSTHandler(req: Request, ctx: RouteContext) {
     await ctx.params;
     const payload = await readBody(req);
     const { status, body } = await handleEnsureStorefrontSession(payload);
     return NextResponse.json(body, { status });
 }
 
-export async function DELETE(_req: Request, ctx: RouteContext) {
+async function DELETEHandler(_req: Request, ctx: RouteContext) {
     await ctx.params;
     const { status, body } = await handleRevokeStorefrontSession();
     return NextResponse.json(body, { status });
 }
+
+export const GET = withRequestLogging(GETHandler);
+export const POST = withRequestLogging(POSTHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

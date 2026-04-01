@@ -7,11 +7,12 @@ import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { AppError } from '@/lib/errors/app-error';
 import { getStorefrontSessionBySessionId } from '@/lib/storefront-session';
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 const TABBY_API_URL_V2 = 'https://api.tabby.ai/api/v2';
 const TABBY_API_URL_V1 = 'https://api.tabby.ai/api/v1';
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     const tabbySecretKey = process.env.TABBY_SECRET_KEY;
 
     if (!tabbySecretKey) {
@@ -146,3 +147,5 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export const POST = withRequestLogging(POSTHandler);

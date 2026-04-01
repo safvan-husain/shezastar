@@ -4,8 +4,9 @@ import { handleUpdateHeroBanner, handleDeleteHeroBanner, handleGetHeroBanners } 
 import { saveImage, deleteImage } from '@/lib/utils/file-upload';
 import { HeroBannerWithId } from '@/lib/app-settings/app-settings.schema';
 import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function PATCHHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     try {
         await requireAdminAuth();
@@ -51,7 +52,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function DELETEHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     try {
         await requireAdminAuth();
@@ -77,3 +78,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         return NextResponse.json({ message: error.message || 'An error occurred' }, { status: error.status || 500 });
     }
 }
+
+export const PATCH = withRequestLogging(PATCHHandler);
+export const DELETE = withRequestLogging(DELETEHandler);

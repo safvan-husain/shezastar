@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment="cache prevention.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="dda212d6-2e49-46b6-be63-89ad40071788" name="Changes" comment="cache prevention." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -100,7 +98,7 @@
       <workItem from="1771513674270" duration="632000" />
       <workItem from="1771556521836" duration="4081000" />
       <workItem from="1774433657770" duration="16263000" />
-      <workItem from="1774850863447" duration="3031000" />
+      <workItem from="1774850863447" duration="3717000" />
     </task>
     <task id="LOCAL-00001" summary="feat: shipment v1">
       <option name="closed" value="true" />

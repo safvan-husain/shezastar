@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleSmsaTrackingWebhook } from '@/lib/shipping/shipping.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 function unauthorizedWebhookResponse() {
     return NextResponse.json(
@@ -12,7 +13,7 @@ function unauthorizedWebhookResponse() {
     );
 }
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     const configuredSecret = process.env.CUSTOM_SECRET || process.env.SHIPPING_CUSTOM_SECRET;
     if (configuredSecret) {
         const incomingSecret = req.headers.get('custom-secret');
@@ -38,3 +39,5 @@ export async function POST(req: NextRequest) {
     const { status, body } = await handleSmsaTrackingWebhook(payload);
     return NextResponse.json(body, { status });
 }
+
+export const POST = withRequestLogging(POSTHandler);

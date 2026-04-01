@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { catchError } from '@/lib/errors/app-error';
 import { handleGetActivityLog } from '@/lib/activity/activity.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+async function GETHandler(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         await requireAdminApiAuth();
         const { id } = await params;
@@ -15,3 +16,5 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json(handled.body, { status: handled.status });
     }
 }
+
+export const GET = withRequestLogging(GETHandler);

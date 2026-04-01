@@ -62,7 +62,11 @@ describe('Featured Products API Integration', () => {
     });
 
     it('should return empty array initially via GET', async () => {
-        const res = await GET();
+        const res = await GET(
+            new Request('http://localhost/api/admin/settings/featured-products', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -136,7 +140,11 @@ describe('Featured Products API Integration', () => {
         await POST(req2);
 
         // Get featured products
-        const res = await GET();
+        const res = await GET(
+            new Request('http://localhost/api/admin/settings/featured-products', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -210,7 +218,11 @@ describe('Featured Products API Integration', () => {
         await deleteProduct(productId2);
 
         // Get featured products
-        const res = await GET();
+        const res = await GET(
+            new Request('http://localhost/api/admin/settings/featured-products', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -243,7 +255,11 @@ describe('Featured Products API Integration', () => {
         await POST(req3);
 
         // Get featured products
-        const res = await GET();
+        const res = await GET(
+            new Request('http://localhost/api/admin/settings/featured-products', {
+                method: 'GET',
+            })
+        );
         const body = await res.json();
 
         expect(res.status).toBe(200);

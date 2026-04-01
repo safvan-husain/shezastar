@@ -1,8 +1,9 @@
 // app/api/categories/[id]/subcategories/[subId]/subsubcategories/route.ts
 import { NextResponse } from 'next/server';
 import { handleAddSubSubCategory } from '@/lib/category/category.controller';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export async function POST(
+async function POSTHandler(
     req: Request,
     { params }: { params: Promise<{ id: string; subId: string }> }
 ) {
@@ -11,3 +12,5 @@ export async function POST(
     const { status, body } = await handleAddSubSubCategory(id, subId, data);
     return NextResponse.json(body, { status });
 }
+
+export const POST = withRequestLogging(POSTHandler);

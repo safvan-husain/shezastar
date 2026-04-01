@@ -16,12 +16,13 @@ import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { buildCustomerActivityActor, createActivityLog } from '@/lib/activity/activity.service';
+import { withRequestLogging } from '@/lib/logging/request-logger';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY, {})
     : null;
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
     if (!stripe) {
         console.error('STRIPE_SECRET_KEY is missing.');
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -419,3 +420,5 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
+export const POST = withRequestLogging(POSTHandler);
