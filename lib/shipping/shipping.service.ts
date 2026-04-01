@@ -1,9 +1,11 @@
 import { enforceServerOnly } from '@/lib/utils/server-only';
 import { AppError } from '@/lib/errors/app-error';
+import { logger } from '@/lib/logging/logger';
 import { Order } from '@/lib/order/model/order.model';
 import { BillingDetails } from '@/lib/billing-details/billing-details.schema';
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
 import type { OrderDocument } from '@/lib/order/model/order.model';
+import type { Filter } from 'mongodb';
 import { SmsaShipmentAddress, CreateShipmentInput, SmsaShipmentResponse, SmsaTrackingResponse, SmsaTrackingWebhookPayload, SmsaTrackingWebhookItem } from './shipping.schema';
 import { getProduct, updateProductWeight } from '@/lib/product/product.service';
 import { getCountryPricings } from '@/lib/app-settings/app-settings.service';
@@ -410,6 +412,36 @@ export interface SmsaTrackingWebhookProcessResult {
     unmatchedAwbs: string[];
 }
 
+type SmsaWebhookLogOptions = {
+    webhookRequestId?: string;
+};
+
+function buildWebhookLogMeta(options?: SmsaWebhookLogOptions) {
+    return {
+        webhookRequestId: options?.webhookRequestId,
+    };
+}
+
+function summarizeUpdateSet(updateSet: Record<string, unknown>) {
+    return {
+        status: updateSet.status,
+        shippingStatus: updateSet['shipping.status'],
+        lastTrackedAt: updateSet['shipping.lastTrackedAt'],
+        updatedAt: updateSet.updatedAt,
+    };
+}
+
+function buildSmsaOrderFilter(filter: {
+    orderId?: ObjectId;
+    awb?: string;
+}): Filter<OrderDocument> {
+    return {
+        ...(filter.orderId ? { _id: filter.orderId } : {}),
+        'shipping.provider': 'smsa',
+        ...(filter.awb ? { 'shipping.awb': filter.awb } : {}),
+    } as Filter<OrderDocument>;
+}
+
 function buildTrackingUpdateSet(
     shipment: Pick<SmsaTrackingWebhookItem, 'Scans' | 'isDelivered'>,
     currentOrderStatus: string,
@@ -461,67 +493,135 @@ export async function syncOrderTrackingState(
     const updateSet = buildTrackingUpdateSet(shipment, currentOrderStatus);
 
     await collection.updateOne(
-        {
-            _id: new ObjectId(orderId),
-            'shipping.provider': 'smsa',
-        } as any,
+        buildSmsaOrderFilter({
+            orderId: new ObjectId(orderId),
+        }),
         {
             $set: updateSet,
         },
     );
 }
 
-export async function processSmsaTrackingWebhook(payload: SmsaTrackingWebhookPayload): Promise<SmsaTrackingWebhookProcessResult> {
+export async function processSmsaTrackingWebhook(
+    payload: SmsaTrackingWebhookPayload,
+    options?: SmsaWebhookLogOptions,
+): Promise<SmsaTrackingWebhookProcessResult> {
+    const baseLogMeta = buildWebhookLogMeta(options);
+    await logger.debug('SMSA webhook service: starting payload processing', {
+        ...baseLogMeta,
+        shipmentCount: payload.length,
+    });
+
     const collection = await getCollection<OrderDocument>('orders');
+    await logger.debug('SMSA webhook service: orders collection loaded', baseLogMeta);
 
     let updatedOrders = 0;
     let statusTransitionedOrders = 0;
     const unmatchedAwbs: string[] = [];
 
-    for (const shipment of payload) {
+    for (const [index, shipment] of payload.entries()) {
         const awb = shipment.AWB.trim();
+        const shipmentLogMeta = {
+            ...baseLogMeta,
+            shipmentIndex: index,
+            awb,
+            reference: shipment.Reference,
+            isDelivered: shipment.isDelivered,
+            scanCount: shipment.Scans?.length ?? 0,
+        };
 
-        let orderDoc = await collection.findOne({
-            'shipping.provider': 'smsa',
-            'shipping.awb': awb,
-        } as any);
+        await logger.debug('SMSA webhook service: shipment processing started', shipmentLogMeta);
+
+        await logger.debug('SMSA webhook service: searching order by AWB', shipmentLogMeta);
+        let orderDoc = await collection.findOne(buildSmsaOrderFilter({ awb }));
+
+        if (orderDoc) {
+            await logger.debug('SMSA webhook service: order matched by AWB', {
+                ...shipmentLogMeta,
+                orderId: String(orderDoc._id),
+                currentOrderStatus: orderDoc.status,
+            });
+        }
 
         if (!orderDoc) {
             const referenceObjectId = parseReferenceObjectId(shipment.Reference);
+            await logger.debug('SMSA webhook service: AWB match missing, checking reference', {
+                ...shipmentLogMeta,
+                hasReferenceObjectId: Boolean(referenceObjectId),
+            });
             if (referenceObjectId) {
-                orderDoc = await collection.findOne({
-                    _id: referenceObjectId,
-                    'shipping.provider': 'smsa',
-                } as any);
+                orderDoc = await collection.findOne(buildSmsaOrderFilter({
+                    orderId: referenceObjectId,
+                }));
+
+                if (orderDoc) {
+                    await logger.debug('SMSA webhook service: order matched by reference', {
+                        ...shipmentLogMeta,
+                        orderId: String(orderDoc._id),
+                        currentOrderStatus: orderDoc.status,
+                    });
+                }
             }
         }
 
         if (!orderDoc) {
             unmatchedAwbs.push(awb);
+            await logger.error('SMSA webhook service: no matching order found', shipmentLogMeta);
             continue;
         }
 
         const updateSet = buildTrackingUpdateSet(shipment, orderDoc.status);
+        await logger.debug('SMSA webhook service: tracking update set built', {
+            ...shipmentLogMeta,
+            orderId: String(orderDoc._id),
+            currentOrderStatus: orderDoc.status,
+            details: summarizeUpdateSet(updateSet),
+        });
+
         if (typeof updateSet.status === 'string' && updateSet.status !== orderDoc.status) {
             statusTransitionedOrders += 1;
+            await logger.log('SMSA webhook service: order status transition detected', {
+                ...shipmentLogMeta,
+                orderId: String(orderDoc._id),
+                previousStatus: orderDoc.status,
+                nextStatus: updateSet.status,
+            });
         }
 
-        await collection.updateOne(
+        await logger.debug('SMSA webhook service: updating order tracking fields', {
+            ...shipmentLogMeta,
+            orderId: String(orderDoc._id),
+        });
+        const updateResult = await collection.updateOne(
             { _id: orderDoc._id },
             {
                 $set: updateSet,
             },
         );
+        await logger.log('SMSA webhook service: order update completed', {
+            ...shipmentLogMeta,
+            orderId: String(orderDoc._id),
+            matchedCount: updateResult.matchedCount,
+            modifiedCount: updateResult.modifiedCount,
+            details: summarizeUpdateSet(updateSet),
+        });
 
         updatedOrders += 1;
     }
 
-    return {
+    const result = {
         received: payload.length,
         processed: payload.length,
         updatedOrders,
         statusTransitionedOrders,
         unmatchedAwbs,
     };
+
+    await logger.log('SMSA webhook service: payload processing completed', {
+        ...baseLogMeta,
+        details: result,
+    });
+
+    return result;
 }
 enforceServerOnly('shipping.service');

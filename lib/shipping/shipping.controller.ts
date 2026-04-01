@@ -1,4 +1,5 @@
 import { catchError, AppError } from '@/lib/errors/app-error';
+import { logger } from '@/lib/logging/logger';
 import { getOrderById, setOrderShipping, updateOrderStatusById } from '@/lib/order/order.service';
 import { createActivityLog } from '@/lib/activity/activity.service';
 import type { ActivityActor } from '@/lib/activity/model/activity.model';
@@ -156,12 +157,38 @@ export async function handleGetShipmentLabel(orderId: string) {
     }
 }
 
-export async function handleSmsaTrackingWebhook(input: unknown) {
+export async function handleSmsaTrackingWebhook(
+    input: unknown,
+    options?: { webhookRequestId?: string },
+) {
+    const logMeta = {
+        webhookRequestId: options?.webhookRequestId,
+    };
+
     try {
+        await logger.debug('SMSA webhook controller: validation started', {
+            ...logMeta,
+            details: input,
+        });
         const parsed: SmsaTrackingWebhookPayload = SmsaTrackingWebhookPayloadSchema.parse(input);
-        const result = await processSmsaTrackingWebhook(parsed);
+        await logger.debug('SMSA webhook controller: validation passed', {
+            ...logMeta,
+            shipmentCount: parsed.length,
+        });
+
+        const result = await processSmsaTrackingWebhook(parsed, options);
+        await logger.log('SMSA webhook controller: processing succeeded', {
+            ...logMeta,
+            details: result,
+        });
         return { status: 200, body: result };
     } catch (err) {
+        await logger.error('SMSA webhook controller: processing failed', {
+            ...logMeta,
+            errorMessage: err instanceof Error ? err.message : String(err),
+            errorStack: err instanceof Error ? err.stack : undefined,
+            details: input,
+        });
         return catchError(err);
     }
 }
