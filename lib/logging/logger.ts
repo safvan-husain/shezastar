@@ -65,7 +65,12 @@ function toLogLine(entry: LogEntry): string {
 }
 
 export function createFileLogger(options: FileLoggerOptions = {}) {
-    const logDir = options.logDir ?? path.join(process.cwd(), 'logs');
+    const logDir =
+        options.logDir ??
+        process.env.LOG_DIR ??
+        (process.env.NODE_ENV === 'production'
+            ? '/tmp/shezastar-logs'
+            : path.join(process.cwd(), 'logs'));
     const appLogPath = path.join(logDir, 'app.log');
     const errorLogPath = path.join(logDir, 'error.log');
     let writeQueue = Promise.resolve();
