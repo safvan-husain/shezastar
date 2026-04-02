@@ -358,7 +358,7 @@ export default function AdminNavbar() {
     const [isBackingUp, setIsBackingUp] = useState(false);
 
     const desktopWidthClass = useMemo(
-        () => (isCollapsed ? 'lg:w-[2rem]' : 'lg:w-[20rem]'),
+        () => (isCollapsed ? 'lg:w-[5rem]' : 'lg:w-[15rem]'),
         [isCollapsed]
     );
 

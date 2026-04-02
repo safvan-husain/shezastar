@@ -304,7 +304,7 @@ export default async function ManageDashboardPage() {
             ...trendPoints.map((point) => `L ${point.x} ${point.y}`),
             `L ${trendPoints[trendPoints.length - 1].x} ${240 - 24}`,
             'Z',
-          ].join(' ')
+        ].join(' ')
         : '';
 
     return (
@@ -386,7 +386,7 @@ export default async function ManageDashboardPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {ordersByStatus.length === 0 ? (
                                     <div className="col-span-full rounded-[var(--radius-md)] border border-dashed border-[var(--border-subtle)] p-4 text-center text-sm text-[var(--text-secondary)]">
                                         No order data yet.
@@ -398,7 +398,7 @@ export default async function ManageDashboardPage() {
                                             href={`/manage/orders?status=${encodeURIComponent(item.status)}`}
                                             className="group flex items-center justify-between gap-4 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 transition-all hover:border-[var(--border-strong)] hover:shadow-sm"
                                         >
-                                            <div className="flex min-w-0 items-center gap-3">
+                                            <div className="flex w-58 shrink-0 items-center gap-3">
                                                 <span
                                                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                                                     style={{ backgroundColor: item.color }}
