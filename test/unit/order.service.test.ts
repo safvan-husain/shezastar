@@ -192,6 +192,35 @@ describe('Order service (admin helpers)', () => {
         );
     });
 
+    it('finalizes a Tabby cancellation immediately when refund succeeds during approval', async () => {
+        refundMocks.queueRefundForApprovedCancellation.mockResolvedValueOnce({
+            queued: true,
+            code: 'REFUND_CREATED',
+            provider: 'tabby',
+            externalRefundId: 'tabby-refund-cancel-1',
+            requestedAt: new Date('2026-03-28T10:00:00.000Z'),
+            amount: 100,
+            currency: 'aed',
+            succeeded: true,
+        });
+
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            paymentProvider: 'tabby',
+            paymentProviderSessionId: 'tabby-payment-1',
+            currency: 'aed',
+            status: 'paid',
+        });
+
+        await requestOrderCancellationByCustomer(created.id, { sessionId: created.sessionId }, 'Cancel this Tabby order');
+
+        const reviewed = await reviewOrderCancellationByAdmin(created.id, { decision: 'approve' });
+        expect(reviewed.status).toBe('refunded');
+        expect(reviewed.refund?.provider).toBe('tabby');
+        expect(reviewed.refund?.externalRefundId).toBe('tabby-refund-cancel-1');
+        expect(reviewed.cancellation?.completedAt).toBeDefined();
+    });
+
     it('can deny cancellation and proceed to shipment', async () => {
         const created = await createOrder({
             ...BASE_ORDER_DATA,
@@ -289,5 +318,45 @@ describe('Order service (admin helpers)', () => {
         expect(refunded.status).toBe('refund_approved');
         expect(refunded.refund?.externalRefundId).toBe('re_test_2');
         expect(refundMocks.queueRefundForOrder).toHaveBeenCalled();
+    });
+
+    it('finalizes a Tabby return refund immediately when provider confirms it inline', async () => {
+        refundMocks.queueRefundForOrder.mockResolvedValueOnce({
+            queued: true,
+            code: 'REFUND_CREATED',
+            provider: 'tabby',
+            externalRefundId: 'tabby-refund-return-1',
+            requestedAt: new Date('2026-03-28T11:00:00.000Z'),
+            amount: 100,
+            currency: 'aed',
+            succeeded: true,
+        });
+
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            paymentProvider: 'tabby',
+            paymentProviderSessionId: 'tabby-payment-2',
+            currency: 'aed',
+            status: 'return_approved',
+            shipping: {
+                provider: 'smsa',
+                awb: 'DEL-3',
+                createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                status: 'Delivered',
+            },
+            returnRequest: {
+                requestedAt: new Date('2026-03-28T09:30:00.000Z'),
+                approvedAt: new Date('2026-03-28T10:00:00.000Z'),
+                adminDecision: 'approved',
+                requestReason: 'Tabby return',
+                requestedBySessionId: 'session-1',
+            },
+        });
+
+        const refunded = await proceedOrderRefundByAdmin(created.id);
+        expect(refunded.status).toBe('refunded');
+        expect(refunded.refund?.provider).toBe('tabby');
+        expect(refunded.refund?.externalRefundId).toBe('tabby-refund-return-1');
+        expect(refunded.returnRequest?.completedAt).toBeDefined();
     });
 });

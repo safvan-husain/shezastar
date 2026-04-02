@@ -4,7 +4,11 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 import { handleGetDashboardAnalytics } from '@/lib/activity/activity.controller';
-import type { DashboardAnalytics } from '@/lib/activity/model/activity.model';
+import type {
+    ActivityActionType,
+    ActivityEntityKind,
+    DashboardAnalytics,
+} from '@/lib/activity/model/activity.model';
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat('en-US', {
@@ -19,13 +23,6 @@ function formatDateLabel(date: string) {
         month: 'short',
         day: 'numeric',
     }).format(new Date(`${date}T00:00:00.000Z`));
-}
-
-function formatDateTime(date: string) {
-    return new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(date));
 }
 
 function formatStatus(status: string) {
@@ -59,6 +56,172 @@ function getStatusColor(status: string) {
     return colorMap[normalized] || '#525252';
 }
 
+type ActivityTone = 'emerald' | 'blue' | 'amber' | 'red' | 'violet' | 'slate';
+
+function getActivityTone(actionType: ActivityActionType): ActivityTone {
+    switch (actionType) {
+        case 'product.created':
+        case 'order.created':
+        case 'order.shipment_created':
+            return 'emerald';
+        case 'product.updated':
+        case 'product.bulk_price_updated':
+        case 'order.status_updated':
+            return 'blue';
+        case 'order.return_requested':
+        case 'order.refund_initiated':
+            return 'amber';
+        case 'product.deleted':
+        case 'order.cancellation_reviewed':
+        case 'order.return_reviewed':
+            return 'red';
+        default:
+            return 'violet';
+    }
+}
+
+function getActivityToneClasses(tone: ActivityTone) {
+    const map: Record<ActivityTone, string> = {
+        emerald: 'border-[var(--activity-emerald-border)] bg-[var(--activity-emerald-bg)] text-[var(--activity-emerald-text)]',
+        blue: 'border-[var(--activity-blue-border)] bg-[var(--activity-blue-bg)] text-[var(--activity-blue-text)]',
+        amber: 'border-[var(--activity-amber-border)] bg-[var(--activity-amber-bg)] text-[var(--activity-amber-text)]',
+        red: 'border-[var(--activity-red-border)] bg-[var(--activity-red-bg)] text-[var(--activity-red-text)]',
+        violet: 'border-[var(--activity-violet-border)] bg-[var(--activity-violet-bg)] text-[var(--activity-violet-text)]',
+        slate: 'border-[var(--activity-slate-border)] bg-[var(--activity-slate-bg)] text-[var(--activity-slate-text)]',
+    };
+
+    return map[tone];
+}
+
+function formatActionLabel(actionType: ActivityActionType) {
+    const [domain, action] = actionType.split('.');
+    const normalizedAction = action
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+
+    return `${domain.charAt(0).toUpperCase() + domain.slice(1)} ${normalizedAction}`;
+}
+
+function formatActorLabel(displayName: string | undefined, actorType: string) {
+    return displayName || actorType.charAt(0).toUpperCase() + actorType.slice(1);
+}
+
+function ActivityIcon({
+    actionType,
+    entityKind,
+    className = 'h-5 w-5',
+}: {
+    actionType: ActivityActionType;
+    entityKind: ActivityEntityKind;
+    className?: string;
+}) {
+    const commonProps = {
+        className,
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 1.8,
+        strokeLinecap: 'round' as const,
+        strokeLinejoin: 'round' as const,
+        'aria-hidden': true,
+    };
+
+    if (actionType.includes('shipment')) {
+        return (
+            <svg {...commonProps}>
+                <path d="M3 7.5h11v8H3z" />
+                <path d="M14 10.5h3.5l2.5 2.5v2.5H14z" />
+                <circle cx="7.5" cy="17.5" r="1.5" />
+                <circle cx="17.5" cy="17.5" r="1.5" />
+            </svg>
+        );
+    }
+
+    if (actionType.includes('refund')) {
+        return (
+            <svg {...commonProps}>
+                <path d="M7 7h9a4 4 0 0 1 0 8H9" />
+                <path d="m7 7 3-3" />
+                <path d="m7 7 3 3" />
+                <path d="M8 17h8" />
+            </svg>
+        );
+    }
+
+    if (actionType.includes('return')) {
+        return (
+            <svg {...commonProps}>
+                <path d="M17 8V5H7v3" />
+                <path d="M7 13v6h10v-6" />
+                <path d="M3 11h12" />
+                <path d="m3 11 3-3" />
+                <path d="m3 11 3 3" />
+            </svg>
+        );
+    }
+
+    if (actionType.includes('status')) {
+        return (
+            <svg {...commonProps}>
+                <circle cx="12" cy="12" r="8" />
+                <path d="m9.5 12 1.7 1.7 3.3-3.7" />
+            </svg>
+        );
+    }
+
+    if (actionType.includes('cancellation')) {
+        return (
+            <svg {...commonProps}>
+                <circle cx="12" cy="12" r="8" />
+                <path d="m9 9 6 6" />
+                <path d="m15 9-6 6" />
+            </svg>
+        );
+    }
+
+    if (actionType.includes('created')) {
+        return (
+            <svg {...commonProps}>
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+            </svg>
+        );
+    }
+
+    if (actionType.includes('deleted')) {
+        return (
+            <svg {...commonProps}>
+                <path d="M5 7h14" />
+                <path d="M9 7V5h6v2" />
+                <path d="M8 10v7" />
+                <path d="M12 10v7" />
+                <path d="M16 10v7" />
+                <path d="M7 7l1 12h8l1-12" />
+            </svg>
+        );
+    }
+
+    if (entityKind === 'order') {
+        return (
+            <svg {...commonProps}>
+                <path d="M7 5.5h10l1 3.5H6z" />
+                <path d="M7 9h10v9.5H7z" />
+                <path d="M10 13h4" />
+            </svg>
+        );
+    }
+
+    return (
+        <svg {...commonProps}>
+            <rect x="5" y="5" width="14" height="14" rx="2" />
+            <path d="M9 9h6" />
+            <path d="M9 13h6" />
+            <path d="M9 17h4" />
+        </svg>
+    );
+}
+
 async function getDashboardData(): Promise<{
     analytics: DashboardAnalytics | null;
     error: ToastErrorPayload | null;
@@ -87,7 +250,7 @@ function buildDonutSegments(items: DashboardAnalytics['ordersByStatus']) {
     const total = items.reduce((sum, item) => sum + item.count, 0);
     let offset = 0;
 
-    return items.map((item, index) => {
+    return items.map((item) => {
         const fraction = total > 0 ? item.count / total : 0;
         const dash = 2 * Math.PI * 42;
         const segmentLength = dash * fraction;
@@ -347,38 +510,76 @@ export default async function ManageDashboardPage() {
                                     No activity recorded yet.
                                 </div>
                             ) : (
-                                recentActivity.map((activity) => (
-                                    <Link
-                                        key={activity.id}
-                                        href={`/manage/activity/${activity.id}`}
-                                        className="block rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-5 py-4 transition-colors hover:border-[var(--border-strong)]"
-                                    >
-                                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                                            <div className="space-y-2">
-                                                <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                                                    <span>{activity.actor.displayName || activity.actor.type}</span>
-                                                    <span className="h-1 w-1 rounded-full bg-[var(--text-muted)]" />
-                                                    <span>{activity.actionType}</span>
+                                recentActivity.map((activity) => {
+                                    const tone = getActivityTone(activity.actionType);
+                                    const toneClasses = getActivityToneClasses(tone);
+
+                                    return (
+                                        <Link
+                                            key={activity.id}
+                                            href={`/manage/activity/${activity.id}`}
+                                            className="group block rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-4 transition-all hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-sm)] sm:px-5"
+                                        >
+                                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                                <div className="flex gap-3 sm:gap-4">
+                                                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] border ${toneClasses}`}>
+                                                        <ActivityIcon
+                                                            actionType={activity.actionType}
+                                                            entityKind={activity.primaryEntity.kind}
+                                                            className="h-5 w-5"
+                                                        />
+                                                    </div>
+
+                                                    <div className="min-w-0 space-y-3">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${toneClasses}`}>
+                                                                {formatActionLabel(activity.actionType)}
+                                                            </span>
+                                                            <span className="inline-flex rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+                                                                {formatActorLabel(activity.actor.displayName, activity.actor.type)}
+                                                            </span>
+                                                        </div>
+
+                                                        <p className="text-sm font-semibold leading-6 text-[var(--text-primary)] sm:text-base">
+                                                            {activity.summary}
+                                                        </p>
+
+                                                        <div className="flex flex-wrap gap-2 text-sm">
+                                                            <span className="inline-flex rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-1 text-[var(--text-primary)]">
+                                                                {activity.primaryEntity.label}
+                                                            </span>
+                                                            {activity.diff && activity.diff.length > 0 && (
+                                                                <span className="inline-flex rounded-full border border-[var(--border-subtle)] px-3 py-1 text-[var(--text-secondary)]">
+                                                                    {activity.diff.length} field changes
+                                                                </span>
+                                                            )}
+                                                            {activity.details && Object.keys(activity.details).length > 0 && (
+                                                                <span className="inline-flex rounded-full border border-[var(--border-subtle)] px-3 py-1 text-[var(--text-secondary)]">
+                                                                    {Object.keys(activity.details).length} detail items
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <p className="text-base font-medium text-[var(--text-primary)]">
-                                                    {activity.summary}
-                                                </p>
-                                                <div className="flex flex-wrap gap-2 text-sm text-[var(--text-secondary)]">
-                                                    <span>{activity.primaryEntity.label}</span>
-                                                    {activity.diff && activity.diff.length > 0 && (
-                                                        <span>{activity.diff.length} field changes</span>
-                                                    )}
-                                                    {activity.details && Object.keys(activity.details).length > 0 && (
-                                                        <span>{Object.keys(activity.details).length} detail items</span>
-                                                    )}
+
+                                                <div className="pl-14 text-sm text-[var(--text-secondary)] lg:pl-0 lg:text-right">
+                                                    <span className="block font-medium text-[var(--text-primary)]">
+                                                        {new Intl.DateTimeFormat('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                        }).format(new Date(activity.createdAt))}
+                                                    </span>
+                                                    <span className="mt-1 block text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                                        {new Intl.DateTimeFormat('en-US', {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                        }).format(new Date(activity.createdAt))}
+                                                    </span>
                                                 </div>
                                             </div>
-                                            <div className="text-sm text-[var(--text-secondary)]">
-                                                {formatDateTime(activity.createdAt)}
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))
+                                        </Link>
+                                    );
+                                })
                             )}
                         </div>
                     </Card>

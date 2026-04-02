@@ -15,6 +15,7 @@ export interface RefundQueueResult {
     requestedAt?: Date;
     amount?: number;
     currency?: string;
+    succeeded?: boolean;
 }
 
 export function buildPendingRefundFromOrder(order: Pick<Order, 'paymentProvider' | 'totalAmount' | 'currency'>): OrderRefundDocument {
@@ -111,8 +112,11 @@ interface TabbyRefund {
     created_at?: string;
 }
 
-interface TabbyPaymentStatusResponse {
+interface TabbyPaymentResponse {
+    id?: string;
     status?: string;
+    currency?: string;
+    refunds?: TabbyRefund[];
 }
 
 interface TabbyRefundResponse {
@@ -132,11 +136,35 @@ function buildRefundReason(order: Order): string {
         : 'Admin approved order refund';
 }
 
-async function assertTabbyPaymentIsClosed(
+async function closeTabbyPayment(
     paymentId: string,
     tabbySecretKey: string,
     orderId: string,
-): Promise<void> {
+): Promise<TabbyPaymentResponse> {
+    const closeResponse = await fetch(`${TABBY_API_URL_V2}/payments/${paymentId}/close`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${tabbySecretKey}`,
+        },
+    });
+
+    const closeResponseBody = await readResponseBody(closeResponse);
+    if (!closeResponse.ok) {
+        throw new AppError(closeResponse.status, 'TABBY_PAYMENT_CLOSE_FAILED', {
+            orderId,
+            paymentId,
+            response: closeResponseBody,
+        });
+    }
+
+    return (closeResponseBody as TabbyPaymentResponse | undefined) ?? {};
+}
+
+async function ensureTabbyPaymentClosed(
+    paymentId: string,
+    tabbySecretKey: string,
+    orderId: string,
+): Promise<TabbyPaymentResponse> {
     const paymentStatusResponse = await fetch(`${TABBY_API_URL_V2}/payments/${paymentId}`, {
         method: 'GET',
         headers: {
@@ -153,37 +181,52 @@ async function assertTabbyPaymentIsClosed(
         });
     }
 
-    const payment = paymentStatusBody as TabbyPaymentStatusResponse | undefined;
-    if (payment?.status !== 'CLOSED') {
-        throw new AppError(409, 'TABBY_PAYMENT_NOT_REFUNDABLE', {
-            orderId,
-            paymentId,
-            paymentStatus: payment?.status ?? 'unknown',
-            expectedStatus: 'CLOSED',
-        });
+    const payment = paymentStatusBody as TabbyPaymentResponse | undefined;
+    if (payment?.status === 'CLOSED') {
+        return payment;
     }
+
+    return closeTabbyPayment(paymentId, tabbySecretKey, orderId);
 }
 
-async function queueTabbyRefundForOrder(order: Order): Promise<RefundQueueResult> {
-    const tabbySecretKey = process.env.TABBY_SECRET_KEY;
+function normalizeTabbyRefundResult(params: {
+    order: Order;
+    currency?: string;
+    refunds?: TabbyRefund[];
+    referenceId: string;
+    fallbackRequestedAt?: Date;
+    fallbackAmount?: number;
+}): RefundQueueResult {
+    const refunds = Array.isArray(params.refunds) ? params.refunds : [];
+    const matchedRefund = refunds.find((item) => item.reference_id === params.referenceId) ?? refunds.at(-1);
+    const requestedAt = matchedRefund?.created_at ? new Date(matchedRefund.created_at) : params.fallbackRequestedAt ?? new Date();
+    const hasValidRequestedAt = Number.isFinite(requestedAt.getTime());
+    const normalizedRequestedAt = hasValidRequestedAt ? requestedAt : new Date();
+    const parsedRefundAmount = matchedRefund?.amount ? Number.parseFloat(matchedRefund.amount) : Number.NaN;
+    const normalizedAmount = Number.isFinite(parsedRefundAmount)
+        ? parsedRefundAmount
+        : params.fallbackAmount ?? params.order.totalAmount;
+    const normalizedCurrency = params.currency
+        ? params.currency.toLowerCase()
+        : params.order.currency;
 
-    if (!tabbySecretKey) {
-        throw new AppError(500, 'TABBY_CONFIG_MISSING', {
-            orderId: order.id,
-            message: 'TABBY_SECRET_KEY is required for Tabby refund initiation',
-        });
-    }
+    return {
+        queued: true,
+        code: 'REFUND_CREATED',
+        provider: 'tabby',
+        externalRefundId: matchedRefund?.id,
+        requestedAt: normalizedRequestedAt,
+        amount: normalizedAmount,
+        currency: normalizedCurrency,
+        succeeded: Boolean(matchedRefund?.id),
+    };
+}
 
-    const paymentId = resolveTabbyPaymentId(order);
-    if (!paymentId) {
-        throw new AppError(409, 'PAYMENT_PROVIDER_ORDER_ID_MISSING', {
-            orderId: order.id,
-            paymentProvider: order.paymentProvider,
-        });
-    }
-
-    await assertTabbyPaymentIsClosed(paymentId, tabbySecretKey, order.id);
-
+async function createTabbyRefundForOrder(
+    order: Order,
+    paymentId: string,
+    tabbySecretKey: string,
+): Promise<RefundQueueResult> {
     const amount = formatAmountForCurrency(order.totalAmount, order.currency);
     const referenceId = order.id;
     const refundPayload = {
@@ -222,33 +265,41 @@ async function queueTabbyRefundForOrder(order: Order): Promise<RefundQueueResult
     }
 
     const tabbyRefundResponse = refundResponseBody as TabbyRefundResponse | undefined;
-    const refunds = Array.isArray(tabbyRefundResponse?.refunds) ? tabbyRefundResponse.refunds : [];
-    const matchedRefund = refunds.find((item) => item.reference_id === referenceId) ?? refunds.at(-1);
-    const requestedAt = matchedRefund?.created_at ? new Date(matchedRefund.created_at) : new Date();
-    const hasValidRequestedAt = Number.isFinite(requestedAt.getTime());
-    const normalizedRequestedAt = hasValidRequestedAt ? requestedAt : new Date();
-    const parsedRefundAmount = matchedRefund?.amount ? Number.parseFloat(matchedRefund.amount) : NaN;
-    const normalizedAmount = Number.isFinite(parsedRefundAmount) ? parsedRefundAmount : order.totalAmount;
-    const normalizedCurrency = tabbyRefundResponse?.currency
-        ? tabbyRefundResponse.currency.toLowerCase()
-        : order.currency;
-
     console.info('[Refund] Tabby refund initiated for approved cancellation', {
         orderId: order.id,
         paymentId,
         referenceId,
-        refundId: matchedRefund?.id,
+        refundId: tabbyRefundResponse?.refunds?.at(-1)?.id,
     });
 
-    return {
-        queued: true,
-        code: 'REFUND_CREATED',
-        provider: 'tabby',
-        externalRefundId: matchedRefund?.id,
-        requestedAt: normalizedRequestedAt,
-        amount: normalizedAmount,
-        currency: normalizedCurrency,
-    };
+    return normalizeTabbyRefundResult({
+        order,
+        currency: tabbyRefundResponse?.currency,
+        refunds: tabbyRefundResponse?.refunds,
+        referenceId,
+    });
+}
+
+async function queueTabbyRefundForOrder(order: Order): Promise<RefundQueueResult> {
+    const tabbySecretKey = process.env.TABBY_SECRET_KEY;
+
+    if (!tabbySecretKey) {
+        throw new AppError(500, 'TABBY_CONFIG_MISSING', {
+            orderId: order.id,
+            message: 'TABBY_SECRET_KEY is required for Tabby refund initiation',
+        });
+    }
+
+    const paymentId = resolveTabbyPaymentId(order);
+    if (!paymentId) {
+        throw new AppError(409, 'PAYMENT_PROVIDER_ORDER_ID_MISSING', {
+            orderId: order.id,
+            paymentProvider: order.paymentProvider,
+        });
+    }
+
+    await ensureTabbyPaymentClosed(paymentId, tabbySecretKey, order.id);
+    return createTabbyRefundForOrder(order, paymentId, tabbySecretKey);
 }
 
 export async function queueRefundForOrder(order: Order): Promise<RefundQueueResult> {
@@ -316,6 +367,28 @@ export async function queueRefundForOrder(order: Order): Promise<RefundQueueResu
 }
 
 export async function queueRefundForApprovedCancellation(order: Order): Promise<RefundQueueResult> {
+    if (order.paymentProvider === 'tabby') {
+        const tabbySecretKey = process.env.TABBY_SECRET_KEY;
+
+        if (!tabbySecretKey) {
+            throw new AppError(500, 'TABBY_CONFIG_MISSING', {
+                orderId: order.id,
+                message: 'TABBY_SECRET_KEY is required for Tabby cancellation handling',
+            });
+        }
+
+        const paymentId = resolveTabbyPaymentId(order);
+        if (!paymentId) {
+            throw new AppError(409, 'PAYMENT_PROVIDER_ORDER_ID_MISSING', {
+                orderId: order.id,
+                paymentProvider: order.paymentProvider,
+            });
+        }
+
+        await ensureTabbyPaymentClosed(paymentId, tabbySecretKey, order.id);
+        return createTabbyRefundForOrder(order, paymentId, tabbySecretKey);
+    }
+
     return queueRefundForOrder(order);
 }
 enforceServerOnly('refund.service');

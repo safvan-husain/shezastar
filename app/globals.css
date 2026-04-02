@@ -67,6 +67,26 @@
   --order-status-failed: #6b7280;
   --order-status-default: #525252;
 
+  /* Admin activity accents */
+  --activity-emerald-bg: #ecfdf5;
+  --activity-emerald-border: #a7f3d0;
+  --activity-emerald-text: #047857;
+  --activity-blue-bg: #eff6ff;
+  --activity-blue-border: #bfdbfe;
+  --activity-blue-text: #1d4ed8;
+  --activity-amber-bg: #fffbeb;
+  --activity-amber-border: #fde68a;
+  --activity-amber-text: #b45309;
+  --activity-red-bg: #fef2f2;
+  --activity-red-border: #fecaca;
+  --activity-red-text: #b91c1c;
+  --activity-violet-bg: #f5f3ff;
+  --activity-violet-border: #ddd6fe;
+  --activity-violet-text: #6d28d9;
+  --activity-slate-bg: #f5f5f5;
+  --activity-slate-border: #d4d4d4;
+  --activity-slate-text: #404040;
+
   /* Storefront-specific tokens (ALWAYS LIGHT MODE - no dark mode support) */
   --storefront-bg: #ffffff;
   --storefront-bg-subtle: #f9fafb;
@@ -147,6 +167,25 @@
     --order-status-refund-failed: #fb7185;
     --order-status-failed: #a3a3a3;
     --order-status-default: #d4d4d4;
+
+    --activity-emerald-bg: #052e26;
+    --activity-emerald-border: #065f46;
+    --activity-emerald-text: #6ee7b7;
+    --activity-blue-bg: #172554;
+    --activity-blue-border: #1d4ed8;
+    --activity-blue-text: #93c5fd;
+    --activity-amber-bg: #451a03;
+    --activity-amber-border: #b45309;
+    --activity-amber-text: #fcd34d;
+    --activity-red-bg: #450a0a;
+    --activity-red-border: #b91c1c;
+    --activity-red-text: #fca5a5;
+    --activity-violet-bg: #2e1065;
+    --activity-violet-border: #6d28d9;
+    --activity-violet-text: #c4b5fd;
+    --activity-slate-bg: #171717;
+    --activity-slate-border: #404040;
+    --activity-slate-text: #e5e5e5;
 
     /* Storefront tokens remain LIGHT MODE even in dark mode */
     /* DO NOT override storefront variables - they are always light */

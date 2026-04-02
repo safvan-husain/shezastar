@@ -115,6 +115,12 @@ function applyQueuedRefundToPendingRefund(
     return pendingRefund;
 }
 
+function isRefundImmediatelyFinalized(
+    queuedRefund: Awaited<ReturnType<typeof queueRefundForOrder>>,
+): boolean {
+    return queuedRefund.provider === 'tabby' && queuedRefund.succeeded === true;
+}
+
 async function createShipmentDocument(order: Order, input: CreateShipmentInput = {}): Promise<NonNullable<OrderDocument['shipping']>> {
     const response = await createB2cShipment(order, input);
     const awb = response.waybills?.[0]?.awb?.trim() || response.sawb.trim();
@@ -591,6 +597,11 @@ export async function reviewOrderCancellationByAdmin(
         const pendingRefund = buildPendingRefundFromOrder(order);
         const queuedRefund = await queueRefundForApprovedCancellation(order);
         updatePayload.refund = applyQueuedRefundToPendingRefund(pendingRefund, queuedRefund);
+        if (isRefundImmediatelyFinalized(queuedRefund)) {
+            cancellation.completedAt = now;
+            updatePayload.cancellation = cancellation;
+            updatePayload.status = 'refunded';
+        }
     }
 
     if (input.decision === 'reject' && input.proceedToShipment) {
@@ -697,13 +708,21 @@ export async function proceedOrderRefundByAdmin(id: string): Promise<Order> {
     const queuedRefund = await queueRefundForOrder(order);
     const refund = applyQueuedRefundToPendingRefund(pendingRefund, queuedRefund);
     const now = new Date();
+    const nextStatus = isRefundImmediatelyFinalized(queuedRefund) ? 'refunded' : 'refund_approved';
+    const returnRequest = isRefundImmediatelyFinalized(queuedRefund) && doc.returnRequest
+        ? {
+            ...doc.returnRequest,
+            completedAt: now,
+        }
+        : undefined;
 
     const result = await collection.findOneAndUpdate(
         { _id: objectId },
         {
             $set: {
-                status: 'refund_approved',
+                status: nextStatus,
                 refund,
+                ...(returnRequest ? { returnRequest } : {}),
                 updatedAt: now,
             },
         },
