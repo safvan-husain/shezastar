@@ -226,6 +226,42 @@ describe('Checkout Session API', () => {
         }));
     });
 
+    it('normalizes OMR line item amounts to Stripe-compatible values', async () => {
+        computeCartItemPricingMock.mockResolvedValueOnce({
+            unitPrice: 12.341,
+            installationAddOnPrice: 0,
+            installationOption: 'none'
+        });
+
+        const req = new Request('http://localhost/api/checkout_sessions', {
+            method: 'POST',
+            body: JSON.stringify({
+                currency: 'OMR',
+                items: [{
+                    productId: 'buy-now-prod-omr',
+                    quantity: 1,
+                    selectedVariantItemIds: []
+                }]
+            }),
+            headers: { 'Content-Type': 'application/json' }
+        }) as any;
+
+        const res = await POST(req);
+        expect(res.status).toBe(200);
+
+        expect(mockCreateSession).toHaveBeenCalledWith(expect.objectContaining({
+            line_items: expect.arrayContaining([
+                expect.objectContaining({
+                    quantity: 1,
+                    price_data: expect.objectContaining({
+                        currency: 'omr',
+                        unit_amount: 12340,
+                    })
+                })
+            ])
+        }));
+    });
+
     it('returns 400 with insufficient stock details when stock is not available', async () => {
         validateStockAvailabilityMock.mockResolvedValueOnce({
             available: false,

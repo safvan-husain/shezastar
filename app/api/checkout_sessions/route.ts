@@ -4,7 +4,8 @@ import { computeCartItemPricing, getCartForCurrentSession } from '@/lib/cart/car
 import type { InstallationOption } from '@/lib/cart/cart.schema';
 import { getStorefrontSession } from '@/lib/storefront-session';
 import { convertPrice, getExchangeRates } from '@/lib/currency/currency.service';
-import { SUPPORTED_CURRENCIES, CurrencyCode } from '@/lib/currency/currency.config';
+import { CurrencyCode } from '@/lib/currency/currency.config';
+import { toStripeUnitAmount } from '@/lib/currency/stripe-amount';
 import { createOrder } from '@/lib/order/order.service';
 import { OrderItemDocument } from '@/lib/order/model/order.model';
 import {
@@ -98,8 +99,6 @@ async function POSTHandler(req: NextRequest) {
         });
 
         const rates = await getExchangeRates();
-        const currencyConfig = SUPPORTED_CURRENCIES.find(c => c.code === targetCurrencyCode);
-        const multiplier = currencyConfig?.decimals === 3 ? 1000 : 100;
 
         // Prepare items for stock validation
         let itemsToValidate: Array<{ productId: string; selectedVariantItemIds: string[]; quantity: number }> = [];
@@ -177,7 +176,7 @@ async function POSTHandler(req: NextRequest) {
                         product_data: {
                             name: item.productId,
                         },
-                        unit_amount: Math.round(convertedPrice * multiplier),
+                        unit_amount: toStripeUnitAmount(convertedPrice, targetCurrencyCode),
                     },
                     quantity: item.quantity,
                 };
@@ -232,7 +231,7 @@ async function POSTHandler(req: NextRequest) {
 
             lineItems = freshCartItems.map((item) => {
                 const convertedPrice = convertPrice(item.unitPrice, targetCurrencyCode, rates);
-                const finalAmount = Math.round(convertedPrice * multiplier);
+                const finalAmount = toStripeUnitAmount(convertedPrice, targetCurrencyCode);
 
                 return {
                     price_data: {
@@ -337,7 +336,7 @@ async function POSTHandler(req: NextRequest) {
                     product_data: {
                         name: `Shipping (${countryPricing.code})`,
                     },
-                    unit_amount: Math.round(pricingBreakdown.shipping * multiplier),
+                    unit_amount: toStripeUnitAmount(pricingBreakdown.shipping, targetCurrencyCode),
                 },
                 quantity: 1,
             });
@@ -350,7 +349,7 @@ async function POSTHandler(req: NextRequest) {
                     product_data: {
                         name: `VAT (${pricingBreakdown.vatRatePercent}%)`,
                     },
-                    unit_amount: Math.round(pricingBreakdown.vat * multiplier),
+                    unit_amount: toStripeUnitAmount(pricingBreakdown.vat, targetCurrencyCode),
                 },
                 quantity: 1,
             });
