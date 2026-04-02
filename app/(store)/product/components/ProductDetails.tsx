@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Product, isProductInStock } from '@/lib/product/model/product.model';
 import { useStorefrontWishlist } from '@/components/storefront/StorefrontWishlistProvider';
 import { useStorefrontCart } from '@/components/storefront/StorefrontCartProvider';
+import { Modal } from '@/components/ui/Modal';
 import { getVariantCombinationKey } from '@/lib/product/product.utils';
 import { useToast } from '@/components/ui/Toast';
 import { useCurrency } from '@/lib/currency/CurrencyContext';
@@ -21,13 +22,15 @@ interface ProductDetailsProps {
   };
 }
 
+type PendingProductAction = 'cart' | 'buy-now' | null;
+
 
 
 
 export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
   const { isInWishlist, toggleWishlistItem } = useStorefrontWishlist();
   const inWishlist = isInWishlist(product.id, []);
-  const { formatPrice, currency } = useCurrency();
+  const { formatPrice } = useCurrency();
 
   const { addToCart, isLoading } = useStorefrontCart();
   const { showToast } = useToast();
@@ -35,9 +38,14 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
   const [installationOption, setInstallationOption] = useState<InstallationOption>('none');
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const [selectedVariantItems, setSelectedVariantItems] = useState<Record<string, string | null>>({});
+  const [pendingAction, setPendingAction] = useState<PendingProductAction>(null);
+  const [buyNowOpenRequestToken, setBuyNowOpenRequestToken] = useState(0);
 
   const installationService = product.installationService;
-  const availableLocations = installationService?.availableLocations?.filter(l => l.enabled) ?? [];
+  const availableLocations = useMemo(
+    () => installationService?.availableLocations?.filter(l => l.enabled) ?? [],
+    [installationService?.availableLocations],
+  );
 
   const addOnPrice = useMemo(() => {
     if (installationOption === 'none') return 0;
@@ -208,8 +216,94 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
   const displaySubtitle = selectedVariantDetails?.variantSubtitle || product.subtitle;
   const displayDescription = selectedVariantDetails?.variantDescription || product.description;
 
+  const isVariantDialogOpen = pendingAction !== null;
+
+  const variantSelectionActionLabel = pendingAction === 'buy-now' ? 'Buy Now' : 'Add to cart';
+
+  const closeVariantDialog = () => {
+    setPendingAction(null);
+  };
+
+  const openVariantDialog = (action: Exclude<PendingProductAction, null>) => {
+    setPendingAction(action);
+  };
+
+  const handleVariantActionConfirm = async () => {
+    if (!allVariantsSelected) {
+      return;
+    }
+
+    if (pendingAction === 'cart') {
+      if (currentStockLimit !== null && quantity > currentStockLimit) {
+        showToast('Lack of stock.', 'error');
+        return;
+      }
+
+      const result = await addToCart(
+        product.id,
+        selectedVariantItemIds,
+        quantity,
+        installationOption,
+        selectedLocationId,
+      );
+
+      if (result) {
+        closeVariantDialog();
+      }
+
+      return;
+    }
+
+    if (pendingAction === 'buy-now') {
+      closeVariantDialog();
+      setBuyNowOpenRequestToken((prev) => prev + 1);
+    }
+  };
+
+  const renderVariantSelectors = () => (
+    <div className="space-y-4">
+      {product.variants?.map((variant) => (
+        <div key={variant.variantTypeId} className="space-y-2">
+          <label className="text-sm font-medium text-[var(--storefront-text-primary)] mb-4 ml-1">
+            {variant.variantTypeName}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {variant.selectedItems.map((item) => {
+              const isSelected = selectedVariantItems[variant.variantTypeId] === item.id;
+              const isAvailable = isVariantItemAvailable(variant.variantTypeId, item.id);
+              const isDisabled = !isAvailable && !isSelected;
+
+              const baseClasses =
+                'px-4 py-2 rounded-md border transition text-[var(--storefront-text-primary)] text-left';
+              const stateClasses = isSelected
+                ? 'border-[var(--storefront-text-primary)] bg-[var(--storefront-bg-hover)] font-semibold'
+                : 'border-[var(--storefront-border)] bg-[var(--storefront-bg)] hover:border-[var(--storefront-text-primary)]';
+              const disabledClasses = isDisabled
+                ? 'opacity-50 cursor-not-allowed hover:border-[var(--storefront-border)]'
+                : '';
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={isDisabled}
+                  aria-pressed={isSelected}
+                  className={[baseClasses, stateClasses, disabledClasses].join(' ')}
+                  onClick={() => handleVariantClick(variant.variantTypeId, item.id, isDisabled)}
+                >
+                  {item.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <div className='flex flex-col'>
+    <>
+      <div className='flex flex-col'>
       <div className="grid gap-8 lg:grid-cols-[2fr_3fr]">
         <ProductImageGallery product={product} selectedVariantItemIds={selectedVariantItemIds} />
 
@@ -277,46 +371,7 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
 
           <StockStatus inStock={displayInStock} />
 
-          {product.variants && product.variants.length > 0 && (
-            <div className="space-y-4">
-              {product.variants.map((variant) => (
-                <div key={variant.variantTypeId} className="space-y-2">
-                  <label className="text-sm font-medium text-[var(--storefront-text-primary)] mb-4 ml-1">
-                    {variant.variantTypeName}
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {variant.selectedItems.map((item) => {
-                      const isSelected = selectedVariantItems[variant.variantTypeId] === item.id;
-                      const isAvailable = isVariantItemAvailable(variant.variantTypeId, item.id);
-                      const isDisabled = !isAvailable && !isSelected;
-
-                      const baseClasses =
-                        'px-4 py-2 rounded-md border transition text-[var(--storefront-text-primary)] text-left';
-                      const stateClasses = isSelected
-                        ? 'border-[var(--storefront-text-primary)] bg-[var(--storefront-bg-hover)] font-semibold'
-                        : 'border-[var(--storefront-border)] bg-[var(--storefront-bg)] hover:border-[var(--storefront-text-primary)]';
-                      const disabledClasses = isDisabled
-                        ? 'opacity-50 cursor-not-allowed hover:border-[var(--storefront-border)]'
-                        : '';
-
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          disabled={isDisabled}
-                          aria-pressed={isSelected}
-                          className={[baseClasses, stateClasses, disabledClasses].join(' ')}
-                          onClick={() => handleVariantClick(variant.variantTypeId, item.id, isDisabled)}
-                        >
-                          {item.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {product.variants && product.variants.length > 0 && renderVariantSelectors()}
 
           {product.installationService?.enabled && (
             <div className="border-t border-[var(--storefront-border)] pt-4 space-y-4">
@@ -467,8 +522,12 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
               <button
                 type="button"
                 className="w-full py-3 px-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={isLoading || !allVariantsSelected || !isLocationValid}
+                disabled={isLoading || !isLocationValid}
                 onClick={async () => {
+                  if (!allVariantsSelected) {
+                    openVariantDialog('cart');
+                    return;
+                  }
                   if (currentStockLimit !== null && quantity > currentStockLimit) {
                     showToast('Lack of stock.', 'error');
                     return;
@@ -520,7 +579,10 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
                   selectedVariantItemIds={selectedVariantItemIds}
                   installationOption={installationOption}
                   installationLocationId={selectedLocationId}
-                  disabled={!allVariantsSelected || !isLocationValid}
+                  disabled={!isLocationValid}
+                  requiresVariantSelection={!allVariantsSelected}
+                  onRequireVariantSelection={() => openVariantDialog('buy-now')}
+                  openRequestToken={buyNowOpenRequestToken}
                   maxAvailable={currentStockLimit}
                   tabbyConfig={tabbyConfig}
                 />
@@ -636,6 +698,43 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      <Modal
+        isOpen={isVariantDialogOpen}
+        onClose={closeVariantDialog}
+        title={`Choose Variant${product.name ? ` - ${product.name}` : ''}`}
+        variant="storefront"
+        containerClassName="max-w-lg"
+      >
+        <div className="space-y-5">
+          {renderVariantSelectors()}
+
+          {missingVariantTypeName && (
+            <p className="text-sm text-[var(--storefront-sale-text)]">
+              Please select a {missingVariantTypeName} to continue.
+            </p>
+          )}
+
+          <div className="flex justify-end gap-3 border-t border-[var(--storefront-border-light)] pt-4">
+            <button
+              type="button"
+              onClick={closeVariantDialog}
+              className="rounded-md border border-[var(--storefront-border)] px-4 py-2 text-sm text-[var(--storefront-text-secondary)] hover:bg-[var(--storefront-bg-subtle)]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleVariantActionConfirm()}
+              disabled={!allVariantsSelected || isLoading}
+              className="rounded-md bg-[var(--storefront-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--storefront-button-primary-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {variantSelectionActionLabel}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }

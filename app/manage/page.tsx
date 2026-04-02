@@ -293,6 +293,11 @@ export default async function ManageDashboardPage() {
     const donutSegments = buildDonutSegments(ordersByStatus);
     const trendPoints = buildTrendPolyline(salesTrend);
     const trendPath = trendPoints.map((point) => `${point.x},${point.y}`).join(' ');
+    const trendLabelPoints = trendPoints.filter(
+        (_, index) =>
+            index === trendPoints.length - 1 ||
+            index % (trendPoints.length > 45 ? 20 : trendPoints.length > 24 ? 12 : 8) === 0,
+    );
     const trendArea = trendPoints.length
         ? [
             `M ${trendPoints[0].x} ${240 - 24}`,
@@ -341,8 +346,8 @@ export default async function ManageDashboardPage() {
                     </div>
                 </section>
 
-                <section className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr]">
-                    <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+                <section className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
+                    <Card className="min-w-0 rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <h2 className="text-xl font-semibold">Orders by Status</h2>
@@ -355,9 +360,9 @@ export default async function ManageDashboardPage() {
                             </Link>
                         </div>
 
-                        <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
-                            <div className="relative mx-auto flex h-[220px] w-[220px] items-center justify-center">
-                                <svg width="220" height="220" viewBox="0 0 220 220" className="-rotate-90 overflow-visible">
+                        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)] lg:items-center">
+                            <div className="relative mx-auto flex aspect-square w-full max-w-[220px] items-center justify-center">
+                                <svg viewBox="0 0 220 220" className="-rotate-90 overflow-visible">
                                     <circle
                                         cx="110"
                                         cy="110"
@@ -386,7 +391,7 @@ export default async function ManageDashboardPage() {
                                 </svg>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="min-w-0 space-y-3">
                                 {ordersByStatus.length === 0 ? (
                                     <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--border-subtle)] p-4 text-sm text-[var(--text-secondary)]">
                                         No order data yet.
@@ -398,14 +403,16 @@ export default async function ManageDashboardPage() {
                                             href={`/manage/orders?status=${encodeURIComponent(item.status)}`}
                                             className="flex items-center justify-between gap-4 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 transition-colors hover:border-[var(--border-strong)]"
                                         >
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex min-w-0 items-center gap-3">
                                                 <span
-                                                    className="h-3 w-3 rounded-full"
+                                                    className="h-3 w-3 shrink-0 rounded-full"
                                                     style={{ backgroundColor: item.color }}
                                                 />
-                                                <span className="font-medium text-[var(--text-primary)]">{formatStatus(item.status)}</span>
+                                                <span className="truncate font-medium text-[var(--text-primary)]">
+                                                    {formatStatus(item.status)}
+                                                </span>
                                             </div>
-                                            <span className="text-sm text-[var(--text-secondary)]">{item.count}</span>
+                                            <span className="shrink-0 text-sm text-[var(--text-secondary)]">{item.count}</span>
                                         </Link>
                                     ))
                                 )}
@@ -413,7 +420,7 @@ export default async function ManageDashboardPage() {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+                    <Card className="min-w-0 rounded-[var(--radius-md)] border-[var(--border-subtle)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <h2 className="text-xl font-semibold">Purchase Trend</h2>
@@ -426,9 +433,13 @@ export default async function ManageDashboardPage() {
                             </span>
                         </div>
 
-                        <div className="mt-6 overflow-x-auto">
-                            <div className="min-w-[760px]">
-                                <svg width="760" height="240" viewBox="0 0 760 240" className="w-full">
+                        <div className="mt-6">
+                            <div className="w-full overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] p-2 sm:p-3">
+                                <svg
+                                    viewBox="0 0 760 240"
+                                    preserveAspectRatio="none"
+                                    className="h-[220px] w-full sm:h-[240px]"
+                                >
                                     {[0, 1, 2, 3].map((row) => {
                                         const y = 24 + row * 48;
                                         return (
@@ -454,7 +465,7 @@ export default async function ManageDashboardPage() {
                                             points={trendPath}
                                         />
                                     )}
-                                    {trendPoints.filter((_, index) => index % 15 === 0 || index === trendPoints.length - 1).map((point) => (
+                                    {trendLabelPoints.map((point) => (
                                         <g key={point.date}>
                                             <circle cx={point.x} cy={point.y} r="3.5" fill="var(--text-primary)" />
                                             <text

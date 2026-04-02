@@ -28,6 +28,9 @@ interface BuyNowButtonProps {
   installationOption: InstallationOption;
   installationLocationId?: string;
   disabled?: boolean;
+  requiresVariantSelection?: boolean;
+  onRequireVariantSelection?: () => void;
+  openRequestToken?: number;
   maxAvailable: number | null;
   tabbyConfig?: {
     publicKey: string;
@@ -51,6 +54,9 @@ export function BuyNowButton({
   installationLocationId,
   selectedVariantItemIds,
   disabled,
+  requiresVariantSelection = false,
+  onRequireVariantSelection,
+  openRequestToken = 0,
   maxAvailable,
   tabbyConfig,
 }: BuyNowButtonProps) {
@@ -93,6 +99,40 @@ export function BuyNowButton({
       setSelectedProvider('stripe');
     }
   }, [isDialogOpen]);
+
+  useEffect(() => {
+    if (openRequestToken <= 0) {
+      return;
+    }
+
+    if (requiresVariantSelection) {
+      onRequireVariantSelection?.();
+      return;
+    }
+
+    if (disabled) {
+      return;
+    }
+
+    if (maxAvailable !== null && quantity > maxAvailable) {
+      showToast('Lack of stock.', 'error');
+      return;
+    }
+
+    setBillingForm(mapBillingDetailsToFormValue(billingDetails));
+    setBillingErrors({});
+    setIsEditingBilling(!billingDetails);
+    setIsDialogOpen(true);
+  }, [
+    billingDetails,
+    disabled,
+    maxAvailable,
+    onRequireVariantSelection,
+    openRequestToken,
+    quantity,
+    requiresVariantSelection,
+    showToast,
+  ]);
 
   const itemPayload = useMemo(
     () => [
@@ -300,7 +340,7 @@ export function BuyNowButton({
       }
 
       window.location.href = body.url as string;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const details =
         error instanceof Error
           ? { message: error.message, stack: error.stack }
@@ -335,6 +375,10 @@ export function BuyNowButton({
   };
 
   const handleBuyNow = () => {
+    if (requiresVariantSelection) {
+      onRequireVariantSelection?.();
+      return;
+    }
     if (disabled) return;
     if (maxAvailable !== null && quantity > maxAvailable) {
       showToast('Lack of stock.', 'error');
