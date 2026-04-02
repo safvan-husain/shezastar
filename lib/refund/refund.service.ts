@@ -3,6 +3,7 @@ import { enforceServerOnly } from '@/lib/utils/server-only';
 import Stripe from 'stripe';
 import { AppError } from '@/lib/errors/app-error';
 import { SUPPORTED_CURRENCIES } from '@/lib/currency/currency.config';
+import { logger } from '@/lib/logging/logger';
 import type { Order, OrderRefundDocument } from '@/lib/order/model/order.model';
 
 const TABBY_API_URL_V2 = 'https://api.tabby.ai/api/v2';
@@ -157,6 +158,12 @@ async function closeTabbyPayment(
         });
     }
 
+    await logger.log('Tabby payment closed before refund processing', {
+        paymentProvider: 'tabby',
+        orderId,
+        paymentId,
+    });
+
     return (closeResponseBody as TabbyPaymentResponse | undefined) ?? {};
 }
 
@@ -183,9 +190,20 @@ async function ensureTabbyPaymentClosed(
 
     const payment = paymentStatusBody as TabbyPaymentResponse | undefined;
     if (payment?.status === 'CLOSED') {
+        await logger.debug('Tabby payment already closed before refund processing', {
+            paymentProvider: 'tabby',
+            orderId,
+            paymentId,
+        });
         return payment;
     }
 
+    await logger.log('Tabby payment requires close before refund processing', {
+        paymentProvider: 'tabby',
+        orderId,
+        paymentId,
+        paymentStatus: payment?.status ?? 'unknown',
+    });
     return closeTabbyPayment(paymentId, tabbySecretKey, orderId);
 }
 
@@ -265,11 +283,14 @@ async function createTabbyRefundForOrder(
     }
 
     const tabbyRefundResponse = refundResponseBody as TabbyRefundResponse | undefined;
-    console.info('[Refund] Tabby refund initiated for approved cancellation', {
+    await logger.log('Tabby refund initiated', {
         orderId: order.id,
         paymentId,
-        referenceId,
+        paymentProvider: 'tabby',
+        refundReferenceId: referenceId,
         refundId: tabbyRefundResponse?.refunds?.at(-1)?.id,
+        totalAmount: order.totalAmount,
+        currency: order.currency,
     });
 
     return normalizeTabbyRefundResult({
@@ -308,7 +329,7 @@ export async function queueRefundForOrder(order: Order): Promise<RefundQueueResu
     }
 
     if (order.paymentProvider !== 'stripe') {
-        console.info('[Refund] Skipping refund initiation for unsupported provider', {
+        await logger.debug('Refund initiation skipped for unsupported provider', {
             orderId: order.id,
             paymentProvider: order.paymentProvider,
         });
@@ -348,11 +369,14 @@ export async function queueRefundForOrder(order: Order): Promise<RefundQueueResu
         ? new Date(stripeRefund.created * 1000)
         : new Date();
 
-    console.info('[Refund] Stripe refund initiated for approved cancellation', {
+    await logger.log('Stripe refund initiated', {
         orderId: order.id,
         paymentIntentId,
+        paymentProvider: 'stripe',
         refundId: stripeRefund.id,
         refundStatus: stripeRefund.status,
+        totalAmount: order.totalAmount,
+        currency: order.currency,
     });
 
     return {

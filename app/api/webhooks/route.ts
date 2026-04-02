@@ -4,6 +4,7 @@ import { clearCart } from '@/lib/cart/cart.service';
 import { SUPPORTED_CURRENCIES } from '@/lib/currency/currency.config';
 import { getCollection } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
+import { logger } from '@/lib/logging/logger';
 import type { OrderDocument, OrderStatus } from '@/lib/order/model/order.model';
 import { getOrderById, updateOrderStatusById } from '@/lib/order/order.service';
 import { getStorefrontSessionBySessionId } from '@/lib/storefront-session';
@@ -62,7 +63,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
     const orderId = session.client_reference_id;
 
     if (!orderId) {
-        console.error('Stripe checkout webhook missing client_reference_id', {
+        await logger.error('Stripe checkout webhook missing client_reference_id', {
             eventId: event.id,
             sessionId: session.id,
         });
@@ -80,7 +81,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
         order = await getOrderById(orderId);
     } catch (error) {
         if (error instanceof AppError && error.code === 'ORDER_NOT_FOUND') {
-            console.error('Stripe webhook order not found', {
+            await logger.error('Stripe checkout webhook order not found', {
                 eventId: event.id,
                 sessionId: session.id,
                 orderId,
@@ -94,7 +95,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
         }
 
         if (error instanceof AppError && error.code === 'INVALID_ORDER_ID') {
-            console.error('Stripe webhook has invalid client_reference_id', {
+            await logger.error('Stripe checkout webhook has invalid client_reference_id', {
                 eventId: event.id,
                 sessionId: session.id,
                 orderId,
@@ -107,11 +108,12 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
             );
         }
 
-        console.error('Unexpected error fetching order for Stripe webhook', {
+        await logger.error('Unexpected error fetching order for Stripe webhook', {
             eventId: event.id,
             sessionId: session.id,
             orderId,
-            error,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
         });
         return webhookError(
             500,
@@ -124,6 +126,14 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
     try {
         const status = session.payment_status === 'paid' ? 'paid' : 'pending';
         const wasAlreadyPaid = order.status !== 'pending';
+        await logger.log('Stripe checkout webhook verified payment status', {
+            eventId: event.id,
+            sessionId: session.id,
+            orderId,
+            paymentStatus: session.payment_status,
+            nextOrderStatus: status,
+            wasAlreadyPaid,
+        });
 
         await updateOrderStatusById(order.id, status);
 
@@ -141,11 +151,12 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
             try {
                 updateData.billingDetails = JSON.parse(session.metadata.billingDetails);
             } catch (parseError) {
-                console.error('Failed to parse billing details metadata from Stripe webhook', {
+                await logger.error('Failed to parse billing details metadata from Stripe webhook', {
                     eventId: event.id,
                     sessionId: session.id,
                     orderId,
-                    parseError,
+                    errorMessage: parseError instanceof Error ? parseError.message : String(parseError),
+                    errorStack: parseError instanceof Error ? parseError.stack : undefined,
                 });
             }
         }
@@ -157,19 +168,35 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
         );
 
         const updatedOrder = await getOrderById(order.id);
+        await logger.log('Stripe checkout webhook order persisted', {
+            eventId: event.id,
+            sessionId: session.id,
+            orderId,
+            paymentIntentId,
+            orderStatus: updatedOrder.status,
+            totalAmount: updatedOrder.totalAmount,
+            currency: updatedOrder.currency,
+        });
 
         if (!wasAlreadyPaid && status === 'paid') {
             for (const item of updatedOrder.items) {
                 try {
                     const { reduceVariantStock } = await import('@/lib/product/product.service-stock');
                     await reduceVariantStock(item.productId, item.selectedVariantItemIds, item.quantity);
+                    await logger.log('Stripe checkout webhook stock reduced', {
+                        eventId: event.id,
+                        orderId,
+                        productId: item.productId,
+                        quantity: item.quantity,
+                    });
                 } catch (stockError) {
-                    console.error('Failed to reduce stock for paid Stripe webhook order item', {
+                    await logger.error('Failed to reduce stock for paid Stripe webhook order item', {
                         eventId: event.id,
                         sessionId: session.id,
                         orderId,
                         productId: item.productId,
-                        stockError,
+                        errorMessage: stockError instanceof Error ? stockError.message : String(stockError),
+                        errorStack: stockError instanceof Error ? stockError.stack : undefined,
                     });
                 }
             }
@@ -190,22 +217,30 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<Next
 
             try {
                 await clearCart(minimalSession);
-            } catch (clearError) {
-                console.error('Failed to clear cart after Stripe webhook order payment', {
+                await logger.log('Stripe checkout webhook cart cleared after payment', {
                     eventId: event.id,
                     sessionId: session.id,
                     orderId,
                     storefrontSessionId: order.sessionId,
-                    clearError,
+                });
+            } catch (clearError) {
+                await logger.error('Failed to clear cart after Stripe webhook order payment', {
+                    eventId: event.id,
+                    sessionId: session.id,
+                    orderId,
+                    storefrontSessionId: order.sessionId,
+                    errorMessage: clearError instanceof Error ? clearError.message : String(clearError),
+                    errorStack: clearError instanceof Error ? clearError.stack : undefined,
                 });
             }
         }
     } catch (error) {
-        console.error('Error processing checkout.session.completed', {
+        await logger.error('Error processing checkout.session.completed', {
             eventId: event.id,
             sessionId: session.id,
             orderId,
-            error,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
         });
         return webhookError(
             500,
@@ -228,7 +263,7 @@ async function handleRefundLifecycleEvent(event: Stripe.Event): Promise<void> {
     const paymentIntentId = toExpandableId(refund.payment_intent as string | Stripe.PaymentIntent | null);
 
     if (!paymentIntentId) {
-        console.warn('Stripe refund webhook missing payment_intent reference', {
+        await logger.error('Stripe refund webhook missing payment_intent reference', {
             eventId: event.id,
             eventType: event.type,
             refundId: refund.id,
@@ -238,7 +273,7 @@ async function handleRefundLifecycleEvent(event: Stripe.Event): Promise<void> {
 
     const orderDoc = await getOrderDocumentByPaymentIntentId(paymentIntentId);
     if (!orderDoc) {
-        console.warn('Stripe refund webhook order not found by paymentProviderOrderId', {
+        await logger.error('Stripe refund webhook order not found by paymentProviderOrderId', {
             eventId: event.id,
             eventType: event.type,
             refundId: refund.id,
@@ -273,6 +308,14 @@ async function handleRefundLifecycleEvent(event: Stripe.Event): Promise<void> {
     if (event.type === 'refund.failed') {
         const orderId = orderDoc._id.toHexString();
         await updateOrderStatusById(orderId, 'refund_failed', { allowWorkflowStatuses: true });
+        await logger.error('Stripe refund webhook marked order as refund_failed', {
+            eventId: event.id,
+            eventType: event.type,
+            orderId,
+            refundId: refund.id,
+            paymentIntentId,
+            failureCode: refund.failure_reason ?? 'unknown',
+        });
         
         updateSet['refund.status'] = 'failed';
         updateSet['refund.processedAt'] = now;
@@ -295,6 +338,14 @@ async function handleRefundLifecycleEvent(event: Stripe.Event): Promise<void> {
             ...(Object.keys(updateUnset).length > 0 ? { $unset: updateUnset } : {}),
         },
     );
+    await logger.log('Stripe refund webhook reconciled refund state', {
+        eventId: event.id,
+        eventType: event.type,
+        orderId: orderDoc._id.toHexString(),
+        refundId: refund.id,
+        paymentIntentId,
+        refundStatus: updateSet['refund.status'],
+    });
 }
 
 async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
@@ -302,7 +353,7 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
     const paymentIntentId = toExpandableId(charge.payment_intent as string | Stripe.PaymentIntent | null);
 
     if (!paymentIntentId) {
-        console.warn('Stripe charge.refunded webhook missing payment_intent reference', {
+        await logger.error('Stripe charge.refunded webhook missing payment_intent reference', {
             eventId: event.id,
             chargeId: charge.id,
         });
@@ -311,7 +362,7 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
 
     const orderDoc = await getOrderDocumentByPaymentIntentId(paymentIntentId);
     if (!orderDoc) {
-        console.warn('Stripe charge.refunded order not found by paymentProviderOrderId', {
+        await logger.error('Stripe charge.refunded order not found by paymentProviderOrderId', {
             eventId: event.id,
             chargeId: charge.id,
             paymentIntentId,
@@ -367,6 +418,14 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
             $unset: updateUnset,
         },
     );
+    await logger.log('Stripe charge.refunded webhook reconciled order refund completion', {
+        eventId: event.id,
+        chargeId: charge.id,
+        orderId: orderDoc._id.toHexString(),
+        paymentIntentId,
+        isFullyRefunded,
+        resultingRefundStatus: updateSet['refund.status'],
+    });
 }
 
 async function POSTHandler(req: NextRequest) {
@@ -385,7 +444,9 @@ async function POSTHandler(req: NextRequest) {
         const body = await req.text();
         event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
     } catch (err: any) {
-        console.error('Webhook signature verification failed', { message: err?.message });
+        await logger.error('Stripe webhook signature verification failed', {
+            errorMessage: err?.message ?? 'Invalid signature',
+        });
         return webhookError(400, 'INVALID_STRIPE_SIGNATURE', `Webhook Error: ${err?.message ?? 'Invalid signature'}`);
     }
 
@@ -410,10 +471,11 @@ async function POSTHandler(req: NextRequest) {
                 return NextResponse.json({ received: true });
         }
     } catch (error) {
-        console.error('Error processing Stripe webhook event', {
+        await logger.error('Error processing Stripe webhook event', {
             eventId: event.id,
             eventType: event.type,
-            error,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
         });
 
         return webhookError(

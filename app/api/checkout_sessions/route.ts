@@ -16,6 +16,7 @@ import { filterImagesByVariants } from '@/lib/product/model/product.model';
 import { ObjectId } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
 import { buildCustomerActivityActor, createActivityLog } from '@/lib/activity/activity.service';
+import { logger } from '@/lib/logging/logger';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -24,7 +25,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 async function POSTHandler(req: NextRequest) {
     if (!stripe) {
-        console.error('STRIPE_SECRET_KEY is missing.');
+        await logger.error('Stripe checkout session creation blocked: missing STRIPE_SECRET_KEY');
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 
@@ -87,13 +88,19 @@ async function POSTHandler(req: NextRequest) {
         }
         metadata.billingCountry = billingCountryForPricing;
 
-        console.log(`[Checkout] Initiating session with currency: ${targetCurrencyCode}`);
+        const rawItems = Array.isArray(body.items) ? body.items : [];
+        await logger.log('Stripe checkout session initialization started', {
+            paymentProvider: 'stripe',
+            sessionId,
+            currency: targetCurrencyCode,
+            checkoutType: rawItems.length > 0 ? 'buy_now' : 'cart',
+            customerEmail: billingDetails.email,
+        });
 
         const rates = await getExchangeRates();
         const currencyConfig = SUPPORTED_CURRENCIES.find(c => c.code === targetCurrencyCode);
         const multiplier = currencyConfig?.decimals === 3 ? 1000 : 100;
 
-        const rawItems = Array.isArray(body.items) ? body.items : [];
         // Prepare items for stock validation
         let itemsToValidate: Array<{ productId: string; selectedVariantItemIds: string[]; quantity: number }> = [];
         let totalAmount = 0;
@@ -148,6 +155,11 @@ async function POSTHandler(req: NextRequest) {
             }
 
             if (processedBuyNowItems.length === 0) {
+                await logger.error('Stripe checkout session initialization failed: invalid buy now payload', {
+                    paymentProvider: 'stripe',
+                    sessionId,
+                    currency: targetCurrencyCode,
+                });
                 return NextResponse.json({ error: 'Invalid buy now payload' }, { status: 400 });
             }
 
@@ -194,7 +206,13 @@ async function POSTHandler(req: NextRequest) {
                         unitPrice: pricing.unitPrice, // Use fresh price
                     });
                 } catch (error) {
-                    console.error(`Failed to re-compute pricing for item ${item.productId}`, error);
+                    await logger.error('Stripe checkout pricing refresh failed', {
+                        paymentProvider: 'stripe',
+                        sessionId,
+                        productId: item.productId,
+                        errorMessage: error instanceof Error ? error.message : String(error),
+                        errorStack: error instanceof Error ? error.stack : undefined,
+                    });
                     // If product deleted or error, we might want to skip or fail. 
                     // For now, fail to prevent incorrect charges.
                     return NextResponse.json({ error: `Product ${item.productId} unavailable` }, { status: 400 });
@@ -285,7 +303,13 @@ async function POSTHandler(req: NextRequest) {
                     installationLocationDelta: (item as any).installationLocationDelta ?? 0,
                 });
             } catch (error) {
-                console.error(`Failed to enrich order item ${item.productId}`, error);
+                await logger.error('Stripe checkout order item enrichment failed', {
+                    paymentProvider: 'stripe',
+                    sessionId,
+                    productId: item.productId,
+                    errorMessage: error instanceof Error ? error.message : String(error),
+                    errorStack: error instanceof Error ? error.stack : undefined,
+                });
                 orderItems.push({
                     productId: item.productId,
                     productName: 'Unknown Product',
@@ -350,6 +374,18 @@ async function POSTHandler(req: NextRequest) {
             userId: storefrontSession.userId ? new ObjectId(storefrontSession.userId) : undefined,
         });
 
+        await logger.log('Stripe pending order created before checkout session', {
+            paymentProvider: 'stripe',
+            orderId: pendingOrder.id,
+            sessionId,
+            totalAmount: pendingOrder.totalAmount,
+            currency: pendingOrder.currency,
+            itemCount: pendingOrder.items.length,
+            shippingAmount: pendingOrder.shippingAmount,
+            vatAmount: pendingOrder.vatAmount,
+            countryCode: pendingOrder.countryCode,
+        });
+
         await createActivityLog({
             actionType: 'order.created',
             actor: buildCustomerActivityActor({
@@ -390,6 +426,12 @@ async function POSTHandler(req: NextRequest) {
         const stockValidation = await validateStockAvailability(itemsToValidate);
 
         if (!stockValidation.available) {
+            await logger.error('Stripe checkout stock validation failed', {
+                paymentProvider: 'stripe',
+                orderId: pendingOrder.id,
+                sessionId,
+                details: stockValidation.insufficientItems,
+            });
             return NextResponse.json({
                 error: 'Insufficient stock',
                 insufficientItems: stockValidation.insufficientItems
@@ -408,9 +450,23 @@ async function POSTHandler(req: NextRequest) {
             metadata: metadata,
         });
 
+        await logger.log('Stripe checkout session created', {
+            paymentProvider: 'stripe',
+            orderId: pendingOrder.id,
+            sessionId,
+            checkoutSessionId: session.id,
+            totalAmount: pendingOrder.totalAmount,
+            currency: pendingOrder.currency,
+        });
+
         return NextResponse.json({ url: session.url });
     } catch (err: any) {
-        console.error('Error creating checkout session:', err);
+        await logger.error('Stripe checkout session creation failed', {
+            paymentProvider: 'stripe',
+            errorMessage: err instanceof Error ? err.message : String(err),
+            errorStack: err instanceof Error ? err.stack : undefined,
+            details: err instanceof AppError ? err.details : undefined,
+        });
         if (err instanceof AppError) {
             return NextResponse.json(
                 { error: err.code, code: err.code, message: err.details?.message || err.message, details: err.details },

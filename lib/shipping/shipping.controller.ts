@@ -41,6 +41,13 @@ export async function handleCreateShipment(orderId: string, input: unknown, acto
     try {
         const order = await getOrderById(orderId);
         assertShipmentEligible(order);
+        await logger.log('Shipment creation started', {
+            orderId,
+            paymentProvider: order.paymentProvider,
+            orderStatus: order.status,
+            totalAmount: order.totalAmount,
+            currency: order.currency,
+        });
 
         const parsed: CreateShipmentInput = CreateShipmentInputSchema.parse(input);
 
@@ -58,6 +65,12 @@ export async function handleCreateShipment(orderId: string, input: unknown, acto
         });
 
         await updateOrderStatusById(orderId, 'requested_shipment');
+        await logger.log('Shipment created and order moved to requested_shipment', {
+            orderId,
+            awb,
+            provider: 'smsa',
+            orderStatus: 'requested_shipment',
+        });
 
         if (actor && tracking.shipping) {
             await createActivityLog({
@@ -85,6 +98,11 @@ export async function handleCreateShipment(orderId: string, input: unknown, acto
         return { status: 200, body: tracking.shipping };
 
     } catch (err) {
+        await logger.error('Shipment creation failed', {
+            orderId,
+            errorMessage: err instanceof Error ? err.message : String(err),
+            errorStack: err instanceof Error ? err.stack : undefined,
+        });
         return catchError(err);
     }
 }
@@ -135,9 +153,19 @@ export async function handleTrackShipment(orderId: string) {
         }
 
         const data = await trackShipment(order.shipping.awb, order.id);
+        await logger.log('Shipment tracking fetched from provider', {
+            orderId,
+            awb: order.shipping.awb,
+            provider: order.shipping.provider,
+        });
         await syncOrderTrackingState(order.id, order.status, data);
         return { status: 200, body: data };
     } catch (err) {
+        await logger.error('Shipment tracking failed', {
+            orderId,
+            errorMessage: err instanceof Error ? err.message : String(err),
+            errorStack: err instanceof Error ? err.stack : undefined,
+        });
         return catchError(err);
     }
 }

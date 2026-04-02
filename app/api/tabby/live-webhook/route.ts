@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { clearCart } from '@/lib/cart/cart.service';
 import { getCollection, ObjectId } from '@/lib/db/mongo-client';
+import { logger } from '@/lib/logging/logger';
 import type { OrderDocument, OrderStatus } from '@/lib/order/model/order.model';
 import { getOrderById, getOrderByPaymentProviderSessionId, updateOrderStatusById } from '@/lib/order/order.service';
 import { getStorefrontSessionBySessionId } from '@/lib/storefront-session';
@@ -64,7 +65,14 @@ async function verifyTabbyPayment(paymentId: string, tabbySecretKey: string): Pr
         throw new Error(`Failed to verify Tabby payment ${paymentId}: ${JSON.stringify(responseBody)}`);
     }
 
-    return (await paymentResponse.json()) as TabbyPayment;
+    const payment = (await paymentResponse.json()) as TabbyPayment;
+    await logger.log('Tabby payment verified from webhook', {
+        paymentProvider: 'tabby',
+        paymentId,
+        paymentStatus: payment.status,
+        refundCount: Array.isArray(payment.refunds) ? payment.refunds.length : 0,
+    });
+    return payment;
 }
 
 async function findOrderForPayment(payment: TabbyPayment): Promise<Awaited<ReturnType<typeof getOrderById>> | null> {
@@ -96,6 +104,11 @@ async function persistPaidOrder(orderId: string, paymentId: string) {
             },
         },
     );
+    await logger.log('Tabby order marked as paid from webhook reconciliation', {
+        paymentProvider: 'tabby',
+        orderId,
+        paymentId,
+    });
 }
 
 async function reduceStockForOrder(order: Awaited<ReturnType<typeof getOrderById>>) {
@@ -103,8 +116,20 @@ async function reduceStockForOrder(order: Awaited<ReturnType<typeof getOrderById
         try {
             const { reduceVariantStock } = await import('@/lib/product/product.service-stock');
             await reduceVariantStock(item.productId, item.selectedVariantItemIds, item.quantity);
+            await logger.log('Tabby webhook stock reduced', {
+                paymentProvider: 'tabby',
+                orderId: order.id,
+                productId: item.productId,
+                quantity: item.quantity,
+            });
         } catch (stockError) {
-            console.error(`Failed to reduce stock for product ${item.productId}:`, stockError);
+            await logger.error('Tabby webhook stock reduction failed', {
+                paymentProvider: 'tabby',
+                orderId: order.id,
+                productId: item.productId,
+                errorMessage: stockError instanceof Error ? stockError.message : String(stockError),
+                errorStack: stockError instanceof Error ? stockError.stack : undefined,
+            });
         }
     }
 }
@@ -123,6 +148,10 @@ async function clearOrderCart(sessionId: string) {
 
     try {
         await clearCart(minimalSession);
+        await logger.log('Tabby webhook cart cleared after payment capture', {
+            paymentProvider: 'tabby',
+            storefrontSessionId: sessionId,
+        });
     } catch {
         // Ignore cart cleanup errors during webhook reconciliation.
     }
@@ -134,8 +163,21 @@ async function captureAuthorizedPayment(payment: TabbyPayment, order: Awaited<Re
     }
 
     if (order.status !== 'pending') {
+        await logger.debug('Tabby webhook capture skipped because order is already processed', {
+            paymentProvider: 'tabby',
+            paymentId: payment.id,
+            orderId: order.id,
+            orderStatus: order.status,
+        });
         return;
     }
+
+    await logger.log('Tabby webhook capturing authorized payment', {
+        paymentProvider: 'tabby',
+        paymentId: payment.id,
+        orderId: order.id,
+        amount: payment.amount,
+    });
 
     const captureResponse = await fetch(`${TABBY_API_URL_V1}/payments/${payment.id}/captures`, {
         method: 'POST',
@@ -152,6 +194,12 @@ async function captureAuthorizedPayment(payment: TabbyPayment, order: Awaited<Re
         const responseBody = await readResponseBody(captureResponse);
         throw new Error(`Capture failed for Tabby payment ${payment.id}: ${JSON.stringify(responseBody)}`);
     }
+
+    await logger.log('Tabby webhook capture succeeded', {
+        paymentProvider: 'tabby',
+        paymentId: payment.id,
+        orderId: order.id,
+    });
 
     await persistPaidOrder(order.id, payment.id);
     const updatedOrder = await getOrderById(order.id);
@@ -206,6 +254,15 @@ async function reconcileRefundState(payment: TabbyPayment, order: Awaited<Return
         },
     );
 
+    await logger.log('Tabby webhook reconciled refund state', {
+        paymentProvider: 'tabby',
+        paymentId: payment.id,
+        orderId: order.id,
+        refundId: latestRefund.id,
+        refundAmount: parseTabbyAmount(latestRefund.amount) ?? order.totalAmount,
+        refundCurrency: payment.currency?.toLowerCase() ?? order.currency,
+    });
+
     const refundableStatuses: OrderStatus[] = [
         'cancellation_approved',
         'refund_approved',
@@ -233,11 +290,20 @@ async function POSTHandler(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
         }
 
+        await logger.log('Tabby webhook received payment notification', {
+            paymentProvider: 'tabby',
+            paymentId,
+        });
+
         const payment = await verifyTabbyPayment(paymentId, tabbySecretKey);
         const order = await findOrderForPayment(payment);
 
         if (!order) {
-            console.error(`[Tabby Webhook] No order found for payment ${paymentId}`);
+            await logger.error('Tabby webhook order lookup failed', {
+                paymentProvider: 'tabby',
+                paymentId,
+                paymentStatus: payment.status,
+            });
             return NextResponse.json({ error: 'Order not found' }, { status: 404 });
         }
 
@@ -249,7 +315,11 @@ async function POSTHandler(req: NextRequest) {
 
         return NextResponse.json({ received: true });
     } catch (error: any) {
-        console.error('Error handling Tabby webhook:', error);
+        await logger.error('Error handling Tabby webhook', {
+            paymentProvider: 'tabby',
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+        });
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
