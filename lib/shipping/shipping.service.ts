@@ -276,6 +276,39 @@ export async function createB2cShipment(order: Order, input: CreateShipmentInput
     return data as SmsaShipmentResponse;
 }
 
+export async function createC2bShipment(order: Order, input: CreateShipmentInput): Promise<SmsaShipmentResponse> {
+    if (!order.billingDetails) {
+        throw new AppError(400, 'BILLING_DETAILS_MISSING', { message: 'Order is missing billing details.' });
+    }
+
+    const { contents } = await validateOrderWeights(order, input.weightOverrides);
+    const totalParcels = order.items.reduce((sum, item) => sum + item.quantity, 0);
+
+    const payload = {
+        ContentDescription: contents,
+        DeclaredValue: order.totalAmount,
+        OrderNumber: order.id,
+        Parcels: totalParcels,
+        PickupAddress: await mapBillingToConsigneeAddress(order.billingDetails),
+        ReturnToAddress: getPlatformShipperAddress(),
+    };
+
+    const res = await fetch(`${getSmsaBaseUrl()}/api/c2b/new`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        console.error('SMSA Create Return Shipment Error:', res.status, text);
+        throw new AppError(res.status, 'SMSA_API_ERROR', { message: 'Failed to create SMSA return shipment', details: text });
+    }
+
+    const data = await res.json();
+    return data as SmsaShipmentResponse;
+}
+
 async function trackShipmentByAwb(awb: string): Promise<SmsaTrackingResponse> {
     const res = await fetch(`${getSmsaBaseUrl()}/api/track/single/${awb}`, {
         method: 'GET',

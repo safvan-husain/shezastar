@@ -122,6 +122,13 @@ export const AdminOrderListResponseSchema = z.object({
     }),
 });
 
+export const AdminOrderPendingActionsResponseSchema = z.object({
+    pendingShipment: z.array(OrderSchema),
+    cancellationRequests: z.array(OrderSchema),
+    returnRequests: z.array(OrderSchema),
+    total: z.number().int().min(0),
+});
+
 export type OrderItemDto = z.infer<typeof OrderItemSchema>;
 export type OrderDto = z.infer<typeof OrderSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof UpdateOrderStatusSchema>;
@@ -130,3 +137,4 @@ export type ReviewOrderCancellationInput = z.infer<typeof ReviewOrderCancellatio
 export type RequestOrderReturnInput = z.infer<typeof RequestOrderReturnSchema>;
 export type ReviewOrderReturnInput = z.infer<typeof ReviewOrderReturnSchema>;
 export type AdminOrderListResponse = z.infer<typeof AdminOrderListResponseSchema>;
+export type AdminOrderPendingActionsResponse = z.infer<typeof AdminOrderPendingActionsResponseSchema>;

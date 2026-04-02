@@ -3,6 +3,7 @@ import { buildCustomerActivityActor, createActivityLog } from '@/lib/activity/ac
 import type { ActivityActor, ActivityEntity } from '@/lib/activity/model/activity.model';
 import {
     listOrders,
+    listOrderPendingActions,
     getOrderById,
     updateOrderStatusById,
     requestOrderCancellationByCustomer,
@@ -57,6 +58,15 @@ export async function handleAdminListOrders(
 export async function handleAdminGetOrder(id: string) {
     try {
         const result = await getOrderById(id);
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleAdminListOrderPendingActions() {
+    try {
+        const result = await listOrderPendingActions();
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);

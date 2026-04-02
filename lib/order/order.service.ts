@@ -5,7 +5,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { Order, OrderDocument, toOrder, OrderStatus } from './model/order.model';
 import { buildPendingRefundFromOrder, queueRefundForApprovedCancellation, queueRefundForOrder } from '@/lib/refund/refund.service';
 import { sendAdminOrderEmail, sendCustomerOrderEmail } from '@/lib/email/email.service';
-import { createB2cShipment } from '@/lib/shipping/shipping.service';
+import { createB2cShipment, createC2bShipment } from '@/lib/shipping/shipping.service';
 import type { CreateShipmentInput } from '@/lib/shipping/shipping.schema';
 
 const COLLECTION = 'orders';
@@ -123,6 +123,19 @@ function isRefundImmediatelyFinalized(
 
 async function createShipmentDocument(order: Order, input: CreateShipmentInput = {}): Promise<NonNullable<OrderDocument['shipping']>> {
     const response = await createB2cShipment(order, input);
+    const awb = response.waybills?.[0]?.awb?.trim() || response.sawb.trim();
+
+    return {
+        provider: 'smsa',
+        awb,
+        createdAt: new Date(),
+        status: 'created',
+        labelPdf: response.waybills?.[0]?.awbFile,
+    };
+}
+
+async function createReturnShipmentDocument(order: Order, input: CreateShipmentInput = {}): Promise<NonNullable<OrderDocument['shipping']>> {
+    const response = await createC2bShipment(order, input);
     const awb = response.waybills?.[0]?.awb?.trim() || response.sawb.trim();
 
     return {
@@ -299,6 +312,49 @@ export async function listOrders(params: {
             total,
             totalPages,
         },
+    };
+}
+
+export async function listOrderPendingActions(): Promise<{
+    pendingShipment: Order[];
+    cancellationRequests: Order[];
+    returnRequests: Order[];
+    total: number;
+}> {
+    const collection = await getOrderCollection();
+
+    const [pendingShipmentDocs, cancellationRequestDocs, returnRequestDocs] = await Promise.all([
+        collection
+            .find({
+                status: 'paid',
+                'shipping.awb': { $exists: false },
+            })
+            .sort({ createdAt: -1 })
+            .toArray(),
+        collection
+            .find({
+                status: 'cancellation_requested',
+                'cancellation.requestedAt': { $exists: true },
+            })
+            .sort({ 'cancellation.requestedAt': -1, updatedAt: -1 })
+            .toArray(),
+        collection
+            .find({
+                status: 'return_requested',
+                'returnRequest.requestedAt': { $exists: true },
+            })
+            .sort({ 'returnRequest.requestedAt': -1, updatedAt: -1 })
+            .toArray(),
+    ]);
+
+    return {
+        pendingShipment: pendingShipmentDocs.map(toOrder),
+        cancellationRequests: cancellationRequestDocs.map(toOrder),
+        returnRequests: returnRequestDocs.map(toOrder),
+        total:
+            pendingShipmentDocs.length +
+            cancellationRequestDocs.length +
+            returnRequestDocs.length,
     };
 }
 
@@ -664,7 +720,7 @@ export async function reviewOrderReturnByAdmin(
 
     if (input.decision === 'approve') {
         returnRequest.approvedAt = now;
-        returnRequest.shipment = await createShipmentDocument(toOrder(doc));
+        returnRequest.shipment = await createReturnShipmentDocument(toOrder(doc));
         updatePayload.status = 'return_approved';
     } else {
         returnRequest.rejectedAt = now;

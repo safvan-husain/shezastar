@@ -31,6 +31,10 @@ const shippingMocks = vi.hoisted(() => ({
         sawb: 'SHIP-001',
         waybills: [{ awb: 'SHIP-001', awbFile: 'label-data' }],
     }),
+    createC2bShipment: vi.fn().mockResolvedValue({
+        sawb: 'RET-001',
+        waybills: [{ awb: 'RET-001', awbFile: 'return-label-data' }],
+    }),
 }));
 
 vi.mock('@/lib/email/email.service', () => ({
@@ -52,6 +56,7 @@ vi.mock('@/lib/shipping/shipping.service', async () => {
     return {
         ...actual,
         createB2cShipment: shippingMocks.createB2cShipment,
+        createC2bShipment: shippingMocks.createC2bShipment,
     };
 });
 
@@ -106,6 +111,7 @@ describe('Order service (admin helpers)', () => {
         refundMocks.queueRefundForApprovedCancellation.mockClear();
         refundMocks.queueRefundForOrder.mockClear();
         shippingMocks.createB2cShipment.mockClear();
+        shippingMocks.createC2bShipment.mockClear();
     });
 
     it('creates and retrieves an order by id', async () => {
@@ -285,7 +291,9 @@ describe('Order service (admin helpers)', () => {
         const reviewed = await reviewOrderReturnByAdmin(created.id, { decision: 'approve' });
 
         expect(reviewed.status).toBe('return_approved');
-        expect(reviewed.returnRequest?.shipment?.awb).toBe('SHIP-001');
+        expect(reviewed.returnRequest?.shipment?.awb).toBe('RET-001');
+        expect(shippingMocks.createC2bShipment).toHaveBeenCalled();
+        expect(shippingMocks.createB2cShipment).not.toHaveBeenCalled();
         expect(refundMocks.queueRefundForOrder).not.toHaveBeenCalled();
         expect(emailMocks.sendCustomerOrderEmail).toHaveBeenCalledWith(
             'return_approved',

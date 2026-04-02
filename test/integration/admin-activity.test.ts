@@ -28,6 +28,10 @@ vi.mock('@/lib/shipping/shipping.service', () => ({
         sawb: 'AWB-12345',
         waybills: [{ awbFile: 'label-pdf-base64' }],
     }),
+    createC2bShipment: vi.fn().mockResolvedValue({
+        sawb: 'RET-AWB-12345',
+        waybills: [{ awbFile: 'return-label-pdf-base64' }],
+    }),
     getShipmentLabel: vi.fn(),
     trackShipment: vi.fn(),
     getOrderMissingWeightProducts: vi.fn().mockResolvedValue([]),

@@ -35,7 +35,7 @@ export function Modal({
 
   const isStorefront = variant === "storefront";
   const backdropClassName = isStorefront
-    ? "absolute inset-0 bg-black/40"
+    ? "absolute inset-0 bg-white/75 backdrop-blur-[2px]"
     : "absolute inset-0 bg-[var(--bg-base)]/60";
   const panelClassName = isStorefront
     ? "relative bg-[var(--storefront-bg)] text-[var(--storefront-text-primary)] rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-[var(--storefront-border)]"

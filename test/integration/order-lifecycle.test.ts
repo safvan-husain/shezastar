@@ -26,6 +26,10 @@ const shippingMocks = vi.hoisted(() => ({
         sawb: 'SHIP-INT-1',
         waybills: [{ awb: 'SHIP-INT-1', awbFile: 'label-pdf-base64' }],
     }),
+    createC2bShipment: vi.fn().mockResolvedValue({
+        sawb: 'RET-INT-1',
+        waybills: [{ awb: 'RET-INT-1', awbFile: 'return-label-pdf-base64' }],
+    }),
 }));
 
 vi.mock('@/lib/auth/admin-auth', () => ({
@@ -51,6 +55,7 @@ vi.mock('@/lib/shipping/shipping.service', async () => {
     return {
         ...actual,
         createB2cShipment: shippingMocks.createB2cShipment,
+        createC2bShipment: shippingMocks.createC2bShipment,
     };
 });
 
@@ -107,6 +112,7 @@ describe('Order lifecycle routes', () => {
         refundMocks.queueRefundForApprovedCancellation.mockClear();
         refundMocks.queueRefundForOrder.mockClear();
         shippingMocks.createB2cShipment.mockClear();
+        shippingMocks.createC2bShipment.mockClear();
     });
 
     it('submits, reviews, and refunds a return request', async () => {
@@ -148,7 +154,9 @@ describe('Order lifecycle routes', () => {
 
         const updated = await getOrderById(created.id);
         expect(updated.status).toBe('refund_approved');
-        expect(updated.returnRequest?.shipment?.awb).toBe('SHIP-INT-1');
+        expect(updated.returnRequest?.shipment?.awb).toBe('RET-INT-1');
+        expect(shippingMocks.createC2bShipment).toHaveBeenCalled();
+        expect(shippingMocks.createB2cShipment).not.toHaveBeenCalled();
         expect(updated.refund?.externalRefundId).toBe('re_return_1');
     });
 

@@ -97,9 +97,10 @@ export function OrderCancellationRequestButton({
           setIsDialogOpen(false);
         }}
         title="Request order cancellation"
+        variant="storefront"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-[var(--storefront-text-secondary)]">
             Your request will be sent to admin for review. Please provide a
             cancellation note.
           </p>
@@ -107,7 +108,7 @@ export function OrderCancellationRequestButton({
           <div className="space-y-2">
             <label
               htmlFor={`cancel-note-${orderId}`}
-              className="block text-sm font-medium text-gray-900"
+              className="block text-sm font-medium text-[var(--storefront-text-primary)]"
             >
               Cancellation note <span className="text-red-600">*</span>
             </label>
@@ -116,7 +117,7 @@ export function OrderCancellationRequestButton({
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               placeholder="Tell us why you want to cancel this order"
-              className="w-full min-h-28 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+              className="min-h-28 w-full rounded-sm border border-[var(--storefront-border)] bg-[var(--storefront-bg)] px-3 py-2 text-sm text-[var(--storefront-text-primary)] placeholder:text-[var(--storefront-text-muted)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--storefront-text-primary)]"
               maxLength={1000}
               disabled={isSubmitting}
             />
@@ -127,7 +128,7 @@ export function OrderCancellationRequestButton({
               type="button"
               onClick={() => setIsDialogOpen(false)}
               disabled={isSubmitting}
-              className="inline-flex items-center rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 disabled:opacity-60"
+              className="inline-flex items-center rounded-sm border border-[var(--storefront-border)] bg-[var(--storefront-button-secondary)] px-3 py-2 text-sm font-medium text-[var(--storefront-text-primary)] hover:bg-[var(--storefront-button-secondary-hover)] disabled:opacity-60"
             >
               Keep order
             </button>
@@ -135,7 +136,7 @@ export function OrderCancellationRequestButton({
               type="button"
               onClick={requestCancellation}
               disabled={isSubmitting || reason.trim().length === 0}
-              className="inline-flex items-center rounded-sm bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+              className="inline-flex items-center rounded-sm bg-[var(--storefront-button-primary)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--storefront-button-primary-hover)] disabled:opacity-60"
             >
               {isSubmitting ? "Submitting..." : "Submit request"}
             </button>

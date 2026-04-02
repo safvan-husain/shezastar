@@ -20,6 +20,13 @@ interface OrdersListResponse {
     };
 }
 
+interface PendingActionsResponse {
+    pendingShipment: Order[];
+    cancellationRequests: Order[];
+    returnRequests: Order[];
+    total: number;
+}
+
 async function getOrders(page?: string, status?: string): Promise<{
     orders: Order[];
     pagination: OrdersListResponse['pagination'];
@@ -92,6 +99,53 @@ async function getOrders(page?: string, status?: string): Promise<{
     }
 }
 
+async function getPendingActions(): Promise<{
+    data: PendingActionsResponse | null;
+    error: ToastErrorPayload | null;
+}> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const url = `${baseUrl}/api/admin/orders/pending-actions`;
+
+    try {
+        const res = await fetch(url, { cache: 'no-store' });
+
+        if (!res.ok) {
+            let body: any = {};
+            try {
+                body = await res.json();
+            } catch {
+                body = { error: 'Failed to parse response body' };
+            }
+
+            return {
+                data: null,
+                error: {
+                    message: body.message || body.error || 'Failed to load pending actions',
+                    status: res.status,
+                    body,
+                    url: res.url,
+                    method: 'GET',
+                },
+            };
+        }
+
+        return {
+            data: (await res.json()) as PendingActionsResponse,
+            error: null,
+        };
+    } catch (error) {
+        return {
+            data: null,
+            error: {
+                message: error instanceof Error ? error.message : 'Failed to load pending actions',
+                body: error instanceof Error ? { stack: error.stack } : { error },
+                url,
+                method: 'GET',
+            },
+        };
+    }
+}
+
 function formatDate(iso: string) {
     try {
         const date = new Date(iso);
@@ -145,11 +199,55 @@ function getCustomerContact(order: Order) {
     return 'No contact info';
 }
 
+function getActionRequestedAt(order: Order, actionType: 'shipment' | 'cancellation' | 'return') {
+    if (actionType === 'shipment') {
+        return order.createdAt;
+    }
+
+    if (actionType === 'cancellation') {
+        return order.cancellation?.requestedAt || order.updatedAt;
+    }
+
+    return order.returnRequest?.requestedAt || order.updatedAt;
+}
+
+function getActionTitle(actionType: 'shipment' | 'cancellation' | 'return') {
+    if (actionType === 'shipment') {
+        return 'Ready for shipment';
+    }
+
+    if (actionType === 'cancellation') {
+        return 'Cancellation request';
+    }
+
+    return 'Return request';
+}
+
+function getActionDescription(actionType: 'shipment' | 'cancellation' | 'return', order: Order) {
+    if (actionType === 'shipment') {
+        return 'Paid order is waiting to be moved into shipment.';
+    }
+
+    if (actionType === 'cancellation') {
+        return order.cancellation?.requestReason?.trim() || 'Customer asked to cancel this order.';
+    }
+
+    return order.returnRequest?.requestReason?.trim() || 'Customer asked to return this order.';
+}
+
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     const { page = '1', status } = await searchParams;
-    const { orders, pagination, error } = await getOrders(page, status);
+    const [{ orders, pagination, error }, pendingActionsResult] = await Promise.all([
+        getOrders(page, status),
+        status ? Promise.resolve({ data: null, error: null }) : getPendingActions(),
+    ]);
+
+    const pendingActions = pendingActionsResult.data;
+    const pendingActionsError = pendingActionsResult.error;
+    const shouldShowPendingActions = !status;
 
     const hasOrders = orders.length > 0;
+    const hasPendingActions = Boolean(pendingActions && pendingActions.total > 0);
 
     const canGoPrev = pagination.page > 1;
     const canGoNext = pagination.totalPages > 0 && pagination.page < pagination.totalPages;
@@ -165,6 +263,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     return (
         <div className="min-h-screen bg-[var(--background)]">
             {error && <ErrorToastHandler error={error} />}
+            {pendingActionsError && <ErrorToastHandler error={pendingActionsError} />}
             <div className="container mx-auto px-4 py-8 max-w-7xl">
                 {/* Header */}
                 <div className="mb-10">
@@ -181,6 +280,124 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     </div>
                     <div className="h-1 w-24 bg-gradient-to-r from-[var(--primary)] to-[var(--ring)] rounded-full"></div>
                 </div>
+
+                {shouldShowPendingActions && (
+                    <Card className="mb-8 overflow-hidden">
+                        <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-6 py-4">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h2 className="text-xl font-semibold text-[var(--foreground)]">
+                                        Pending actions
+                                    </h2>
+                                    <p className="text-sm text-[var(--muted-foreground)]">
+                                        Orders that need an admin decision or shipment action.
+                                    </p>
+                                </div>
+                                <span className="inline-flex w-fit items-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
+                                    {pendingActions?.total ?? 0} open
+                                </span>
+                            </div>
+                        </div>
+
+                        {hasPendingActions ? (
+                            <div className="divide-y divide-[var(--border-subtle)]">
+                                {([
+                                    {
+                                        key: 'shipment',
+                                        label: 'Paid waiting for shipment',
+                                        orders: pendingActions?.pendingShipment ?? [],
+                                    },
+                                    {
+                                        key: 'cancellation',
+                                        label: 'Cancellation requests',
+                                        orders: pendingActions?.cancellationRequests ?? [],
+                                    },
+                                    {
+                                        key: 'return',
+                                        label: 'Return requests',
+                                        orders: pendingActions?.returnRequests ?? [],
+                                    },
+                                ] as const).map((group) => (
+                                    <section key={group.key} className="px-6 py-5">
+                                        <div className="mb-4 flex items-center justify-between gap-3">
+                                            <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+                                                {group.label}
+                                            </h3>
+                                            <span className="text-xs text-[var(--text-muted)]">
+                                                {group.orders.length}
+                                            </span>
+                                        </div>
+
+                                        {group.orders.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {group.orders.map((order) => {
+                                                    const actionType = group.key;
+                                                    const customerName = getCustomerName(order);
+                                                    const customerContact = getCustomerContact(order);
+
+                                                    return (
+                                                        <div
+                                                            key={`${actionType}-${order.id}`}
+                                                            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4"
+                                                        >
+                                                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                                                <div className="space-y-2">
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <p className="text-sm font-semibold text-[var(--text-primary)]">
+                                                                            {customerName}
+                                                                        </p>
+                                                                        <span className="inline-flex items-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)]">
+                                                                            {getActionTitle(actionType)}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-sm text-[var(--text-secondary)]">
+                                                                        {customerContact}
+                                                                    </p>
+                                                                    <p className="text-sm text-[var(--text-primary)]">
+                                                                        {getActionDescription(actionType, order)}
+                                                                    </p>
+                                                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
+                                                                        <span>Order #{order.id.slice(0, 8)}</span>
+                                                                        <span>{order.items.length} items</span>
+                                                                        <span>
+                                                                            {order.totalAmount.toFixed(2)} {order.currency.toUpperCase()}
+                                                                        </span>
+                                                                        <span>
+                                                                            Requested {formatDate(getActionRequestedAt(order, actionType))}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                                                                    {actionType === 'shipment' ? (
+                                                                        <ProceedToShippingButton order={order} />
+                                                                    ) : null}
+                                                                    <Link href={`/manage/orders/${order.id}`}>
+                                                                        <Button size="sm" variant="ghost">
+                                                                            {actionType === 'shipment' ? 'Open order' : 'Review'}
+                                                                        </Button>
+                                                                    </Link>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-[var(--muted-foreground)]">
+                                                No orders in this queue.
+                                            </p>
+                                        )}
+                                    </section>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="px-6 py-8 text-sm text-[var(--muted-foreground)]">
+                                No pending actions right now.
+                            </div>
+                        )}
+                    </Card>
+                )}
 
                 {/* Content */}
                 {error ? (
@@ -304,14 +521,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                                         {order.totalAmount.toFixed(2)} {order.currency.toUpperCase()}
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
-                                                        <div className="flex items-center justify-end gap-2">
-                                                            <ProceedToShippingButton order={order} />
-                                                            <Link href={`/manage/orders/${order.id}`}>
-                                                                <Button size="sm" variant="ghost">
-                                                                    View
-                                                                </Button>
-                                                            </Link>
-                                                        </div>
+                                                        <Link href={`/manage/orders/${order.id}`}>
+                                                            <Button size="sm" variant="ghost">
+                                                                View
+                                                            </Button>
+                                                        </Link>
                                                     </td>
                                                 </tr>
                                             );
@@ -375,14 +589,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                             <p className="text-sm font-semibold text-[var(--text-primary)]">
                                                 {order.totalAmount.toFixed(2)} {order.currency.toUpperCase()}
                                             </p>
-                                            <div className="flex items-center gap-2">
-                                                <ProceedToShippingButton order={order} />
-                                                <Link href={`/manage/orders/${order.id}`}>
-                                                    <Button size="sm" variant="ghost">
-                                                        View
-                                                    </Button>
-                                                </Link>
-                                            </div>
+                                            <Link href={`/manage/orders/${order.id}`}>
+                                                <Button size="sm" variant="ghost">
+                                                    View
+                                                </Button>
+                                            </Link>
                                         </div>
                                     </Card>
                                 );
