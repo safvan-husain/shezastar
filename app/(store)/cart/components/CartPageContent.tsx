@@ -509,19 +509,20 @@ export function CartPageContent({
                             </>
                           )}
 
-                          <span className="min-w-0 break-words text-[var(--storefront-text-muted)]">
-                            Shipping (estimated):
-                          </span>
-                          <span className="text-right text-[var(--storefront-text-secondary)]">
-                            {formatPrice(lineShippingShareAed)}
-                          </span>
-
-                          <span className="min-w-0 break-words text-[var(--storefront-text-muted)]">
-                            VAT ({vatRatePercent}%){vatIncludedInPrice ? " included" : ""}:
-                          </span>
-                          <span className="text-right text-[var(--storefront-text-secondary)]">
-                            {formatPrice(lineVatAmountAed)}
-                          </span>
+                          {selectedCountry?.code === 'UAE' ? (
+                            <span className="col-span-2 text-[var(--storefront-text-muted)] italic">
+                              VAT is included
+                            </span>
+                          ) : (
+                            <>
+                              <span className="min-w-0 break-words text-[var(--storefront-text-muted)]">
+                                Shipping and taxes:
+                              </span>
+                              <span className="text-right text-[var(--storefront-text-secondary)]">
+                                {formatPrice(lineShippingShareAed + lineVatAmountAed)}
+                              </span>
+                            </>
+                          )}
 
                           <div className="col-span-2 border-t border-[var(--storefront-border-light)] mt-0.5 pt-0.5 flex justify-between font-bold">
                             <span className="text-[var(--storefront-text-primary)]">
@@ -698,7 +699,7 @@ export function CartPageContent({
           )}
 
           <p className="text-xs text-[var(--storefront-text-muted)]">
-            Taxes and shipping calculated at checkout.
+            {selectedCountry?.code === 'UAE' ? "VAT included" : "Taxes and shipping calculated at checkout."}
           </p>
           {hasStockIssues && (
             <p className="text-xs text-[var(--storefront-sale-text)] text-right">

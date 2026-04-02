@@ -419,18 +419,16 @@ export function CheckoutPageContent({
                             <span>Subtotal</span>
                             <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.subtotal) : formatPrice(totalOrderValue)}</span>
                         </div>
-                        <div className="flex justify-between">
-                            <span>Shipping</span>
-                            <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.shipping) : formatPrice(0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>
-                                VAT
-                                {checkoutPreview ? ` (${checkoutPreview.vatRatePercent}%)` : ''}
-                                {checkoutPreview?.vatIncludedInPrice ? ' (included)' : ''}
-                            </span>
-                            <span>{checkoutPreview ? formatConvertedAmount(checkoutPreview.vat) : formatPrice(0)}</span>
-                        </div>
+                        {selectedCountryCode === 'UAE' ? (
+                            <div className="flex justify-between text-[var(--storefront-text-muted)] italic">
+                                <span>VAT is included</span>
+                            </div>
+                        ) : (
+                            <div className="flex justify-between">
+                                <span>Shipping and taxes</span>
+                                <span>{checkoutPreview ? formatConvertedAmount((checkoutPreview.shipping ?? 0) + (checkoutPreview.vat ?? 0)) : formatPrice(0)}</span>
+                            </div>
+                        )}
                     </div>
 
                     {countryActionMessage && (
