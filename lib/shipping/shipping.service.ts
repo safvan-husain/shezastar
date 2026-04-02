@@ -281,7 +281,7 @@ export async function createC2bShipment(order: Order, input: CreateShipmentInput
         throw new AppError(400, 'BILLING_DETAILS_MISSING', { message: 'Order is missing billing details.' });
     }
 
-    const { contents } = await validateOrderWeights(order, input.weightOverrides);
+    const { totalWeight, contents } = await validateOrderWeights(order, input.weightOverrides);
     const totalParcels = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
     const payload = {
@@ -291,6 +291,10 @@ export async function createC2bShipment(order: Order, input: CreateShipmentInput
         Parcels: totalParcels,
         PickupAddress: await mapBillingToConsigneeAddress(order.billingDetails),
         ReturnToAddress: getPlatformShipperAddress(),
+        ShipDate: new Date().toISOString(),
+        ShipmentCurrency: order.currency.toUpperCase(),
+        Weight: totalWeight,
+        WeightUnit: 'KG',
     };
 
     const res = await fetch(`${getSmsaBaseUrl()}/api/c2b/new`, {

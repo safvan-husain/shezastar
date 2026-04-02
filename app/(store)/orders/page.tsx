@@ -30,7 +30,7 @@ export default async function OrdersPage() {
     const session = await getOrCreateStorefrontSession();
     const orders = await getOrdersBySessionId(session.sessionId);
 
-    return (
+                        return (
         <div className="bg-white pt-20 pb-12 mt-22">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-8">My Orders</h1>
@@ -171,10 +171,16 @@ export default async function OrdersPage() {
                                             <OrderCancellationRequestButton orderId={order.id} />
                                         )}
 
-                                        {order.shipping?.awb && !hasReturnRequest && !['return_approved', 'refund_approved', 'refunded'].includes(order.status) && order.status !== 'cancellation_requested' && order.status !== 'cancellation_approved' && order.status !== 'cancelled' && (
+                                        {order.status === 'DL' && order.shipping?.awb && !hasReturnRequest && !['return_approved', 'refund_approved', 'refunded'].includes(order.status) && order.status !== 'cancellation_requested' && order.status !== 'cancellation_approved' && order.status !== 'cancelled' && (
                                             <div className="mt-3">
                                                 <OrderReturnRequestButton orderId={order.id} />
                                             </div>
+                                        )}
+
+                                        {order.shipping?.awb && order.status !== 'DL' && !hasReturnRequest && !['return_approved', 'refund_approved', 'refunded', 'cancellation_requested', 'cancellation_approved', 'cancelled'].includes(order.status) && (
+                                            <p className="mt-3 text-xs text-[var(--storefront-text-secondary)]">
+                                                Return requests become available after delivery.
+                                            </p>
                                         )}
 
                                         {order.status === 'cancellation_requested' && (

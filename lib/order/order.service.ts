@@ -81,19 +81,7 @@ function canRequestReturn(doc: OrderDocument): boolean {
         return false;
     }
 
-    return ![
-        'pending',
-        'paid',
-        'cancelled',
-        'cancellation_requested',
-        'cancellation_approved',
-        'return_requested',
-        'return_approved',
-        'refund_approved',
-        'refunded',
-        'failed',
-        'refund_failed',
-    ].includes(doc.status);
+    return doc.status === 'DL';
 }
 
 function applyQueuedRefundToPendingRefund(
@@ -500,15 +488,19 @@ export async function requestOrderCancellationByCustomer(
         throw new AppError(409, 'CANCELLATION_REQUEST_ALREADY_SUBMITTED', { id });
     }
 
-    if (doc.status !== 'paid') {
-        throw new AppError(409, 'ORDER_NOT_CANCELLABLE', { id, status: doc.status });
-    }
     if (doc.shipping?.awb) {
         throw new AppError(409, 'ORDER_NOT_CANCELLABLE', {
             id,
             status: doc.status,
-            message: 'Order already has an active shipment.',
+            message: 'Cancellation is no longer available after shipment creation. You can request a return after delivery if the order status allows it.',
             awb: doc.shipping.awb,
+        });
+    }
+    if (doc.status !== 'paid') {
+        throw new AppError(409, 'ORDER_NOT_CANCELLABLE', {
+            id,
+            status: doc.status,
+            message: 'Cancellation is only available before shipment is created.',
         });
     }
 
@@ -564,7 +556,11 @@ export async function requestOrderReturnByCustomer(
     }
 
     if (!canRequestReturn(doc)) {
-        throw new AppError(409, 'ORDER_NOT_RETURNABLE', { id, status: doc.status });
+        throw new AppError(409, 'ORDER_NOT_RETURNABLE', {
+            id,
+            status: doc.status,
+            message: 'Return requests are only available after the order is delivered.',
+        });
     }
 
     const now = new Date();

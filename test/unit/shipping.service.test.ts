@@ -154,6 +154,10 @@ describe('shipping.service country normalization', () => {
 
         const payload = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
         expect(payload.OrderNumber).toBe('order-1');
+        expect(payload.ShipmentCurrency).toBe('USD');
+        expect(payload.Weight).toBe(1);
+        expect(payload.WeightUnit).toBe('KG');
+        expect(payload.ShipDate).toEqual(expect.any(String));
         expect(payload.PickupAddress).toEqual(expect.objectContaining({
             City: 'Dubai',
             Country: 'AE',

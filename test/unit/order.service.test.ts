@@ -261,14 +261,63 @@ describe('Order service (admin helpers)', () => {
             },
         });
 
+        await expect(
+            requestOrderReturnByCustomer(
+                created.id,
+                { sessionId: created.sessionId },
+                'Returning after delivery attempt',
+            )
+        ).rejects.toMatchObject({
+            code: 'ORDER_NOT_RETURNABLE',
+        });
+    });
+
+    it('blocks cancellation once a shipment already exists', async () => {
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            status: 'requested_shipment',
+            shipping: {
+                provider: 'smsa',
+                awb: 'SHIP-EXISTS-1',
+                createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                status: 'created',
+            },
+        });
+
+        await expect(
+            requestOrderCancellationByCustomer(
+                created.id,
+                { sessionId: created.sessionId },
+                'Need to cancel after shipment creation',
+            )
+        ).rejects.toMatchObject({
+            code: 'ORDER_NOT_CANCELLABLE',
+            details: expect.objectContaining({
+                awb: 'SHIP-EXISTS-1',
+            }),
+        });
+    });
+
+    it('allows return request only after delivery', async () => {
+        const created = await createOrder({
+            ...BASE_ORDER_DATA,
+            status: 'DL',
+            shipping: {
+                provider: 'smsa',
+                awb: 'DELIVERED-1',
+                createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                status: 'Delivered',
+            },
+        });
+
         const requested = await requestOrderReturnByCustomer(
             created.id,
             { sessionId: created.sessionId },
-            'Returning after delivery attempt',
+            'Returning after delivery',
         );
 
         expect(requested.status).toBe('return_requested');
-        expect(requested.returnRequest?.requestedFromStatus).toBe('OD');
+        expect(requested.returnRequest?.requestedFromStatus).toBe('DL');
         expect(emailMocks.sendAdminOrderEmail).toHaveBeenCalledWith(
             'admin_return_requested',
             expect.objectContaining({ id: created.id, status: 'return_requested' }),
