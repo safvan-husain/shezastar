@@ -171,7 +171,7 @@ export default async function OrdersPage() {
                                             <OrderCancellationRequestButton orderId={order.id} />
                                         )}
 
-                                        {order.status === 'DL' && order.shipping?.awb && !hasReturnRequest && !['return_approved', 'refund_approved', 'refunded'].includes(order.status) && order.status !== 'cancellation_requested' && order.status !== 'cancellation_approved' && order.status !== 'cancelled' && (
+                                        {order.status === 'DL' && order.shipping?.awb && !hasReturnRequest && (
                                             <div className="mt-3">
                                                 <OrderReturnRequestButton orderId={order.id} />
                                             </div>
