@@ -352,7 +352,7 @@ export default async function ManageDashboardPage() {
                             <div>
                                 <h2 className="text-xl font-semibold">Orders by Status</h2>
                                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                                    Circle breakdown of the live order pipeline.
+                                    Status breakdown of the live order pipeline.
                                 </p>
                             </div>
                             <Link href="/manage/orders">
@@ -360,40 +360,35 @@ export default async function ManageDashboardPage() {
                             </Link>
                         </div>
 
-                        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)] lg:items-center">
-                            <div className="relative mx-auto flex aspect-square w-full max-w-[220px] items-center justify-center">
-                                <svg viewBox="0 0 220 220" className="-rotate-90 overflow-visible">
-                                    <circle
-                                        cx="110"
-                                        cy="110"
-                                        r="42"
-                                        fill="none"
-                                        stroke="var(--border-subtle)"
-                                        strokeWidth="28"
-                                    />
+                        <div className="mt-8 space-y-8">
+                            <div className="space-y-3">
+                                <div className="flex h-3 w-full overflow-hidden rounded-full bg-[var(--bg-subtle)] shadow-inner">
                                     {donutSegments.map((segment) => (
-                                        <a key={segment.status} href={segment.href}>
-                                            <title>{`${formatStatus(segment.status)}: ${segment.count}`}</title>
-                                            <circle
-                                                cx="110"
-                                                cy="110"
-                                                r="42"
-                                                fill="none"
-                                                style={{ stroke: segment.color }}
-                                                strokeWidth="28"
-                                                strokeLinecap="butt"
-                                                strokeDasharray={segment.strokeDasharray}
-                                                strokeDashoffset={segment.strokeDashoffset}
-                                            />
-                                        </a>
+                                        <Link
+                                            key={segment.status}
+                                            href={segment.href}
+                                            className="h-full transition-all hover:opacity-80"
+                                            style={{
+                                                width: `${totalOrders > 0 ? (segment.count / totalOrders) * 100 : 0}%`,
+                                                backgroundColor: segment.color,
+                                            }}
+                                            title={`${formatStatus(segment.status)}: ${segment.count}`}
+                                        />
                                     ))}
-                                    <circle cx="110" cy="110" r="26" fill="var(--bg-elevated)" />
-                                </svg>
+                                </div>
+                                <div className="flex items-center justify-between px-0.5">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                        Pipeline Distribution
+                                    </p>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                        {totalOrders} Total Units
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="min-w-0 space-y-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
                                 {ordersByStatus.length === 0 ? (
-                                    <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--border-subtle)] p-4 text-sm text-[var(--text-secondary)]">
+                                    <div className="col-span-full rounded-[var(--radius-md)] border border-dashed border-[var(--border-subtle)] p-4 text-center text-sm text-[var(--text-secondary)]">
                                         No order data yet.
                                     </div>
                                 ) : (
@@ -401,18 +396,20 @@ export default async function ManageDashboardPage() {
                                         <Link
                                             key={item.status}
                                             href={`/manage/orders?status=${encodeURIComponent(item.status)}`}
-                                            className="flex items-center justify-between gap-4 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 transition-colors hover:border-[var(--border-strong)]"
+                                            className="group flex items-center justify-between gap-4 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 transition-all hover:border-[var(--border-strong)] hover:shadow-sm"
                                         >
                                             <div className="flex min-w-0 items-center gap-3">
                                                 <span
-                                                    className="h-3 w-3 shrink-0 rounded-full"
+                                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
                                                     style={{ backgroundColor: item.color }}
                                                 />
-                                                <span className="truncate font-medium text-[var(--text-primary)]">
+                                                <span className="truncate text-sm font-semibold text-[var(--text-primary)]">
                                                     {formatStatus(item.status)}
                                                 </span>
                                             </div>
-                                            <span className="shrink-0 text-sm text-[var(--text-secondary)]">{item.count}</span>
+                                            <span className="shrink-0 font-mono text-xs font-bold text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
+                                                {item.count}
+                                            </span>
                                         </Link>
                                     ))
                                 )}
