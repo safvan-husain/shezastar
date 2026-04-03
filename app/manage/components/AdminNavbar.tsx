@@ -20,7 +20,7 @@ type NavLinkItem = {
 
 type NavGroupItem = {
     type: 'group';
-    id: 'products' | 'settings';
+    id: 'products' | 'orders' | 'settings';
     label: string;
     shortLabel: string;
     href: string;
@@ -145,7 +145,18 @@ const NAV_ITEMS: NavItem[] = [
     { type: 'link', href: '/manage/categories', label: 'Categories', shortLabel: 'Cats', Icon: CategoryIcon },
     { type: 'link', href: '/manage/brands', label: 'Brands', shortLabel: 'Brand', Icon: BrandIcon },
     { type: 'link', href: '/manage/variant-types', label: 'Variant Types', shortLabel: 'Vars', Icon: VariantIcon },
-    { type: 'link', href: '/manage/orders', label: 'Orders', shortLabel: 'Orders', Icon: OrdersIcon },
+    {
+        type: 'group',
+        id: 'orders',
+        href: '/manage/orders',
+        label: 'Orders',
+        shortLabel: 'Orders',
+        Icon: OrdersIcon,
+        children: [
+            { href: '/manage/orders', label: 'All orders' },
+            { href: '/manage/orders/pending-actions', label: 'Pending actions' },
+        ],
+    },
     {
         type: 'group',
         id: 'settings',
@@ -172,7 +183,7 @@ type NavPanelProps = {
     onBackup: () => Promise<void>;
 };
 
-type OpenGroups = Record<'products' | 'settings', boolean>;
+type OpenGroups = Record<'products' | 'orders' | 'settings', boolean>;
 
 function isPathActive(pathname: string | null, href: string) {
     return pathname === href || pathname?.startsWith(`${href}/`) || false;
@@ -196,6 +207,7 @@ function RailContent({
 }: NavPanelProps) {
     const [openGroups, setOpenGroups] = useState<OpenGroups>({
         products: false,
+        orders: false,
         settings: false,
     });
 
