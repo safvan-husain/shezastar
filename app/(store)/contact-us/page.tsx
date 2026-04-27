@@ -162,13 +162,13 @@ export default function ContactUsPage() {
               </DetailRow>
               <DetailRow label="Mobile">
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
-                  <span className="text-[var(--storefront-text-muted)]">/</span>
                   <a
                     href="tel:+971504311624"
                     className="underline underline-offset-4 hover:opacity-80"
                   >
                     {WHATSAPP_DISPLAY}
                   </a>
+                  <span className="text-[var(--storefront-text-muted)]">/</span>
                   <a
                     href="tel:+971504311624"
                     className="underline underline-offset-4 hover:opacity-80"
