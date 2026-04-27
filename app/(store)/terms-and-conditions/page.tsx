@@ -24,8 +24,8 @@ export default function TermsAndConditionsPage() {
           >
             www.shezastar.com
           </Link>{" "}
-          and the services, information, and content that may be offered on
-          such site, Affiliate Program(s) and corporate accounts; the ability to
+          and the services, information, and content that may be offered on such
+          site, Affiliate Program(s) and corporate accounts; the ability to
           order products and receive newsletters and promotional emails; and any
           related links. Please read the following Terms and Conditions
           carefully.
@@ -304,15 +304,15 @@ export default function TermsAndConditionsPage() {
             or otherwise interfere with any other party&#39;s full use and
             enjoyment of www.shezastar.com website. You may not attempt to gain
             unauthorized access to www.shezastar.com, any related website, other
-            accounts, computer systems or networks connected to www.shezastar.com,
-            through hacking, password mining or any other means. You may not
-            obtain or attempt to obtain any materials or information through any
-            means not intentionally made available to all registered users
-            through www.shezastar.com. All membership benefits are subject to
-            availability. Your access to www.shezastar.com may be terminated
-            immediately, without notice and without a refund of any unused
-            portion of your account, if you fail to comply with any provisions
-            of these terms and conditions.
+            accounts, computer systems or networks connected to
+            www.shezastar.com, through hacking, password mining or any other
+            means. You may not obtain or attempt to obtain any materials or
+            information through any means not intentionally made available to
+            all registered users through www.shezastar.com. All membership
+            benefits are subject to availability. Your access to
+            www.shezastar.com may be terminated immediately, without notice and
+            without a refund of any unused portion of your account, if you fail
+            to comply with any provisions of these terms and conditions.
           </p>
           <p>
             www.shezastar.com reserves the right to terminate your access to
@@ -361,8 +361,8 @@ export default function TermsAndConditionsPage() {
           <p>
             If you are shipping your order to another person, be sure to contact
             that person to expect the shipment. Better yet, consider using our
-            gift wrap option with a personalized message to let them know it&#39;s
-            from you.
+            gift wrap option with a personalized message to let them know
+            it&#39;s from you.
           </p>
           <p>
             www.shezastar.com, in conjunction with our shipping and delivery
@@ -379,10 +379,22 @@ export default function TermsAndConditionsPage() {
           </p>
           <p>The www.shezastar.com is not responsible for:</p>
           <ul className="list-disc pl-6 space-y-2">
-            <li>Products and items delivered to incorrect addresses supplied by the customer</li>
-            <li>Decreased product quality due to an incorrect delivery address supplied by the customer</li>
-            <li>Decreased product quality due to a re-route requested by the customer</li>
-            <li>Product quality problems caused by improper handling by the package recipient</li>
+            <li>
+              Products and items delivered to incorrect addresses supplied by
+              the customer
+            </li>
+            <li>
+              Decreased product quality due to an incorrect delivery address
+              supplied by the customer
+            </li>
+            <li>
+              Decreased product quality due to a re-route requested by the
+              customer
+            </li>
+            <li>
+              Product quality problems caused by improper handling by the
+              package recipient
+            </li>
             <li>
               Unsuccessful deliveries arising from the recipient not being
               present at time of delivery, at the address supplied by the
@@ -496,8 +508,8 @@ export default function TermsAndConditionsPage() {
             Returns
           </h3>
           <p>
-            We ask that all returned products be in like-new condition, with
-            all of the original packaging and materials. We are unable to refund
+            We ask that all returned products be in like-new condition, with all
+            of the original packaging and materials. We are unable to refund
             gift wrap charges and cannot accept them as a return. Please read
             Return Policy. These terms are subject to change without notice.
           </p>
@@ -518,12 +530,12 @@ export default function TermsAndConditionsPage() {
             Indemnity
           </h2>
           <p>
-            By using our site, you agree to indemnify and hold www.shezastar.com,
-            its subsidiaries, affiliates, officers, agents and other partners
-            and employees, harmless from any loss, liability, claim or demand,
-            including reasonable attorneys&#39; fees, made by any third party
-            due to or arising out of your use of such Site, including providing
-            a link to another site or any User Content.
+            By using our site, you agree to indemnify and hold
+            www.shezastar.com, its subsidiaries, affiliates, officers, agents
+            and other partners and employees, harmless from any loss, liability,
+            claim or demand, including reasonable attorneys&#39; fees, made by
+            any third party due to or arising out of your use of such Site,
+            including providing a link to another site or any User Content.
           </p>
         </section>
 
@@ -572,7 +584,7 @@ export default function TermsAndConditionsPage() {
           </h2>
           <p>
             If you have any comments or questions, please do not hesitate to
-            contact us at +971 502122464 or sending an email through the
+            contact us at +971 504311624 or sending an email through the
             following link:{" "}
             <a
               href="mailto:info@shezastar.com"
@@ -595,9 +607,9 @@ export default function TermsAndConditionsPage() {
             Payment (Additional Details)
           </h2>
           <p>
-            Visa and Master card witch in AED (United Arab Dirhams) &amp; USD
-            ( United States Dollar ) will be accepted for payment. Cardholder
-            must retain a copy of transaction records and Merchant policies and
+            Visa and Master card witch in AED (United Arab Dirhams) &amp; USD (
+            United States Dollar ) will be accepted for payment. Cardholder must
+            retain a copy of transaction records and Merchant policies and
             rules.
           </p>
         </section>
@@ -607,14 +619,14 @@ export default function TermsAndConditionsPage() {
             Restrictions
           </h2>
           <p>
-            We will not trade with or provide any services to OFAC and Sanctioned
-            countries. Customer using the website who are minor /under the age
-            of 18 shall not register as a user of the website and shall not
-            transact on or use the website. Any dispute or claim arising out of
-            or in connection with this website shall be governed and construed
-            in accordance with the laws of UAE. United Arab of Emirates is our
-            country of domicile and stipulate that the governing law is the
-            local law.
+            We will not trade with or provide any services to OFAC and
+            Sanctioned countries. Customer using the website who are minor
+            /under the age of 18 shall not register as a user of the website and
+            shall not transact on or use the website. Any dispute or claim
+            arising out of or in connection with this website shall be governed
+            and construed in accordance with the laws of UAE. United Arab of
+            Emirates is our country of domicile and stipulate that the governing
+            law is the local law.
           </p>
         </section>
 

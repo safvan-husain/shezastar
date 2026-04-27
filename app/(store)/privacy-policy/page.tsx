@@ -13,7 +13,10 @@ export default function PrivacyPolicyPage() {
       </h1>
 
       <div className="mt-6 space-y-6 text-[var(--storefront-text-secondary)] leading-relaxed">
-        <p>Your use of any of our sites is subject to the Conditions of Use for that site.</p>
+        <p>
+          Your use of any of our sites is subject to the Conditions of Use for
+          that site.
+        </p>
         <p>This Policy applies to:</p>
         <ul className="list-disc pl-6 space-y-2">
           <li>
@@ -49,8 +52,14 @@ export default function PrivacyPolicyPage() {
           </ul>
           <p>In certain situations, we may also collect things like:</p>
           <ul className="list-disc pl-6 space-y-2">
-            <li>ID card number (for example, if you return a product or apply for credit)</li>
-            <li>Location information (such as when you ask us to tell you about nearby stores)</li>
+            <li>
+              ID card number (for example, if you return a product or apply for
+              credit)
+            </li>
+            <li>
+              Location information (such as when you ask us to tell you about
+              nearby stores)
+            </li>
             <li>Your responses to surveys</li>
           </ul>
           <h3 className="text-xl font-semibold text-[var(--storefront-text-primary)]">
@@ -83,16 +92,16 @@ export default function PrivacyPolicyPage() {
           </p>
           <p>
             Shezastar.com use technologies such as cookies or similar
-            technologies to analyze trends, administer the website, track users&#39;
-            movements around the website, and to gather demographic information
-            about our user base. Users can control the use of cookies at the
-            individual browser level.
+            technologies to analyze trends, administer the website, track
+            users&#39; movements around the website, and to gather demographic
+            information about our user base. Users can control the use of
+            cookies at the individual browser level.
           </p>
           <p>
             We may permit third party service providers to collect and process
             some information from us. We may share personal information with
-            those providers and may have similar arrangements with interest-based
-            advertisers.
+            those providers and may have similar arrangements with
+            interest-based advertisers.
           </p>
           <h3 className="text-xl font-semibold text-[var(--storefront-text-primary)]">
             Location information
@@ -117,7 +126,10 @@ export default function PrivacyPolicyPage() {
               experience (for example, based on your purchase history or your
               location)
             </li>
-            <li>Fulfilling orders and requests for products, services, or information</li>
+            <li>
+              Fulfilling orders and requests for products, services, or
+              information
+            </li>
             <li>Processing refunds, returns, and exchanges</li>
             <li>Tracking and confirming online orders</li>
             <li>Delivering and installing products</li>
@@ -156,7 +168,10 @@ export default function PrivacyPolicyPage() {
             We may combine or share information among current or future
             Shezastar.com companies, including affiliates and subsidiaries.
           </p>
-          <p>We may share your information with third parties to perform services on our behalf such as:</p>
+          <p>
+            We may share your information with third parties to perform services
+            on our behalf such as:
+          </p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Fulfilling orders and delivering packages</li>
             <li>Scheduling and performing installations</li>
@@ -177,9 +192,9 @@ export default function PrivacyPolicyPage() {
           </p>
           <p>
             We may share personal information in the event of a corporate sale,
-            merger, acquisition, dissolution, or similar event. If such an
-            event takes place, we&#39;ll notify you through email (if we have
-            your email address) and/or a prominent notice on our applicable
+            merger, acquisition, dissolution, or similar event. If such an event
+            takes place, we&#39;ll notify you through email (if we have your
+            email address) and/or a prominent notice on our applicable
             website(s) of any change in ownership, as well as any choices you
             may have regarding your personal information.
           </p>
@@ -207,7 +222,10 @@ export default function PrivacyPolicyPage() {
               of personal information under our control and appropriately limit
               access to it.
             </li>
-            <li>Shezastar.com use encryption technology to protect your personal information.</li>
+            <li>
+              Shezastar.com use encryption technology to protect your personal
+              information.
+            </li>
           </ul>
           <p>
             We are committed to protecting your information, but you can do your
@@ -224,7 +242,10 @@ export default function PrivacyPolicyPage() {
               information will NOT be stored, sold, shared, rented or leased to
               any third parties.
             </li>
-            <li>Merchant will not pass any debit/credit card details to third parties.</li>
+            <li>
+              Merchant will not pass any debit/credit card details to third
+              parties.
+            </li>
             <li>
               Merchant takes appropriate steps to ensure data privacy and
               security including through various hardware and software
@@ -233,11 +254,11 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               The merchant is not responsible for the privacy policies of
-              websites to which it links. If you provide any information to
-              such third parties different rules regarding the collection and
-              use of your personal information may apply. You should contact
-              these entities directly if you have any questions about their use
-              of the information that they collect.
+              websites to which it links. If you provide any information to such
+              third parties different rules regarding the collection and use of
+              your personal information may apply. You should contact these
+              entities directly if you have any questions about their use of the
+              information that they collect.
             </li>
             <li>
               The Website Policies and Terms &amp; Conditions may be changed or
@@ -255,7 +276,10 @@ export default function PrivacyPolicyPage() {
           </h2>
           <p>You may at any time:</p>
           <ul className="list-disc pl-6 space-y-2">
-            <li>Stop receiving marketing or promotional emails, direct mail, phone, and marketing communications</li>
+            <li>
+              Stop receiving marketing or promotional emails, direct mail,
+              phone, and marketing communications
+            </li>
             <li>Update and correct your personal information</li>
             <li>Deactivate your account</li>
             <li>
@@ -267,10 +291,14 @@ export default function PrivacyPolicyPage() {
           </ul>
           <p>To do any of these, let us know by one of these methods:</p>
           <ul className="list-disc pl-6 space-y-2">
-            <li>Follow the directions in a marketing email, direct mail, or mobile communication that you receive from us</li>
+            <li>
+              Follow the directions in a marketing email, direct mail, or mobile
+              communication that you receive from us
+            </li>
             <li>
               Provide your request and current contact information through one
-              of the contact methods listed under &ldquo;Contact Us&rdquo; below.
+              of the contact methods listed under &ldquo;Contact Us&rdquo;
+              below.
             </li>
           </ul>
           <p>
@@ -321,8 +349,11 @@ export default function PrivacyPolicyPage() {
           <h2 className="text-2xl font-semibold text-[var(--storefront-text-primary)]">
             Contact Us
           </h2>
-          <p>If you have any questions about our Privacy Policy or practices please contact us.</p>
-          <p>Phone: +971 502122464</p>
+          <p>
+            If you have any questions about our Privacy Policy or practices
+            please contact us.
+          </p>
+          <p>Phone: +971 504311624</p>
           <p>
             E-mail:{" "}
             <a
@@ -335,7 +366,7 @@ export default function PrivacyPolicyPage() {
           <p>
             Address: SHEZA STAR CAR ACCESSORIES SPS LLC, Sheikh ammar street,
             Opp salem mall, Al mwaihat 2 Ajman, UAE. Ph: 06 5208398 Mob:
-            0502122464
+            0504311624
           </p>
         </section>
       </div>

@@ -60,7 +60,7 @@ export default function ContactUsPage() {
 
         <a
           href={`https://wa.me/${WHATSAPP_E164}?text=${encodeURIComponent(
-            "Hello Sheza Star Support"
+            "Hello Sheza Star Support",
           )}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -117,7 +117,8 @@ export default function ContactUsPage() {
             <div>
               Block B B16-157
               <br />
-              Sharjah Research Technology and Innovation Park Free Zone Authority
+              Sharjah Research Technology and Innovation Park Free Zone
+              Authority
               <br />
               Sharjah, United Arab Emirates
             </div>
@@ -161,18 +162,18 @@ export default function ContactUsPage() {
               </DetailRow>
               <DetailRow label="Mobile">
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
-                  <a
-                    href="tel:+971502122464"
-                    className="underline underline-offset-4 hover:opacity-80"
-                  >
-                    +971 50 212 2464
-                  </a>
                   <span className="text-[var(--storefront-text-muted)]">/</span>
                   <a
                     href="tel:+971504311624"
                     className="underline underline-offset-4 hover:opacity-80"
                   >
                     {WHATSAPP_DISPLAY}
+                  </a>
+                  <a
+                    href="tel:+971504311624"
+                    className="underline underline-offset-4 hover:opacity-80"
+                  >
+                    +971 50 212 2464
                   </a>
                 </div>
               </DetailRow>
@@ -201,4 +202,3 @@ export default function ContactUsPage() {
     </div>
   );
 }
-
