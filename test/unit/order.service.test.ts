@@ -299,29 +299,97 @@ describe('Order service (admin helpers)', () => {
     });
 
     it('allows return request only after delivery', async () => {
-        const created = await createOrder({
-            ...BASE_ORDER_DATA,
-            status: 'DL',
-            shipping: {
-                provider: 'smsa',
-                awb: 'DELIVERED-1',
-                createdAt: new Date('2026-03-28T09:00:00.000Z'),
-                status: 'Delivered',
-            },
-        });
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-04-01T12:00:00.000Z'));
 
-        const requested = await requestOrderReturnByCustomer(
-            created.id,
-            { sessionId: created.sessionId },
-            'Returning after delivery',
-        );
+            const created = await createOrder({
+                ...BASE_ORDER_DATA,
+                status: 'DL',
+                shipping: {
+                    provider: 'smsa',
+                    awb: 'DELIVERED-1',
+                    createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                    status: 'Delivered',
+                    lastTrackedAt: new Date('2026-03-28T10:00:00.000Z'),
+                },
+            });
 
-        expect(requested.status).toBe('return_requested');
-        expect(requested.returnRequest?.requestedFromStatus).toBe('DL');
-        expect(emailMocks.sendAdminOrderEmail).toHaveBeenCalledWith(
-            'admin_return_requested',
-            expect.objectContaining({ id: created.id, status: 'return_requested' }),
-        );
+            const requested = await requestOrderReturnByCustomer(
+                created.id,
+                { sessionId: created.sessionId },
+                'Returning after delivery',
+            );
+
+            expect(requested.status).toBe('return_requested');
+            expect(requested.returnRequest?.requestedFromStatus).toBe('DL');
+            expect(emailMocks.sendAdminOrderEmail).toHaveBeenCalledWith(
+                'admin_return_requested',
+                expect.objectContaining({ id: created.id, status: 'return_requested' }),
+            );
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('blocks return request after the seven day return window expires', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-04-08T12:00:00.000Z'));
+
+            const created = await createOrder({
+                ...BASE_ORDER_DATA,
+                status: 'DL',
+                shipping: {
+                    provider: 'smsa',
+                    awb: 'DELIVERED-EXPIRED-1',
+                    createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                    status: 'Delivered',
+                    lastTrackedAt: new Date('2026-03-31T11:59:59.000Z'),
+                },
+            });
+
+            await expect(
+                requestOrderReturnByCustomer(
+                    created.id,
+                    { sessionId: created.sessionId },
+                    'Trying after the return window',
+                )
+            ).rejects.toMatchObject({
+                code: 'ORDER_NOT_RETURNABLE',
+                details: expect.objectContaining({
+                    message: 'Return requests are only available within 7 days after delivery.',
+                    deliveredAt: '2026-03-31T11:59:59.000Z',
+                }),
+            });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('stores a delivery timestamp when admin marks the order as delivered', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-04-03T09:30:00.000Z'));
+
+            const created = await createOrder({
+                ...BASE_ORDER_DATA,
+                status: 'OD',
+                shipping: {
+                    provider: 'smsa',
+                    awb: 'MANUAL-DL-1',
+                    createdAt: new Date('2026-04-02T09:00:00.000Z'),
+                    status: 'Out for Delivery',
+                },
+            });
+
+            const updated = await updateOrderStatusById(created.id, 'DL');
+
+            expect(updated.status).toBe('DL');
+            expect(updated.shipping?.lastTrackedAt).toBe('2026-04-03T09:30:00.000Z');
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('approves return without initiating refund immediately', async () => {

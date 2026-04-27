@@ -1,5 +1,6 @@
 import { getOrCreateStorefrontSession } from '@/app/actions/session';
 import { getOrdersBySessionId } from '@/lib/order/order.service';
+import { getReturnWindowState, resolveReturnDeliveryDate } from '@/lib/order/return-window';
 import Link from 'next/link';
 import Image from 'next/image';
 import { OrderCancellationRequestButton } from './components/OrderCancellationRequestButton';
@@ -24,6 +25,10 @@ function getReadableOrderStatus(order: { status: string; shipping?: { status?: s
     }
 
     return normalized;
+}
+
+function getReturnWindowMessage(daysRemaining: number) {
+    return `You can return this order within ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}.`;
 }
 
 export default async function OrdersPage() {
@@ -68,6 +73,13 @@ export default async function OrdersPage() {
                                 order.cancellation?.requestedAt,
                             );
                             const hasReturnRequest = ['return_requested', 'return_approved', 'refund_approved', 'refunded'].includes(order.status);
+                            const returnWindow = getReturnWindowState(
+                                resolveReturnDeliveryDate(order),
+                            );
+                            const canRequestReturn = order.status === 'DL'
+                                && order.shipping?.awb
+                                && !hasReturnRequest
+                                && returnWindow.canRequestReturn;
                             
                             return (
                                 <div
@@ -171,10 +183,19 @@ export default async function OrdersPage() {
                                             <OrderCancellationRequestButton orderId={order.id} />
                                         )}
 
-                                        {order.status === 'DL' && order.shipping?.awb && !hasReturnRequest && (
+                                        {canRequestReturn && (
                                             <div className="mt-3">
                                                 <OrderReturnRequestButton orderId={order.id} />
+                                                <p className="mt-2 text-xs text-[var(--storefront-text-secondary)]">
+                                                    {getReturnWindowMessage(returnWindow.daysRemaining)}
+                                                </p>
                                             </div>
+                                        )}
+
+                                        {order.status === 'DL' && order.shipping?.awb && !hasReturnRequest && returnWindow.isExpired && (
+                                            <p className="mt-3 text-xs text-red-700">
+                                                The 7-day return window has expired for this order.
+                                            </p>
                                         )}
 
                                         {order.shipping?.awb && order.status !== 'DL' && !hasReturnRequest && !['return_approved', 'refund_approved', 'refunded', 'cancellation_requested', 'cancellation_approved', 'cancelled'].includes(order.status) && (

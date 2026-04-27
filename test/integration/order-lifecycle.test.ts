@@ -116,48 +116,93 @@ describe('Order lifecycle routes', () => {
     });
 
     it('submits, reviews, and refunds a return request', async () => {
-        const created = await createOrder({
-            ...BASE_ORDER_DATA,
-            status: 'DL',
-            shipping: {
-                provider: 'smsa',
-                awb: 'DL-1',
-                createdAt: new Date('2026-03-28T09:00:00.000Z'),
-                status: 'Delivered',
-            },
-        });
+        vi.useFakeTimers();
 
-        const returnRes = await requestReturnRoute(new Request(`http://localhost/api/storefront/orders/${created.id}/return-request`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reason: 'Need to return this order' }),
-        }), {
-            params: Promise.resolve({ id: created.id }),
-        });
-        expect(returnRes.status).toBe(200);
+        try {
+            vi.setSystemTime(new Date('2026-04-01T12:00:00.000Z'));
 
-        const reviewRes = await reviewReturnRoute(new Request(`http://localhost/api/admin/orders/${created.id}/return-request`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ decision: 'approve', note: 'Approved' }),
-        }), {
-            params: Promise.resolve({ id: created.id }),
-        });
-        expect(reviewRes.status).toBe(200);
+            const created = await createOrder({
+                ...BASE_ORDER_DATA,
+                status: 'DL',
+                shipping: {
+                    provider: 'smsa',
+                    awb: 'DL-1',
+                    createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                    status: 'Delivered',
+                    lastTrackedAt: new Date('2026-03-28T10:00:00.000Z'),
+                },
+            });
 
-        const refundRes = await proceedRefundRoute(new Request(`http://localhost/api/admin/orders/${created.id}/refund`, {
-            method: 'POST',
-        }), {
-            params: Promise.resolve({ id: created.id }),
-        });
-        expect(refundRes.status).toBe(200);
+            const returnRes = await requestReturnRoute(new Request(`http://localhost/api/storefront/orders/${created.id}/return-request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Need to return this order' }),
+            }), {
+                params: Promise.resolve({ id: created.id }),
+            });
+            expect(returnRes.status).toBe(200);
 
-        const updated = await getOrderById(created.id);
-        expect(updated.status).toBe('refund_approved');
-        expect(updated.returnRequest?.shipment?.awb).toBe('RET-INT-1');
-        expect(shippingMocks.createC2bShipment).toHaveBeenCalled();
-        expect(shippingMocks.createB2cShipment).not.toHaveBeenCalled();
-        expect(updated.refund?.externalRefundId).toBe('re_return_1');
+            const reviewRes = await reviewReturnRoute(new Request(`http://localhost/api/admin/orders/${created.id}/return-request`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ decision: 'approve', note: 'Approved' }),
+            }), {
+                params: Promise.resolve({ id: created.id }),
+            });
+            expect(reviewRes.status).toBe(200);
+
+            const refundRes = await proceedRefundRoute(new Request(`http://localhost/api/admin/orders/${created.id}/refund`, {
+                method: 'POST',
+            }), {
+                params: Promise.resolve({ id: created.id }),
+            });
+            expect(refundRes.status).toBe(200);
+
+            const updated = await getOrderById(created.id);
+            expect(updated.status).toBe('refund_approved');
+            expect(updated.returnRequest?.shipment?.awb).toBe('RET-INT-1');
+            expect(shippingMocks.createC2bShipment).toHaveBeenCalled();
+            expect(shippingMocks.createB2cShipment).not.toHaveBeenCalled();
+            expect(updated.refund?.externalRefundId).toBe('re_return_1');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('rejects storefront return requests after the seven day window', async () => {
+        vi.useFakeTimers();
+
+        try {
+            vi.setSystemTime(new Date('2026-04-08T12:00:00.000Z'));
+
+            const created = await createOrder({
+                ...BASE_ORDER_DATA,
+                status: 'DL',
+                shipping: {
+                    provider: 'smsa',
+                    awb: 'DL-EXPIRED-1',
+                    createdAt: new Date('2026-03-28T09:00:00.000Z'),
+                    status: 'Delivered',
+                    lastTrackedAt: new Date('2026-03-31T11:59:59.000Z'),
+                },
+            });
+
+            const response = await requestReturnRoute(new Request(`http://localhost/api/storefront/orders/${created.id}/return-request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Need to return this order' }),
+            }), {
+                params: Promise.resolve({ id: created.id }),
+            });
+
+            expect(response.status).toBe(409);
+            await expect(response.json()).resolves.toMatchObject({
+                code: 'ORDER_NOT_RETURNABLE',
+                message: 'Return requests are only available within 7 days after delivery.',
+            });
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('can deny cancellation and proceed to shipment via admin review route', async () => {

@@ -7,6 +7,7 @@ import { buildPendingRefundFromOrder, queueRefundForApprovedCancellation, queueR
 import { sendAdminOrderEmail, sendCustomerOrderEmail } from '@/lib/email/email.service';
 import { createB2cShipment, createC2bShipment } from '@/lib/shipping/shipping.service';
 import type { CreateShipmentInput } from '@/lib/shipping/shipping.schema';
+import { getReturnWindowState, resolveReturnDeliveryDate, RETURN_WINDOW_DAYS } from './return-window';
 
 const COLLECTION = 'orders';
 const NON_SUCCESS_ORDER_STATUSES: OrderStatus[] = [
@@ -81,7 +82,12 @@ function canRequestReturn(doc: OrderDocument): boolean {
         return false;
     }
 
-    return doc.status === 'DL';
+    if (doc.status !== 'DL') {
+        return false;
+    }
+
+    const deliveredAt = resolveReturnDeliveryDate(doc);
+    return getReturnWindowState(deliveredAt).canRequestReturn;
 }
 
 function applyQueuedRefundToPendingRefund(
@@ -375,6 +381,11 @@ export async function updateOrderStatusById(
         {
             $set: {
                 status,
+                ...(status === 'DL' && existing.shipping?.awb
+                    ? {
+                        'shipping.lastTrackedAt': now,
+                    }
+                    : {}),
                 updatedAt: now,
             },
         },
@@ -556,10 +567,17 @@ export async function requestOrderReturnByCustomer(
     }
 
     if (!canRequestReturn(doc)) {
+        const deliveredAt = resolveReturnDeliveryDate(doc);
+        const returnWindow = getReturnWindowState(deliveredAt);
+
         throw new AppError(409, 'ORDER_NOT_RETURNABLE', {
             id,
             status: doc.status,
-            message: 'Return requests are only available after the order is delivered.',
+            message: doc.status !== 'DL'
+                ? 'Return requests are only available after the order is delivered.'
+                : `Return requests are only available within ${RETURN_WINDOW_DAYS} days after delivery.`,
+            deliveredAt: returnWindow.deliveredAt?.toISOString(),
+            returnDeadlineAt: returnWindow.deadlineAt?.toISOString(),
         });
     }
 
