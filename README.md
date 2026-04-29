@@ -1,3 +1,4 @@
+last update.
 # ShezaStar E-Commerce - Product Management System
 
 A comprehensive product management system for vehicle electronic gadgets with dynamic variant types, multiple images, and intelligent image-to-variant mapping.
