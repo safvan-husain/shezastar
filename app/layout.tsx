@@ -31,6 +31,17 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-FNR2XYCV84"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-FNR2XYCV84');`}
+        </Script>
         <Script id="strip-extension-body-attrs" strategy="beforeInteractive">
           {`(function () {
   function strip() {
