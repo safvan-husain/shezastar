@@ -95,6 +95,15 @@ export function Footer({ categories }: FooterProps) {
               </li>
               <li>
                 <Link
+                  href="/blogs"
+                  className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
+                >
+                  <span className="text-yellow-400">›</span>
+                  Blogs
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/privacy-policy"
                   className="text-gray-400 hover:text-yellow-400 text-sm transition-colors flex items-center justify-center md:justify-start gap-1"
                 >

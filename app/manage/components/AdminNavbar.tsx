@@ -78,6 +78,15 @@ const VariantIcon = ({ className }: IconProps) => (
     </svg>
 );
 
+const BlogIcon = ({ className }: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M5 4h10l4 4v12H5z" />
+        <path d="M15 4v4h4" />
+        <path d="M8 12h8" />
+        <path d="M8 16h6" />
+    </svg>
+);
+
 const OrdersIcon = ({ className }: IconProps) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="M7 4h10l1 4H6z" />
@@ -145,6 +154,7 @@ const NAV_ITEMS: NavItem[] = [
     { type: 'link', href: '/manage/categories', label: 'Categories', shortLabel: 'Cats', Icon: CategoryIcon },
     { type: 'link', href: '/manage/brands', label: 'Brands', shortLabel: 'Brand', Icon: BrandIcon },
     { type: 'link', href: '/manage/variant-types', label: 'Variant Types', shortLabel: 'Vars', Icon: VariantIcon },
+    { type: 'link', href: '/manage/blogs', label: 'Blogs', shortLabel: 'Blog', Icon: BlogIcon },
     {
         type: 'group',
         id: 'orders',

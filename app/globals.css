@@ -226,6 +226,111 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.ProseMirror {
+  outline: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--text-muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.shezastar-rich-editor {
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+
+.shezastar-rich-editor p {
+  margin: 0.75rem 0;
+}
+
+.shezastar-rich-editor h1,
+.shezastar-rich-editor h2,
+.shezastar-rich-editor h3 {
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 1rem 0 0.5rem;
+}
+
+.shezastar-rich-editor h1 {
+  font-size: 1.75rem;
+}
+
+.shezastar-rich-editor h2 {
+  font-size: 1.35rem;
+}
+
+.shezastar-rich-editor h3 {
+  font-size: 1.15rem;
+}
+
+.shezastar-rich-editor ul,
+.shezastar-rich-editor ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.shezastar-rich-editor ul {
+  list-style: disc;
+}
+
+.shezastar-rich-editor ol {
+  list-style: decimal;
+}
+
+.storefront-blog-content {
+  color: var(--storefront-text-secondary);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.storefront-blog-content p {
+  margin: 1rem 0;
+}
+
+.storefront-blog-content h1,
+.storefront-blog-content h2,
+.storefront-blog-content h3 {
+  color: var(--storefront-text-primary);
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 2rem 0 0.75rem;
+}
+
+.storefront-blog-content h1 {
+  font-size: 2rem;
+}
+
+.storefront-blog-content h2 {
+  font-size: 1.5rem;
+}
+
+.storefront-blog-content h3 {
+  font-size: 1.25rem;
+}
+
+.storefront-blog-content ul,
+.storefront-blog-content ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.storefront-blog-content ul {
+  list-style: disc;
+}
+
+.storefront-blog-content ol {
+  list-style: decimal;
+}
+
+.storefront-blog-content strong {
+  color: var(--storefront-text-primary);
+}
+
 @layer utilities {
   .animate-in {
     animation-duration: 300ms;
