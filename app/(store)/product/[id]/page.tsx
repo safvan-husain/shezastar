@@ -1,7 +1,9 @@
+import { cache, Suspense } from 'react';
 import { Product } from '@/lib/product/model/product.model';
 import { ProductErrorHandler, ProductPageError } from '../components/ProductErrorHandler';
 import { ProductDetails } from '../components/ProductDetails';
 import { RelatedProducts } from '../components/RelatedProducts';
+import { ProductDetailsSkeleton } from '../components/ProductPageSkeleton';
 import { RecentlyViewed } from '@/components/storefront/RecentlyViewed';
 import { getBroaderCategoryContextIds } from '@/lib/category/category.service';
 import { getAllProducts, getProduct } from '@/lib/product/product.service';
@@ -42,7 +44,7 @@ function createErrorPayload(error: unknown, override?: Partial<ProductPageError>
   };
 }
 
-async function fetchProduct(id: string): Promise<{ product: Product | null; error: ProductPageError | null }> {
+const fetchProduct = cache(async (id: string): Promise<{ product: Product | null; error: ProductPageError | null }> => {
   try {
     const product = await getProduct(id);
     return { product, error: null };
@@ -55,7 +57,7 @@ async function fetchProduct(id: string): Promise<{ product: Product | null; erro
       }),
     };
   }
-}
+});
 
 async function fetchRelatedProducts(categoryIds: string[], originId?: string): Promise<{ products: Product[]; error: ProductPageError | null }> {
   if (categoryIds.length === 0) {
@@ -80,37 +82,79 @@ async function fetchRelatedProducts(categoryIds: string[], originId?: string): P
   }
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params;
+function getTabbyConfig() {
   const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY || '';
   const tabbyMerchantCode = process.env.TABBY_MERCHANT_CODE || '';
-  const tabbyConfig = (tabbyPublicKey && tabbyMerchantCode)
+
+  return (tabbyPublicKey && tabbyMerchantCode)
     ? { publicKey: tabbyPublicKey, merchantCode: tabbyMerchantCode }
     : undefined;
+}
 
+function RelatedProductsSkeleton() {
+  return (
+    <div className="space-y-6" aria-label="Loading related products">
+      <div className="h-8 w-48 animate-pulse rounded bg-[var(--storefront-bg-subtle)]" />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="space-y-3">
+            <div className="aspect-square animate-pulse rounded-md bg-[var(--storefront-bg-subtle)]" />
+            <div className="h-4 animate-pulse rounded bg-[var(--storefront-bg-subtle)]" />
+            <div className="h-4 w-2/3 animate-pulse rounded bg-[var(--storefront-bg-subtle)]" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProductErrorState({ error }: { error: ProductPageError }) {
+  return (
+    <div className="space-y-4">
+      <ProductErrorHandler error={error} />
+      <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">Unable to load product</h1>
+      <p className="text-[var(--storefront-text-secondary)]">
+        Something went wrong while loading this product. Please try again, and copy the toast details if you need to report the issue.
+      </p>
+    </div>
+  );
+}
+
+function ProductNotFoundState() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">Product not found</h1>
+      <p className="text-[var(--storefront-text-secondary)]">
+        We could not find this product. It may have been removed or the link is incorrect.
+      </p>
+    </div>
+  );
+}
+
+async function ProductDetailsSection({ id }: { id: string }) {
   const { product, error: productError } = await fetchProduct(id);
 
   if (productError) {
-    return (
-      <div className="container mx-auto px-4 py-12 space-y-4">
-        <ProductErrorHandler error={productError} />
-        <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">Unable to load product</h1>
-        <p className="text-[var(--storefront-text-secondary)]">
-          Something went wrong while loading this product. Please try again, and copy the toast details if you need to report the issue.
-        </p>
-      </div>
-    );
+    return <ProductErrorState error={productError} />;
   }
 
   if (!product) {
-    return (
-      <div className="container mx-auto px-4 py-12 space-y-4">
-        <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)]">Product not found</h1>
-        <p className="text-[var(--storefront-text-secondary)]">
-          We could not find this product. It may have been removed or the link is incorrect.
-        </p>
-      </div>
-    );
+    return <ProductNotFoundState />;
+  }
+
+  return (
+    <ProductDetails
+      product={product}
+      tabbyConfig={getTabbyConfig()}
+    />
+  );
+}
+
+async function RelatedProductsSection({ id }: { id: string }) {
+  const { product, error: productError } = await fetchProduct(id);
+
+  if (productError || !product) {
+    return null;
   }
 
   const broaderCategoryIds = await getBroaderCategoryContextIds(product.subCategoryIds);
@@ -118,17 +162,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const filteredRelatedProducts = relatedProducts.filter(p => p.id !== product.id);
 
   return (
-    <div className="container mx-auto px-4 py-12 space-y-12 mt-24 lg:mt-32 max-w-7xl">
+    <>
       {relatedError && <ProductErrorHandler error={relatedError} />}
-
-      <ProductDetails
-        product={product}
-        tabbyConfig={tabbyConfig}
-      />
-
       <RelatedProducts products={filteredRelatedProducts} />
+    </>
+  );
+}
 
-      <RecentlyViewed currentProductId={product.id} />
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params;
+
+  return (
+    <div className="container mx-auto px-4 py-12 space-y-12 mt-24 lg:mt-32 max-w-7xl">
+      <Suspense fallback={<ProductDetailsSkeleton />}>
+        <ProductDetailsSection id={id} />
+      </Suspense>
+
+      <Suspense fallback={<RelatedProductsSkeleton />}>
+        <RelatedProductsSection id={id} />
+      </Suspense>
+
+      <RecentlyViewed currentProductId={id} />
     </div>
   );
 }

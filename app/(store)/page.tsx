@@ -1,53 +1,24 @@
+import { Suspense } from "react";
 import { Product } from "@/lib/product/model/product.model";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ErrorToastHandler, type ToastErrorPayload } from "@/components/ErrorToastHandler";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { CardView } from "@/components/CardView";
 import type { HeroBannerWithId, CustomCard } from "@/lib/app-settings/app-settings.schema";
-import { getFeaturedProducts } from "@/lib/app-settings/app-settings.service";
+import { getCustomCards, getFeaturedProducts, getHeroBanners } from "@/lib/app-settings/app-settings.service";
+import { getAllProducts } from "@/lib/product/product.service";
 import { Pagination } from "@/components/storefront/Pagination";
 
-type ErrorBody = {
-  message?: string;
-  error?: string;
-  [key: string]: unknown;
-};
-
 async function fetchHeroBanners(): Promise<{ banners: HeroBannerWithId[]; error: ToastErrorPayload | null }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const url = `${baseUrl}/api/admin/settings/hero-banners`;
-
   try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) {
-      let body: ErrorBody = {};
-      try {
-        body = await res.json();
-      } catch {
-        body = { error: "Failed to parse response body" };
-      }
-
-      return {
-        banners: [],
-        error: {
-          message: body.message || body.error || "Failed to load hero banners",
-          status: res.status,
-          body,
-          url: res.url,
-          method: "GET",
-        },
-      };
-    }
-
-    const data = await res.json();
-    return { banners: Array.isArray(data) ? data : [], error: null };
+    return { banners: await getHeroBanners(), error: null };
   } catch (error) {
     return {
       banners: [],
       error: {
         message: error instanceof Error ? error.message : "Failed to load hero banners",
         body: error instanceof Error ? { stack: error.stack } : { error },
-        url,
+        url: "service:app-settings:getHeroBanners",
         method: "GET",
       },
     };
@@ -55,32 +26,8 @@ async function fetchHeroBanners(): Promise<{ banners: HeroBannerWithId[]; error:
 }
 
 async function fetchProducts(page = 1, limit = 24): Promise<{ products: Product[]; pagination?: { totalPages: number; total: number }; error: ToastErrorPayload | null }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const url = `${baseUrl}/api/products?page=${page}&limit=${limit}`;
-
   try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) {
-      let body: ErrorBody = {};
-      try {
-        body = await res.json();
-      } catch {
-        body = { error: "Failed to parse response body" };
-      }
-
-      return {
-        products: [],
-        error: {
-          message: body.message || body.error || "Failed to load products",
-          status: res.status,
-          body,
-          url: res.url,
-          method: "GET",
-        },
-      };
-    }
-
-    const data = await res.json();
+    const data = await getAllProducts(page, limit);
     return { products: data.products ?? [], pagination: data.pagination, error: null };
   } catch (error) {
     return {
@@ -88,7 +35,7 @@ async function fetchProducts(page = 1, limit = 24): Promise<{ products: Product[
       error: {
         message: error instanceof Error ? error.message : "Failed to load products",
         body: error instanceof Error ? { stack: error.stack } : { error },
-        url,
+        url: `service:product:getAllProducts?page=${page}&limit=${limit}`,
         method: "GET",
       },
     };
@@ -96,32 +43,8 @@ async function fetchProducts(page = 1, limit = 24): Promise<{ products: Product[
 }
 
 async function fetchCustomCards(): Promise<{ cards: CustomCard[]; error: ToastErrorPayload | null }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const url = `${baseUrl}/api/admin/settings/custom-cards`;
-
   try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) {
-      let body: ErrorBody = {};
-      try {
-        body = await res.json();
-      } catch {
-        body = { error: "Failed to parse response body" };
-      }
-
-      return {
-        cards: [],
-        error: {
-          message: body.message || body.error || "Failed to load custom cards",
-          status: res.status,
-          body,
-          url: res.url,
-          method: "GET",
-        },
-      };
-    }
-
-    const data = await res.json();
+    const data = await getCustomCards();
     // Convert object to array of non-null cards
     const cardsArray = Object.values(data).filter((card): card is CustomCard => card !== null);
     return { cards: cardsArray, error: null };
@@ -131,19 +54,59 @@ async function fetchCustomCards(): Promise<{ cards: CustomCard[]; error: ToastEr
       error: {
         message: error instanceof Error ? error.message : "Failed to load custom cards",
         body: error instanceof Error ? { stack: error.stack } : { error },
-        url,
+        url: "service:app-settings:getCustomCards",
         method: "GET",
       },
     };
   }
 }
 
-export default async function Home() {
+function HeroSkeleton() {
+  return (
+    <section className="h-[560px] animate-pulse bg-[var(--storefront-bg-subtle)]" aria-label="Loading hero banner" />
+  );
+}
+
+function ProductGridSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5" aria-label="Loading products">
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} className="space-y-3">
+          <div className="aspect-[4/3] animate-pulse rounded-md bg-[var(--storefront-bg-subtle)]" />
+          <div className="h-4 animate-pulse rounded bg-[var(--storefront-bg-subtle)]" />
+          <div className="h-4 w-2/3 animate-pulse rounded bg-[var(--storefront-bg-subtle)]" />
+          <div className="h-6 w-24 animate-pulse rounded bg-[var(--storefront-bg-subtle)]" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MerchandisingSkeleton() {
+  return (
+    <section className="container mx-auto px-4 py-12 space-y-6" aria-label="Loading home products">
+      <div className="h-8 w-64 animate-pulse rounded bg-[var(--storefront-bg-subtle)]" />
+      <ProductGridSkeleton />
+    </section>
+  );
+}
+
+async function HeroSection() {
+  const { banners, error: heroBannersError } = await fetchHeroBanners();
+
+  return (
+    <>
+      {banners.length > 0 && <HeroCarousel banners={banners} />}
+      {heroBannersError && <ErrorToastHandler error={heroBannersError} />}
+    </>
+  );
+}
+
+async function HomeMerchandising() {
   const [
-    { banners, error: heroBannersError },
     { products, pagination, error: productsError },
     { cards, error: customCardsError },
-  ] = await Promise.all([fetchHeroBanners(), fetchProducts(1, 24), fetchCustomCards()]);
+  ] = await Promise.all([fetchProducts(1, 24), fetchCustomCards()]);
 
   // Fetch featured products
   let featuredProducts: Product[] = [];
@@ -191,11 +154,7 @@ export default async function Home() {
   const showSingleCardAfterProducts = highlightedGroup.length <= 4;
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Banner Section */}
-      {banners.length > 0 && <HeroCarousel banners={banners} />}
-      {heroBannersError && <ErrorToastHandler error={heroBannersError} />}
-
+    <>
       {/* Two-Item Card View - Below Hero */}
       {twoItemCards.length > 0 && (
         <section className="container mx-auto px-4 py-8">
@@ -282,6 +241,20 @@ export default async function Home() {
           <CardView cards={oneItemCard} />
         </section>
       )}
+    </>
+  );
+}
+
+export default function Home() {
+  return (
+    <div className="min-h-screen">
+      <Suspense fallback={<HeroSkeleton />}>
+        <HeroSection />
+      </Suspense>
+
+      <Suspense fallback={<MerchandisingSkeleton />}>
+        <HomeMerchandising />
+      </Suspense>
     </div>
   );
 }

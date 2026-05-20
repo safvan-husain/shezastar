@@ -11,6 +11,10 @@ export function getMongoUri() {
   throw new Error('MONGODB_URI nor found enviourment.')
 }
 
+export function getMongoDbName() {
+  return process.env.DB_NAME || 'shezastar';
+}
+
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 
@@ -29,7 +33,7 @@ export async function connectToDatabase() {
   });
 
   const client = await MongoClient.connect(uri);
-  const db = client.db('shezastar');
+  const db = client.db(getMongoDbName());
 
   cachedClient = client;
   cachedDb = db;

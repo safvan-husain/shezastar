@@ -1,3 +1,4 @@
+import { cache, Suspense } from 'react';
 import { ProductGrid } from '@/components/ProductGrid';
 import { getAllCategories } from '@/lib/category/category.service';
 import { Category } from '@/lib/category/model/category.model';
@@ -6,6 +7,7 @@ import { getAllProducts } from '@/lib/product/product.service';
 import { AppError } from '@/lib/errors/app-error';
 import { CategoryErrorHandler, CategoryPageError } from '../components/CategoryErrorHandler';
 import { Breadcrumbs, BreadcrumbItem } from '../components/Breadcrumbs';
+import { CategoryPageSkeleton } from '../components/CategoryPageSkeleton';
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -41,6 +43,19 @@ function createErrorPayload(error: unknown, override?: Partial<CategoryPageError
     ...override,
   };
 }
+
+const fetchCategories = cache(async (): Promise<{ categories: Category[]; error: CategoryPageError | null }> => {
+  try {
+    return { categories: await getAllCategories(), error: null };
+  } catch (error) {
+    return {
+      categories: [],
+      error: createErrorPayload(error, {
+        message: error instanceof Error ? error.message : 'Failed to load categories',
+      }),
+    };
+  }
+});
 
 async function fetchProducts(categoryId: string): Promise<{ products: Product[]; error: CategoryPageError | null }> {
   try {
@@ -128,48 +143,46 @@ function buildDescription(level: CategoryLevel, title: string, hasProducts: bool
   return `Products in ${title}.${hasProducts ? '' : ' No items yet.'}`;
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
-  const { slug } = await params;
+function CategoryLoadErrorState({ error }: { error: CategoryPageError }) {
+  return (
+    <div className="space-y-4">
+      <CategoryErrorHandler error={error} />
+      <h1 className="text-3xl font-bold text-[var(--text-primary)]">Unable to load categories</h1>
+      <p className="text-[var(--text-secondary)]">
+        Something went wrong while loading categories. Please try again, and copy the toast details if you need to report the issue.
+      </p>
+    </div>
+  );
+}
 
-  let categories: Category[] = [];
-  let loadError: CategoryPageError | null = null;
-  try {
-    categories = await getAllCategories();
-  } catch (error) {
-    loadError = createErrorPayload(error, {
-      message: error instanceof Error ? error.message : 'Failed to load categories',
-    });
-  }
+function CategoryNotFoundState() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-3xl font-bold text-[var(--text-primary)]">Category not found</h1>
+      <p className="text-[var(--text-secondary)]">
+        We could not match this URL to a subcategory. Pick a category from the navigation to continue.
+      </p>
+    </div>
+  );
+}
+
+async function CategoryProductsSection({ slug }: { slug: string }) {
+  const { categories, error: loadError } = await fetchCategories();
 
   if (loadError) {
-    return (
-      <div className="container mx-auto px-4 py-12 space-y-4">
-        <CategoryErrorHandler error={loadError} />
-        <h1 className="text-3xl font-bold text-[var(--text-primary)]">Unable to load categories</h1>
-        <p className="text-[var(--text-secondary)]">
-          Something went wrong while loading categories. Please try again, and copy the toast details if you need to report the issue.
-        </p>
-      </div>
-    );
+    return <CategoryLoadErrorState error={loadError} />;
   }
 
   const match = findCategoryBySlug(categories, slug);
 
   if (!match) {
-    return (
-      <div className="container mx-auto px-4 py-12 space-y-4">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)]">Category not found</h1>
-        <p className="text-[var(--text-secondary)]">
-          We could not match this URL to a subcategory. Pick a category from the navigation to continue.
-        </p>
-      </div>
-    );
+    return <CategoryNotFoundState />;
   }
 
   const { products, error: productsError } = await fetchProducts(match.filterId);
 
   return (
-    <div className="container mx-auto px-4 py-12 space-y-8 mt-24">
+    <>
       {productsError && <CategoryErrorHandler error={productsError} />}
       <div className="space-y-3">
         {match.breadcrumbs.length > 0 && <Breadcrumbs items={match.breadcrumbs} />}
@@ -179,6 +192,18 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         products={products}
         emptyMessage="No products are assigned to this category yet. Add them from the admin panel."
       />
+    </>
+  );
+}
+
+export default async function CategoryPage({ params }: CategoryPageProps) {
+  const { slug } = await params;
+
+  return (
+    <div className="container mx-auto px-4 py-12 space-y-8 mt-24">
+      <Suspense fallback={<CategoryPageSkeleton />}>
+        <CategoryProductsSection slug={slug} />
+      </Suspense>
     </div>
   );
 }
