@@ -15,7 +15,15 @@ function logUnhandledError(message: string, meta: Record<string, unknown>) {
     console.error(message, meta);
 }
 
+function isNextPrerenderSignal(err: unknown): err is Error {
+    return err instanceof Error && err.message.includes('During prerendering, `connection()` rejects');
+}
+
 export function catchError(err: unknown): { status: number; body: any } {
+    if (isNextPrerenderSignal(err)) {
+        throw err;
+    }
+
     if (err instanceof AppError) {
         return {
             status: err.status,

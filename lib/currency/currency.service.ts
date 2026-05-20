@@ -1,4 +1,5 @@
-import { unstable_cache } from 'next/cache';
+import { cacheLife } from 'next/cache';
+import { logger } from '@/lib/logging/logger';
 import { BASE_CURRENCY, CurrencyCode, SUPPORTED_CURRENCIES } from './currency.config';
 
 // Open Exchange Rate API (Free, no key required for basic usage)
@@ -9,18 +10,11 @@ interface ExchangeRateResponse {
     time_last_update_unix: number;
 }
 
-// In-memory cache fallback (for when unstable_cache might be bypassed or in dev)
-let memoryCache: { rates: Record<string, number>; expiry: number } | null = null;
-const CACHE_DURATION_MS = 3600 * 1000; // 1 hour
-
 export async function getExchangeRates(): Promise<Record<string, number>> {
-    try {
-        // Check memory cache first
-        const now = Date.now();
-        if (memoryCache && now < memoryCache.expiry) {
-            return memoryCache.rates;
-        }
+    'use cache';
+    cacheLife('hours');
 
+    try {
         const res = await fetch(API_ENDPOINT, { next: { revalidate: 3600 } });
 
         if (!res.ok) {
@@ -40,16 +34,10 @@ export async function getExchangeRates(): Promise<Record<string, number>> {
             }
         });
 
-        // Update memory cache
-        memoryCache = {
-            rates,
-            expiry: now + CACHE_DURATION_MS
-        };
-
         return rates;
 
     } catch (error) {
-        console.error('Error fetching exchange rates:', error);
+        await logger.error('Error fetching exchange rates', { error });
         // Return fallback rates
         const fallbackRates: Record<string, number> = {};
         SUPPORTED_CURRENCIES.forEach(c => {

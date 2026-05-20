@@ -4,8 +4,6 @@ import { searchProducts } from '@/lib/product/product.service';
 import { AppError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export const dynamic = 'force-dynamic';
-
 async function GETHandler(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;

@@ -13,8 +13,6 @@ import { WhatsAppFloatingButton } from "@/components/storefront/WhatsAppFloating
 import { CountryProvider } from "@/lib/country/CountryContext";
 import { getActiveCountryPricings } from "@/lib/app-settings/app-settings.service";
 
-export const dynamic = "force-dynamic";
-
 export default async function StorefrontLayout({
   children,
 }: {

@@ -4,8 +4,6 @@ import { requireAdminAuth } from '@/lib/auth/admin-auth';
 import { getMongoUri } from '@/lib/db/mongo-client';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
-export const dynamic = 'force-dynamic';
-
 async function GETHandler(req: NextRequest) {
     // Check for admin authentication
     try {

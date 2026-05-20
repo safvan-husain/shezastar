@@ -1,15 +1,15 @@
 // app/manage/layout.tsx
+import { connection } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth/admin-auth';
 
 import AdminNavbar from './components/AdminNavbar';
-
-export const dynamic = "force-dynamic";
 
 export default async function ManageLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    await connection();
     await requireAdminAuth();
 
     return (

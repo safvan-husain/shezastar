@@ -1,6 +1,8 @@
 // lib/db/mongo-client.ts
 import { loadEnvConfig } from '@next/env';
 import { MongoClient, Db, Collection, ObjectId, Document } from 'mongodb';
+import { connection } from 'next/server';
+import { logger } from '@/lib/logging/logger';
 
 loadEnvConfig(process.cwd());
 
@@ -13,16 +15,18 @@ let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 
 export async function connectToDatabase() {
+  await connection();
+
   if (cachedClient && cachedDb) {
     return { client: cachedClient, db: cachedDb };
   }
 
   const uri = getMongoUri();
 
-  console.log('--- MongoDB Connection Info ---');
-  console.log('Source URI:', uri.replace(/:([^@]+)@/, ':****@'));
-  console.log('process.env.MONGODB_URI:', process.env.MONGODB_URI ? 'Present' : 'Missing');
-  console.log('-------------------------------');
+  await logger.debug('Connecting to MongoDB', {
+    sourceUri: uri.replace(/:([^@]+)@/, ':****@'),
+    hasMongoUri: Boolean(process.env.MONGODB_URI),
+  });
 
   const client = await MongoClient.connect(uri);
   const db = client.db('shezastar');
