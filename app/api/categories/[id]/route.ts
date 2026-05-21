@@ -6,6 +6,26 @@ import {
     handleDeleteCategory,
 } from '@/lib/category/category.controller';
 import { withRequestLogging } from '@/lib/logging/request-logger';
+import { revalidateCategoryCache } from '@/lib/category/category-cache';
+import { revalidateProductCache } from '@/lib/product/product-cache';
+
+function isForceDelete(req: Request) {
+    return new URL(req.url).searchParams.get('force') === 'true';
+}
+
+function revalidateCategoryDeleteResult(body: unknown) {
+    revalidateCategoryCache();
+
+    if (!body || typeof body !== 'object' || !('cleanedProductIds' in body) || !Array.isArray(body.cleanedProductIds)) {
+        return;
+    }
+
+    body.cleanedProductIds.forEach(productId => {
+        if (typeof productId === 'string') {
+            revalidateProductCache(productId);
+        }
+    });
+}
 
 async function GETHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -22,7 +42,10 @@ async function PUTHandler(req: Request, { params }: { params: Promise<{ id: stri
 
 async function DELETEHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const { status, body } = await handleDeleteCategory(id);
+    const { status, body } = await handleDeleteCategory(id, { force: isForceDelete(req) });
+    if (status < 400) {
+        revalidateCategoryDeleteResult(body);
+    }
     return NextResponse.json(body, { status });
 }
 

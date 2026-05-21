@@ -1,4 +1,5 @@
-import { cache, Suspense } from 'react';
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Product } from '@/lib/product/model/product.model';
 import { ProductErrorHandler, ProductPageError } from '../components/ProductErrorHandler';
 import { ProductDetails } from '../components/ProductDetails';
@@ -6,7 +7,8 @@ import { RelatedProducts } from '../components/RelatedProducts';
 import { ProductDetailsSkeleton } from '../components/ProductPageSkeleton';
 import { RecentlyViewed } from '@/components/storefront/RecentlyViewed';
 import { getBroaderCategoryContextIds } from '@/lib/category/category.service';
-import { getAllProducts, getProduct } from '@/lib/product/product.service';
+import { getCachedProduct } from '@/lib/product/product-cache';
+import { getAllProducts } from '@/lib/product/product.service';
 import { AppError } from '@/lib/errors/app-error';
 
 interface ProductPageProps {
@@ -44,9 +46,18 @@ function createErrorPayload(error: unknown, override?: Partial<ProductPageError>
   };
 }
 
-const fetchProduct = cache(async (id: string): Promise<{ product: Product | null; error: ProductPageError | null }> => {
+function stripHtml(value?: string | null) {
+  if (!value) return '';
+  return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function buildProductDescription(product: Product) {
+  return product.subtitle || stripHtml(product.description) || `Shop ${product.name} at Sheza Star.`;
+}
+
+async function fetchProduct(id: string): Promise<{ product: Product | null; error: ProductPageError | null }> {
   try {
-    const product = await getProduct(id);
+    const product = await getCachedProduct(id);
     return { product, error: null };
   } catch (error) {
     return {
@@ -57,7 +68,7 @@ const fetchProduct = cache(async (id: string): Promise<{ product: Product | null
       }),
     };
   }
-});
+}
 
 async function fetchRelatedProducts(categoryIds: string[], originId?: string): Promise<{ products: Product[]; error: ProductPageError | null }> {
   if (categoryIds.length === 0) {
@@ -78,6 +89,41 @@ async function fetchRelatedProducts(categoryIds: string[], originId?: string): P
         message: error instanceof Error ? error.message : 'Failed to load related products',
         url: `service:product:getAllProducts?${params.toString()}`,
       }),
+    };
+  }
+}
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { id } = await params;
+
+  try {
+    const product = await getCachedProduct(id);
+    const description = buildProductDescription(product);
+    const imageUrl = product.images.find((image) => image.url)?.url;
+
+    return {
+      title: `${product.name} | Sheza Star`,
+      description,
+      alternates: {
+        canonical: `/product/${id}`,
+      },
+      openGraph: {
+        title: `${product.name} | Sheza Star`,
+        description,
+        type: 'website',
+        images: imageUrl ? [{ url: imageUrl, alt: product.name }] : undefined,
+      },
+      twitter: {
+        card: imageUrl ? 'summary_large_image' : 'summary',
+        title: `${product.name} | Sheza Star`,
+        description,
+        images: imageUrl ? [imageUrl] : undefined,
+      },
+    };
+  } catch {
+    return {
+      title: 'Product | Sheza Star',
+      description: 'Shop quality car accessories from Sheza Star.',
     };
   }
 }

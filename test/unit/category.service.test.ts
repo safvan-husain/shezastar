@@ -9,7 +9,9 @@ import {
     getCategory,
     getCategoryHierarchyIds,
     getBroaderCategoryContextIds,
+    deleteCategory,
 } from '@/lib/category/category.service';
+import { createProduct, getProduct } from '@/lib/product/product.service';
 import { AppError } from '@/lib/errors/app-error';
 import { clear } from '../test-db';
 
@@ -145,5 +147,130 @@ describe('getCategoryHierarchyIds', () => {
         const ids = await getBroaderCategoryContextIds([subSubCategoryId]);
         expect(ids).toEqual(expect.arrayContaining([subSubCategoryId, subCategoryId, categoryId]));
         expect(ids.length).toBe(3);
+    });
+});
+
+describe('Category Service - Deletion Cleanup', () => {
+    beforeEach(async () => {
+        await clear();
+    });
+
+    it('deletes an unused category normally', async () => {
+        const category = await createCategory({ name: 'Unused Delete Root', subCategories: [] });
+
+        const result = await deleteCategory(category.id);
+
+        expect(result).toMatchObject({
+            success: true,
+            cleanedProductCount: 0,
+            removedCategoryIds: [category.id],
+        });
+        await expect(getCategory(category.id)).rejects.toThrow(AppError);
+    });
+
+    it('blocks deleting a referenced category without force', async () => {
+        const category = await createCategory({ name: 'Referenced Delete Root', subCategories: [] });
+        await createProduct({
+            name: 'Referenced Root Product',
+            basePrice: 10,
+            images: [],
+            variants: [],
+            variantStock: [],
+            specifications: [],
+            subCategoryIds: [category.id],
+        });
+
+        await expect(deleteCategory(category.id)).rejects.toMatchObject({
+            status: 409,
+            code: 'CATEGORY_IN_USE',
+        });
+    });
+
+    it('force deletes a referenced category and cleans product references', async () => {
+        const category = await createCategory({ name: 'Forced Delete Root', subCategories: [] });
+        const product = await createProduct({
+            name: 'Forced Root Product',
+            basePrice: 10,
+            images: [],
+            variants: [],
+            variantStock: [],
+            specifications: [],
+            subCategoryIds: [category.id],
+        });
+
+        const result = await deleteCategory(category.id, { force: true });
+        const cleanedProduct = await getProduct(product.id);
+
+        expect(result.cleanedProductCount).toBe(1);
+        expect(result.cleanedProductIds).toEqual([product.id]);
+        expect(result.removedCategoryIds).toEqual([category.id]);
+        expect(cleanedProduct.subCategoryIds).toEqual([]);
+    });
+
+    it('force deleting a parent category cleans descendant references from products', async () => {
+        const category = await createCategory({
+            name: 'Forced Delete Parent',
+            subCategories: [
+                {
+                    id: 'delete-child',
+                    name: 'Delete Child',
+                    subSubCategories: [{ id: 'delete-leaf', name: 'Delete Leaf' }],
+                },
+            ],
+        });
+        const childProduct = await createProduct({
+            name: 'Child Reference Product',
+            basePrice: 10,
+            images: [],
+            variants: [],
+            variantStock: [],
+            specifications: [],
+            subCategoryIds: ['delete-child'],
+        });
+        const leafProduct = await createProduct({
+            name: 'Leaf Reference Product',
+            basePrice: 10,
+            images: [],
+            variants: [],
+            variantStock: [],
+            specifications: [],
+            subCategoryIds: ['delete-leaf'],
+        });
+
+        const result = await deleteCategory(category.id, { force: true });
+
+        expect(result.cleanedProductCount).toBe(2);
+        expect(result.removedCategoryIds).toEqual(expect.arrayContaining([category.id, 'delete-child', 'delete-leaf']));
+        await expect(getProduct(childProduct.id)).resolves.toMatchObject({ subCategoryIds: [] });
+        await expect(getProduct(leafProduct.id)).resolves.toMatchObject({ subCategoryIds: [] });
+    });
+
+    it('force deleting a subcategory cleans the subcategory and level 3 references', async () => {
+        const category = await createCategory({
+            name: 'Forced Delete Subcategory Parent',
+            subCategories: [
+                {
+                    id: 'remove-sub',
+                    name: 'Remove Sub',
+                    subSubCategories: [{ id: 'remove-leaf', name: 'Remove Leaf' }],
+                },
+            ],
+        });
+        const product = await createProduct({
+            name: 'Subcategory Cleanup Product',
+            basePrice: 10,
+            images: [],
+            variants: [],
+            variantStock: [],
+            specifications: [],
+            subCategoryIds: ['remove-sub', 'remove-leaf'],
+        });
+
+        const updatedCategory = await removeSubCategory(category.id, 'remove-sub', { force: true });
+        const cleanedProduct = await getProduct(product.id);
+
+        expect(updatedCategory.subCategories).toEqual([]);
+        expect((updatedCategory as any).cleanedProductCount).toBe(1);
+        expect(cleanedProduct.subCategoryIds).toEqual([]);
     });
 });

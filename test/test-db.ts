@@ -50,4 +50,8 @@ export async function getCollection(name: string) {
     return db.collection(name);
 }
 
+export async function getCachedCollection(name: string) {
+    return getCollection(name);
+}
+
 export { ObjectId };

@@ -4,6 +4,7 @@ import { handleAddImages } from '@/lib/product/product.controller';
 import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
 import { withRequestLogging } from '@/lib/logging/request-logger';
+import { revalidateProductCache } from '@/lib/product/product-cache';
 
 async function POSTHandler(
     req: Request,
@@ -34,6 +35,9 @@ async function POSTHandler(
 
         // Add to product
         const { status, body } = await handleAddImages(id, images);
+        if (status < 400) {
+            revalidateProductCache(id);
+        }
         return NextResponse.json(body, { status });
     } catch (error: any) {
         return NextResponse.json(

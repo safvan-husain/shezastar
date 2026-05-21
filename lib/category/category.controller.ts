@@ -9,6 +9,10 @@ import {
 } from './category.schema';
 import * as categoryService from './category.service';
 
+interface DeleteOptions {
+    force?: boolean;
+}
+
 export async function handleCreateCategory(input: unknown) {
     try {
         const parsed = CreateCategorySchema.parse(input);
@@ -47,9 +51,9 @@ export async function handleUpdateCategory(id: string, input: unknown) {
     }
 }
 
-export async function handleDeleteCategory(id: string) {
+export async function handleDeleteCategory(id: string, options?: DeleteOptions) {
     try {
-        const result = await categoryService.deleteCategory(id);
+        const result = await categoryService.deleteCategory(id, options);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);
@@ -66,9 +70,9 @@ export async function handleAddSubCategory(id: string, input: unknown) {
     }
 }
 
-export async function handleRemoveSubCategory(id: string, subCategoryId: string) {
+export async function handleRemoveSubCategory(id: string, subCategoryId: string, options?: DeleteOptions) {
     try {
-        const result = await categoryService.removeSubCategory(id, subCategoryId);
+        const result = await categoryService.removeSubCategory(id, subCategoryId, options);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);
@@ -92,10 +96,11 @@ export async function handleAddSubSubCategory(
 export async function handleRemoveSubSubCategory(
     id: string,
     subCategoryId: string,
-    subSubCategoryId: string
+    subSubCategoryId: string,
+    options?: DeleteOptions
 ) {
     try {
-        const result = await categoryService.removeSubSubCategory(id, subCategoryId, subSubCategoryId);
+        const result = await categoryService.removeSubSubCategory(id, subCategoryId, subSubCategoryId, options);
         return { status: 200, body: result };
     } catch (err) {
         return catchError(err);

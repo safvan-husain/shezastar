@@ -8,6 +8,7 @@ import {
     DELETE as removeSubSubCategory,
 } from '@/app/api/categories/[id]/subcategories/[subId]/subsubcategories/[subSubId]/route';
 import { clear } from '../test-db';
+import { createProduct as createProductService, getProduct } from '@/lib/product/product.service';
 
 describe('Category API Integration - Three Level Categories', () => {
     let categoryId: string;
@@ -130,5 +131,54 @@ describe('Category API Integration - Three Level Categories', () => {
         const deleteBody = await deleteRes.json();
         expect(deleteRes.status).toBe(200);
         expect(deleteBody.success).toBe(true);
+    });
+});
+
+describe('Category API Integration - Reference cleanup', () => {
+    beforeAll(async () => {
+        await clear();
+    });
+
+    it('warns before deleting a referenced category and cleans references when forced', async () => {
+        const createRes = await createCategory(new Request('http://localhost/api/categories', {
+            method: 'POST',
+            body: JSON.stringify({ name: 'Referenced API Category' }),
+        }));
+        const category = await createRes.json();
+        const product = await createProductService({
+            name: 'Referenced API Product',
+            basePrice: 20,
+            images: [],
+            variants: [],
+            variantStock: [],
+            specifications: [],
+            subCategoryIds: [category.id],
+        });
+
+        const params = Promise.resolve({ id: category.id });
+        const warnRes = await deleteCategory(
+            new Request(`http://localhost/api/categories/${category.id}`, { method: 'DELETE' }),
+            { params }
+        );
+        const warnBody = await warnRes.json();
+
+        expect(warnRes.status).toBe(409);
+        expect(warnBody.code).toBe('CATEGORY_IN_USE');
+        expect(warnBody.details.productCount).toBe(1);
+
+        const forceRes = await deleteCategory(
+            new Request(`http://localhost/api/categories/${category.id}?force=true`, { method: 'DELETE' }),
+            { params: Promise.resolve({ id: category.id }) }
+        );
+        const forceBody = await forceRes.json();
+        const cleanedProduct = await getProduct(product.id);
+
+        expect(forceRes.status).toBe(200);
+        expect(forceBody).toMatchObject({
+            success: true,
+            cleanedProductCount: 1,
+            removedCategoryIds: [category.id],
+        });
+        expect(cleanedProduct.subCategoryIds).toEqual([]);
     });
 });

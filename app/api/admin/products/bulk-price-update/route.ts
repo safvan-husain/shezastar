@@ -5,6 +5,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { withRequestLogging } from '@/lib/logging/request-logger';
+import { revalidateProductCache } from '@/lib/product/product-cache';
 
 async function POSTHandler(req: Request) {
     try {
@@ -20,6 +21,7 @@ async function POSTHandler(req: Request) {
         }
 
         const result = await bulkUpdatePrices(parsed.data, buildAdminActivityActor(admin));
+        revalidateProductCache();
         return NextResponse.json(result);
     } catch (error) {
         if (error instanceof AppError) {

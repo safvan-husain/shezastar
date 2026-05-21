@@ -21,6 +21,10 @@ let cachedDb: Db | null = null;
 export async function connectToDatabase() {
   await connection();
 
+  return connectToDatabaseWithoutRequestConnection();
+}
+
+export async function connectToDatabaseWithoutRequestConnection() {
   if (cachedClient && cachedDb) {
     return { client: cachedClient, db: cachedDb };
   }
@@ -43,6 +47,11 @@ export async function connectToDatabase() {
 
 export async function getCollection<T extends Document>(collectionName: string): Promise<Collection<T>> {
   const { db } = await connectToDatabase();
+  return db.collection<T>(collectionName);
+}
+
+export async function getCachedCollection<T extends Document>(collectionName: string): Promise<Collection<T>> {
+  const { db } = await connectToDatabaseWithoutRequestConnection();
   return db.collection<T>(collectionName);
 }
 

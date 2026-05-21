@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface SubSubCategory {
     id: string;
@@ -25,6 +26,17 @@ interface Category {
 
 type LoadingType = 'category' | 'subcategory' | 'subsubcategory';
 type LoadingAction = { type: LoadingType; id: string } | null;
+type DeleteTarget = {
+    type: LoadingType;
+    id: string;
+    url: string;
+    title: string;
+    message: string;
+    confirmText: string;
+    successMessage: string;
+    onSuccess: (data: any) => void;
+    force?: boolean;
+};
 
 export function CategoryList() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -36,6 +48,7 @@ export function CategoryList() {
     const [editingSubCategoryId, setEditingSubCategoryId] = useState<string | null>(null);
     const [editingSubCategoryName, setEditingSubCategoryName] = useState('');
     const [actionLoading, setActionLoading] = useState<LoadingAction>(null);
+    const [pendingDelete, setPendingDelete] = useState<DeleteTarget | null>(null);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -98,14 +111,26 @@ export function CategoryList() {
         );
     };
 
-    const handleDeleteCategory = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this category?')) return;
-
-        setActionLoading({ type: 'category', id });
+    const executeDelete = async (target: DeleteTarget) => {
+        const url = target.force ? `${target.url}?force=true` : target.url;
+        setActionLoading({ type: target.type, id: target.id });
         try {
-            const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+            const res = await fetch(url, { method: 'DELETE' });
+            const data = await res.json();
+
+            if (res.status === 409 && data.code === 'CATEGORY_IN_USE') {
+                const productCount = data.details?.productCount ?? 0;
+                setPendingDelete({
+                    ...target,
+                    force: true,
+                    title: 'Remove category from products?',
+                    message: `This category is used by ${productCount} product${productCount === 1 ? '' : 's'}. Deleting it will remove this category assignment from those products.`,
+                    confirmText: 'Delete and clean products',
+                });
+                return;
+            }
+
             if (!res.ok) {
-                const data = await res.json();
                 const message = data.message || data.error || 'Failed to delete category';
                 showToast(message, 'error', {
                     status: res.status,
@@ -116,18 +141,42 @@ export function CategoryList() {
                 return;
             }
 
-            showToast('Category deleted', 'success');
-            setCategories(prev => prev.filter(category => category.id !== id));
+            const cleanedProductCount = data.cleanedProductCount ?? 0;
+            showToast(
+                cleanedProductCount > 0
+                    ? `${target.successMessage}. Cleaned ${cleanedProductCount} product${cleanedProductCount === 1 ? '' : 's'}.`
+                    : target.successMessage,
+                'success'
+            );
+            target.onSuccess(data);
+            setPendingDelete(null);
         } catch (err: any) {
             const message = err.message || 'Failed to delete category';
             showToast(message, 'error', {
-                url: `/api/categories/${id}`,
+                url: target.url,
                 method: 'DELETE',
                 body: { error: message },
             });
         } finally {
             setActionLoading(null);
         }
+    };
+
+    const requestDelete = (target: DeleteTarget) => {
+        setPendingDelete(target);
+    };
+
+    const handleDeleteCategory = (category: Category) => {
+        requestDelete({
+            type: 'category',
+            id: category.id,
+            url: `/api/categories/${category.id}`,
+            title: 'Delete category',
+            message: `Delete ${category.name}? This cannot be undone.`,
+            confirmText: 'Delete',
+            successMessage: 'Category deleted',
+            onSuccess: () => setCategories(prev => prev.filter(item => item.id !== category.id)),
+        });
     };
 
     const handleAddSubCategory = async (categoryId: string) => {
@@ -169,39 +218,17 @@ export function CategoryList() {
         }
     };
 
-    const handleRemoveSubCategory = async (categoryId: string, subCategoryId: string) => {
-        if (!confirm('Delete this subcategory and all nested items?')) return;
-
-        setActionLoading({ type: 'subcategory', id: subCategoryId });
-        try {
-            const res = await fetch(`/api/categories/${categoryId}/subcategories/${subCategoryId}`, {
-                method: 'DELETE',
-            });
-
-            const data = await res.json();
-            if (!res.ok) {
-                const message = data.message || data.error || 'Failed to delete subcategory';
-                showToast(message, 'error', {
-                    status: res.status,
-                    body: data,
-                    url: res.url,
-                    method: 'DELETE',
-                });
-                return;
-            }
-
-            showToast('Subcategory removed', 'success');
-            updateCategoryState(data);
-        } catch (err: any) {
-            const message = err.message || 'Failed to delete subcategory';
-            showToast(message, 'error', {
-                url: `/api/categories/${categoryId}/subcategories/${subCategoryId}`,
-                method: 'DELETE',
-                body: { error: message },
-            });
-        } finally {
-            setActionLoading(null);
-        }
+    const handleRemoveSubCategory = (categoryId: string, subCategory: SubCategory) => {
+        requestDelete({
+            type: 'subcategory',
+            id: subCategory.id,
+            url: `/api/categories/${categoryId}/subcategories/${subCategory.id}`,
+            title: 'Delete subcategory',
+            message: `Delete ${subCategory.name} and all nested items? This cannot be undone.`,
+            confirmText: 'Delete',
+            successMessage: 'Subcategory removed',
+            onSuccess: updateCategoryState,
+        });
     };
 
     const handleUpdateSubCategoryName = async (categoryId: string, subCategoryId: string) => {
@@ -286,48 +313,25 @@ export function CategoryList() {
         }
     };
 
-    const handleRemoveSubSubCategory = async (
+    const handleRemoveSubSubCategory = (
         categoryId: string,
         subCategoryId: string,
-        subSubCategoryId: string
+        subSubCategory: SubSubCategory
     ) => {
-        if (!confirm('Remove this level 3 category?')) return;
-
         const key = `${categoryId}-${subCategoryId}`;
-        setActionLoading({ type: 'subsubcategory', id: subSubCategoryId });
-        try {
-            const res = await fetch(
-                `/api/categories/${categoryId}/subcategories/${subCategoryId}/subsubcategories/${subSubCategoryId}`,
-                {
-                    method: 'DELETE',
-                }
-            );
-
-            const data = await res.json();
-            if (!res.ok) {
-                const message = data.message || data.error || 'Failed to remove level 3 category';
-                showToast(message, 'error', {
-                    status: res.status,
-                    body: data,
-                    url: res.url,
-                    method: 'DELETE',
-                });
-                return;
-            }
-
-            updateCategoryState(data);
-            showToast('Level 3 category removed', 'success');
-            setNewSubSubCategoryNames(prev => ({ ...prev, [key]: '' }));
-        } catch (err: any) {
-            const message = err.message || 'Failed to remove level 3 category';
-            showToast(message, 'error', {
-                url: `/api/categories/${categoryId}/subcategories/${subCategoryId}/subsubcategories/${subSubCategoryId}`,
-                method: 'DELETE',
-                body: { error: message },
-            });
-        } finally {
-            setActionLoading(null);
-        }
+        requestDelete({
+            type: 'subsubcategory',
+            id: subSubCategory.id,
+            url: `/api/categories/${categoryId}/subcategories/${subCategoryId}/subsubcategories/${subSubCategory.id}`,
+            title: 'Delete level 3 category',
+            message: `Delete ${subSubCategory.name}? This cannot be undone.`,
+            confirmText: 'Delete',
+            successMessage: 'Level 3 category removed',
+            onSuccess: (data) => {
+                updateCategoryState(data);
+                setNewSubSubCategoryNames(prev => ({ ...prev, [key]: '' }));
+            },
+        });
     };
 
     if (loading) {
@@ -350,9 +354,10 @@ export function CategoryList() {
     };
 
     return (
-        <div className="divide-y divide-[var(--border)]">
-            {categories.map(category => (
-                <div key={category.id} className="p-4">
+        <>
+            <div className="divide-y divide-[var(--border)]">
+                {categories.map(category => (
+                    <div key={category.id} className="p-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
                             <button
@@ -385,7 +390,7 @@ export function CategoryList() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDeleteCategory(category.id)}
+                                onClick={() => handleDeleteCategory(category)}
                                 disabled={isActionLoading('category', category.id)}
                             >
                                 {isActionLoading('category', category.id) ? 'Deleting...' : 'Delete'}
@@ -514,7 +519,7 @@ export function CategoryList() {
                                                                 <Button
                                                                     size="sm"
                                                                     variant="outline"
-                                                                    onClick={() => handleRemoveSubCategory(category.id, sub.id)}
+                                                                    onClick={() => handleRemoveSubCategory(category.id, sub)}
                                                                     disabled={isActionLoading('subcategory', sub.id)}
                                                                 >
                                                                     {isActionLoading('subcategory', sub.id)
@@ -561,7 +566,7 @@ export function CategoryList() {
                                                                             handleRemoveSubSubCategory(
                                                                                 category.id,
                                                                                 sub.id,
-                                                                                subSub.id
+                                                                                subSub
                                                                             )
                                                                         }
                                                                         disabled={isActionLoading('subsubcategory', subSub.id)}
@@ -611,8 +616,24 @@ export function CategoryList() {
                             )}
                         </div>
                     )}
-                </div>
-            ))}
-        </div>
+                    </div>
+                ))}
+            </div>
+
+            <ConfirmDialog
+                isOpen={Boolean(pendingDelete)}
+                onClose={() => setPendingDelete(null)}
+                onConfirm={() => {
+                    if (pendingDelete) {
+                        void executeDelete(pendingDelete);
+                    }
+                }}
+                title={pendingDelete?.title ?? 'Delete category'}
+                message={pendingDelete?.message ?? ''}
+                confirmText={pendingDelete?.confirmText ?? 'Delete'}
+                variant="danger"
+                isLoading={Boolean(pendingDelete && isActionLoading(pendingDelete.type, pendingDelete.id))}
+            />
+        </>
     );
 }

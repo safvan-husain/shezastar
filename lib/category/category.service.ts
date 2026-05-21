@@ -23,8 +23,10 @@ import {
     getSubCategorySlug,
     getSubSubCategorySlug,
 } from './slug';
+import type { ProductDocument } from '@/lib/product/model/product.model';
 
 const COLLECTION = 'categories';
+const PRODUCT_COLLECTION = 'products';
 
 let cachedCategories: CategoryDocument[] | null = null;
 let cachedLineageMap: Map<string, string[]> | null = null;
@@ -41,6 +43,17 @@ function parseObjectId(id: string) {
 
 type NestedSubCategory = SchemaSubCategory | CategorySubCategory;
 type NestedSubSubCategory = SchemaSubSubCategory | CategorySubSubCategory;
+
+interface DeleteCategoryOptions {
+    force?: boolean;
+}
+
+export interface DeleteCategoryResult {
+    success: true;
+    cleanedProductCount: number;
+    cleanedProductIds: string[];
+    removedCategoryIds: string[];
+}
 
 function normalizeSubSubCategory(
     categoryName: string,
@@ -73,6 +86,51 @@ function normalizeSubCategories(
     subCategories: NestedSubCategory[] = []
 ): CategorySubCategory[] {
     return subCategories.map(sub => normalizeSubCategory(categoryName, sub));
+}
+
+function getSubCategoryBranchIds(subCategory: CategorySubCategory) {
+    return [
+        subCategory.id,
+        ...subCategory.subSubCategories.map(subSub => subSub.id),
+    ];
+}
+
+function getCategoryBranchIds(category: CategoryDocument) {
+    return [
+        category._id.toString(),
+        ...normalizeSubCategories(category.name, category.subCategories).flatMap(getSubCategoryBranchIds),
+    ];
+}
+
+async function cleanupProductCategoryReferences(categoryIds: string[], options: DeleteCategoryOptions): Promise<Omit<DeleteCategoryResult, 'success'>> {
+    const removedCategoryIds = Array.from(new Set(categoryIds));
+    const productCollection = await getCollection<ProductDocument>(PRODUCT_COLLECTION);
+    const affectedProducts = await productCollection
+        .find({ subCategoryIds: { $in: removedCategoryIds } }, { projection: { _id: 1 } })
+        .toArray();
+    const cleanedProductIds = affectedProducts.map(product => product._id.toString());
+
+    if (cleanedProductIds.length > 0 && !options.force) {
+        throw new AppError(409, 'CATEGORY_IN_USE', {
+            message: `This category is used by ${cleanedProductIds.length} product${cleanedProductIds.length === 1 ? '' : 's'}.`,
+            productCount: cleanedProductIds.length,
+            productIds: cleanedProductIds,
+            removedCategoryIds,
+        });
+    }
+
+    if (cleanedProductIds.length > 0) {
+        await productCollection.updateMany(
+            { _id: { $in: affectedProducts.map(product => product._id) } },
+            { $pull: { subCategoryIds: { $in: removedCategoryIds } } }
+        );
+    }
+
+    return {
+        cleanedProductCount: cleanedProductIds.length,
+        cleanedProductIds,
+        removedCategoryIds,
+    };
 }
 
 export async function createCategory(input: CreateCategoryInput) {
@@ -182,7 +240,7 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
     return toCategory(updated);
 }
 
-export async function deleteCategory(id: string) {
+export async function deleteCategory(id: string, options: DeleteCategoryOptions = {}): Promise<DeleteCategoryResult> {
     const collection = await getCollection<CategoryDocument>(COLLECTION);
 
     const objectId = parseObjectId(id);
@@ -192,13 +250,15 @@ export async function deleteCategory(id: string) {
         throw new AppError(404, 'CATEGORY_NOT_FOUND');
     }
 
+    const cleanup = await cleanupProductCategoryReferences(getCategoryBranchIds(existing), options);
+
     await collection.deleteOne({ _id: objectId });
 
     // Invalidate cache
     cachedCategories = null;
     cachedLineageMap = null;
 
-    return { success: true };
+    return { success: true, ...cleanup };
 }
 
 export async function addSubCategory(id: string, input: AddSubCategoryInput) {
@@ -249,7 +309,7 @@ export async function addSubCategory(id: string, input: AddSubCategoryInput) {
     return toCategory(updated);
 }
 
-export async function removeSubCategory(id: string, subCategoryId: string) {
+export async function removeSubCategory(id: string, subCategoryId: string, options: DeleteCategoryOptions = {}) {
     const collection = await getCollection<CategoryDocument>(COLLECTION);
 
     const objectId = parseObjectId(id);
@@ -265,6 +325,12 @@ export async function removeSubCategory(id: string, subCategoryId: string) {
     if (updatedSubCategories.length === subCategories.length) {
         throw new AppError(404, 'SUBCATEGORY_NOT_FOUND');
     }
+
+    const subCategory = subCategories.find(sub => sub.id === subCategoryId);
+    if (!subCategory) {
+        throw new AppError(404, 'SUBCATEGORY_NOT_FOUND');
+    }
+    const cleanup = await cleanupProductCategoryReferences(getSubCategoryBranchIds(subCategory), options);
 
     await collection.updateOne(
         { _id: objectId },
@@ -282,7 +348,7 @@ export async function removeSubCategory(id: string, subCategoryId: string) {
     cachedCategories = null;
     cachedLineageMap = null;
 
-    return toCategory(updated);
+    return { ...toCategory(updated), ...cleanup };
 }
 
 export async function addSubSubCategory(
@@ -344,7 +410,8 @@ export async function addSubSubCategory(
 export async function removeSubSubCategory(
     categoryId: string,
     subCategoryId: string,
-    subSubCategoryId: string
+    subSubCategoryId: string,
+    options: DeleteCategoryOptions = {}
 ) {
     const collection = await getCollection<CategoryDocument>(COLLECTION);
     const objectId = parseObjectId(categoryId);
@@ -369,6 +436,8 @@ export async function removeSubSubCategory(
         throw new AppError(404, 'SUBSUBCATEGORY_NOT_FOUND');
     }
 
+    const cleanup = await cleanupProductCategoryReferences([subSubCategoryId], options);
+
     await collection.updateOne(
         { _id: objectId },
         {
@@ -388,7 +457,7 @@ export async function removeSubSubCategory(
     cachedCategories = null;
     cachedLineageMap = null;
 
-    return toCategory(updated);
+    return { ...toCategory(updated), ...cleanup };
 }
 
 export async function updateSubCategory(

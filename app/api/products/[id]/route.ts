@@ -7,6 +7,7 @@ import {
 } from '@/lib/product/product.controller';
 import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
+import { revalidateProductCache } from '@/lib/product/product-cache';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
@@ -90,11 +91,17 @@ async function PUTHandler(
             productData.images = allImages;
 
             const { status, body } = await handleUpdateProduct(id, productData, actor);
+            if (status < 400) {
+                revalidateProductCache(id);
+            }
             return NextResponse.json(body, { status });
         } else {
             // Handle JSON request (backward compatibility)
             const data = await req.json();
             const { status, body } = await handleUpdateProduct(id, data, actor);
+            if (status < 400) {
+                revalidateProductCache(id);
+            }
             return NextResponse.json(body, { status });
         }
     } catch (error: any) {
@@ -118,6 +125,9 @@ async function DELETEHandler(
         const actor = buildAdminActivityActor(admin);
         const { id } = await params;
         const { status, body } = await handleDeleteProduct(id, actor);
+        if (status < 400) {
+            revalidateProductCache(id);
+        }
         return NextResponse.json(body, { status });
     } catch (error) {
         const handled = catchError(error);

@@ -8,6 +8,7 @@ import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
 import { searchProducts } from '@/lib/product/product.service';
 import { resolveCategoryFilter } from '@/lib/product/product.service';
+import { revalidateProductCache } from '@/lib/product/product-cache';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
@@ -149,11 +150,17 @@ async function POSTHandler(req: Request) {
             };
 
             const { status, body } = await handleCreateProduct(productData, actor);
+            if (status < 400 && 'id' in body && typeof body.id === 'string') {
+                revalidateProductCache(body.id);
+            }
             return NextResponse.json(body, { status });
         }
 
         const jsonData = await req.json();
         const { status, body } = await handleCreateProduct(jsonData, actor);
+        if (status < 400 && 'id' in body && typeof body.id === 'string') {
+            revalidateProductCache(body.id);
+        }
         return NextResponse.json(body, { status });
     } catch (error: any) {
         const handled = catchError(error);
