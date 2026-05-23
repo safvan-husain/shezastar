@@ -98,7 +98,12 @@ export default async function EditProductPage({
 
                 {/* Form */}
                 {product ? (
-                    <ProductForm initialData={product} globalInstallationLocations={globalInstallationLocations} brands={brands} />
+                    <ProductForm
+                        key={product.id}
+                        initialData={product}
+                        globalInstallationLocations={globalInstallationLocations}
+                        brands={brands}
+                    />
                 ) : (
                     <div className="rounded-xl border-2 border-[var(--border-subtle)] p-4 text-[var(--muted-foreground)]">
                         Unable to load this product. Try again later and copy the toast details for debugging.

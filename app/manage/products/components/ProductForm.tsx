@@ -270,6 +270,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                 initialData?.id ? 'Product updated successfully' : 'Product created successfully',
                 'success'
             );
+            setLoading(false);
             router.push('/manage/products');
             router.refresh();
         } catch (err: any) {
@@ -317,6 +318,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             }
 
             showToast('Product deleted successfully', 'success');
+            setLoading(false);
             router.push('/manage/products');
             router.refresh();
         } catch (err: any) {
