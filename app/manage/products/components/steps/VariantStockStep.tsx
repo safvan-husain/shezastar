@@ -43,6 +43,7 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
     const [combinations, setCombinations] = useState<Array<{ key: string; label: string; itemIds: string[] }>>([]);
     const [stockValues, setStockValues] = useState<Record<string, string>>({});
     const [priceValues, setPriceValues] = useState<Record<string, string>>({});
+    const isDefaultOnly = variants.length === 0;
 
     // State for modal
     const [editingVariantKey, setEditingVariantKey] = useState<string | null>(null);
@@ -61,7 +62,11 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
             const existing = variantStock.find(vs => vs.variantCombinationKey === combo.key);
             initialStockValues[combo.key] = existing?.stockCount.toString() ?? '0';
 
-            // Logic: prefer 'price', fallback to defaultPrice.
+            if (isDefaultOnly) {
+                initialPriceValues[combo.key] = defaultPrice.toString();
+                return;
+            }
+
             if (existing?.price !== undefined) {
                 initialPriceValues[combo.key] = existing.price.toString();
             } else {
@@ -70,7 +75,7 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
         });
         setStockValues(initialStockValues);
         setPriceValues(initialPriceValues);
-    }, [variants, variantStock, basePrice]);
+    }, [variants, variantStock, basePrice, isDefaultOnly]);
 
     const rebuildVariantStock = (stocks: Record<string, string>, prices: Record<string, string>, updatedDetails?: { key: string, title?: string, subtitle?: string, description?: string }) => {
         const newVariantStock: VariantStock[] = Object.entries(stocks).map(([key, stockCountStr]) => {
@@ -92,7 +97,7 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
             }
 
             const stockCount = parseInt(stockCountStr, 10) || 0;
-            const price = parseFloat(prices[key]) || 0;
+            const price = isDefaultOnly ? (basePrice || 0) : (parseFloat(prices[key]) || 0);
 
             return {
                 variantCombinationKey: key,
@@ -233,20 +238,34 @@ export function VariantStockStep({ variants, variantStock, basePrice, offerPerce
                                             <label htmlFor={`price-${combo.key}`} className="text-sm text-[var(--muted-foreground)] whitespace-nowrap">
                                                 Final Price:
                                             </label>
-                                            <input
-                                                id={`price-${combo.key}`}
-                                                type="text"
-                                                inputMode="decimal"
-                                                value={price}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                                        handlePriceChange(combo.key, val);
-                                                    }
-                                                }}
-                                                className="w-28 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-                                            />
+                                            {isDefaultOnly ? (
+                                                <div
+                                                    id={`price-${combo.key}`}
+                                                    className="w-28 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--bg-subtle)] text-[var(--foreground)]"
+                                                >
+                                                    {(basePrice || 0).toFixed(2)}
+                                                </div>
+                                            ) : (
+                                                <input
+                                                    id={`price-${combo.key}`}
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={price}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                            handlePriceChange(combo.key, val);
+                                                        }
+                                                    }}
+                                                    className="w-28 px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                                                />
+                                            )}
                                         </div>
+                                        {isDefaultOnly && (
+                                            <p className="text-[10px] text-[var(--muted-foreground)]">
+                                                Synced with base product price
+                                            </p>
+                                        )}
                                         {offerPercentage > 0 && (
                                             <div className="text-[10px] text-[var(--success)] font-medium">
                                                 Calculated Offer: AED {((parseFloat(price) || 0) * (1 - offerPercentage / 100)).toFixed(2)} ({offerPercentage}% off)

@@ -1,7 +1,7 @@
 // app/(admin)/products/components/ProductForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -88,6 +88,40 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
         }, {}) || {}
     );
 
+    useEffect(() => {
+        if (variants.length > 0) {
+            return;
+        }
+
+        const parsedPrice = parseFloat(basePrice);
+        if (!basePrice || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+            return;
+        }
+
+        setVariantStock((prev) => {
+            const defaultIndex = prev.findIndex((entry) => entry.variantCombinationKey === 'default');
+
+            if (defaultIndex >= 0) {
+                if (prev[defaultIndex].price === parsedPrice) {
+                    return prev;
+                }
+
+                const next = [...prev];
+                next[defaultIndex] = { ...next[defaultIndex], price: parsedPrice };
+                return next;
+            }
+
+            return [
+                ...prev,
+                {
+                    variantCombinationKey: 'default',
+                    stockCount: 0,
+                    price: parsedPrice,
+                },
+            ];
+        });
+    }, [basePrice, variants.length]);
+
     const handleSubmit = async () => {
         setError('');
 
@@ -146,16 +180,24 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
 
             formData.append('variants', JSON.stringify(variants));
 
-            // Ensure products without variants have a default stock entry
+            // Ensure products without variants keep default stock in sync with base price
             let finalVariantStock = [...variantStock];
             if (variants.length === 0) {
-                // If no variants, ensure we have a default stock entry
-                const hasDefaultEntry = finalVariantStock.some(vs => vs.variantCombinationKey === 'default');
-                if (!hasDefaultEntry) {
+                const parsedPrice = parseFloat(basePrice) || 0;
+                const defaultIndex = finalVariantStock.findIndex(
+                    (entry) => entry.variantCombinationKey === 'default'
+                );
+
+                if (defaultIndex >= 0) {
+                    finalVariantStock[defaultIndex] = {
+                        ...finalVariantStock[defaultIndex],
+                        price: parsedPrice,
+                    };
+                } else {
                     finalVariantStock.push({
                         variantCombinationKey: 'default',
                         stockCount: 0,
-                        price: parseFloat(basePrice) || 0,
+                        price: parsedPrice,
                     });
                 }
             }
