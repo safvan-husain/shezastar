@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { handleUpdateShipmentWeights } from '@/lib/shipping/shipping.controller';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { catchError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function PATCHHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        await requireAdminApiAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
         const { id } = await params;
 
         let payload: unknown = {};

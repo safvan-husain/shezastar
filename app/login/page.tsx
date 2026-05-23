@@ -7,7 +7,7 @@ export default function AdminLoginPage() {
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold">Admin login</h1>
                     <p className="text-[var(--text-secondary)]">
-                        Use the seeded admin password to continue. Only the password is required.
+                        Sign in with your admin email and password.
                     </p>
                 </div>
                 <AdminLoginForm />

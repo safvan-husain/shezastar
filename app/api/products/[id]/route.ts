@@ -9,6 +9,7 @@ import { saveImages } from '@/lib/utils/file-upload';
 import { nanoid } from 'nanoid';
 import { revalidateProductCache } from '@/lib/product/product-cache';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
@@ -33,7 +34,7 @@ async function PUTHandler(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const admin = await requireAdminApiAuth();
+        const admin = await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
         const actor = buildAdminActivityActor(admin);
         const { id } = await params;
         const contentType = req.headers.get('content-type');
@@ -131,7 +132,7 @@ async function DELETEHandler(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const admin = await requireAdminApiAuth();
+        const admin = await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
         const actor = buildAdminActivityActor(admin);
         const { id } = await params;
         const { status, body } = await handleDeleteProduct(id, actor);

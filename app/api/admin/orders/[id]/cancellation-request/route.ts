@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { handleAdminReviewOrderCancellationRequest } from '@/lib/order/order.controller';
 import { catchError } from '@/lib/errors/app-error';
@@ -9,7 +10,7 @@ import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function PATCHHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const admin = await requireAdminApiAuth();
+        const admin = await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
         const { id } = await params;
 
         let payload: unknown = {};

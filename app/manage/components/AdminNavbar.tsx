@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 import { useToast } from '@/components/ui/Toast';
+import type { AdminRole } from '@/lib/auth/admin-auth-core';
 
 type IconProps = {
     className?: string;
@@ -20,7 +21,7 @@ type NavLinkItem = {
 
 type NavGroupItem = {
     type: 'group';
-    id: 'products' | 'orders' | 'settings';
+    id: 'products' | 'orders' | 'settings' | 'seo';
     label: string;
     shortLabel: string;
     href: string;
@@ -103,6 +104,15 @@ const SettingsIcon = ({ className }: IconProps) => (
     </svg>
 );
 
+const SeoIcon = ({ className }: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+        <path d="M8 11h6" />
+        <path d="M11 8v6" />
+    </svg>
+);
+
 const BackupIcon = ({ className }: IconProps) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="M12 3v11" />
@@ -135,6 +145,23 @@ const CloseIcon = ({ className }: IconProps) => (
         <path d="M18 6 6 18" />
     </svg>
 );
+
+const SEO_NAV_ITEMS: NavItem[] = [
+    {
+        type: 'group',
+        id: 'seo',
+        href: '/manage/seo',
+        label: 'SEO',
+        shortLabel: 'SEO',
+        Icon: SeoIcon,
+        children: [
+            { href: '/manage/seo', label: 'Overview' },
+            { href: '/manage/seo/products', label: 'Products' },
+            { href: '/manage/seo/categories', label: 'Categories' },
+            { href: '/manage/seo/static-pages', label: 'Static pages' },
+        ],
+    },
+];
 
 const NAV_ITEMS: NavItem[] = [
     { type: 'link', href: '/manage', label: 'Dashboard', shortLabel: 'Dash', Icon: DashboardIcon },
@@ -183,18 +210,24 @@ const NAV_ITEMS: NavItem[] = [
             { href: '/manage/settings/seo', label: 'Static page SEO' },
         ],
     },
+    ...SEO_NAV_ITEMS,
 ];
 
 type NavPanelProps = {
     collapsed: boolean;
     pathname: string | null;
+    adminRole: AdminRole;
     onNavigate?: () => void;
     onToggleCollapse?: () => void;
     isBackingUp: boolean;
     onBackup: () => Promise<void>;
 };
 
-type OpenGroups = Record<'products' | 'orders' | 'settings', boolean>;
+type OpenGroups = Record<'products' | 'orders' | 'settings' | 'seo', boolean>;
+
+function getNavItemsForRole(adminRole: AdminRole): NavItem[] {
+    return adminRole === 'seo_manager' ? SEO_NAV_ITEMS : NAV_ITEMS;
+}
 
 function isPathActive(pathname: string | null, href: string) {
     return pathname === href || pathname?.startsWith(`${href}/`) || false;
@@ -211,15 +244,18 @@ async function safeParseBody(response: Response) {
 function RailContent({
     collapsed,
     pathname,
+    adminRole,
     onNavigate,
     onToggleCollapse,
     isBackingUp,
     onBackup,
 }: NavPanelProps) {
+    const navItems = getNavItemsForRole(adminRole);
     const [openGroups, setOpenGroups] = useState<OpenGroups>({
         products: false,
         orders: false,
         settings: false,
+        seo: adminRole === 'seo_manager',
     });
 
     const toggleGroup = (id: keyof OpenGroups) => {
@@ -247,7 +283,7 @@ function RailContent({
 
             <div className="flex-1 overflow-y-auto px-3 pb-4">
                 <div className="space-y-1">
-                    {NAV_ITEMS.map((item) => {
+                    {navItems.map((item) => {
                         const topLevelActive = isPathActive(pathname, item.href);
 
                         if (item.type === 'link') {
@@ -345,17 +381,19 @@ function RailContent({
             </div>
 
             <div className="space-y-1 px-3 py-4">
-                <button
-                    type="button"
-                    onClick={onBackup}
-                    disabled={isBackingUp}
-                    aria-label={collapsed ? 'Download backup' : undefined}
-                    title={collapsed ? 'Download backup' : undefined}
-                    className={`${baseRowClass} ${collapsed ? 'justify-center' : ''} text-[var(--text-secondary)] hover:bg-[var(--bg-base)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                    <BackupIcon className="h-5 w-5 flex-shrink-0" />
-                    {!collapsed && <span>{isBackingUp ? 'Preparing backup...' : 'Download backup'}</span>}
-                </button>
+                {adminRole === 'super_admin' && (
+                    <button
+                        type="button"
+                        onClick={onBackup}
+                        disabled={isBackingUp}
+                        aria-label={collapsed ? 'Download backup' : undefined}
+                        title={collapsed ? 'Download backup' : undefined}
+                        className={`${baseRowClass} ${collapsed ? 'justify-center' : ''} text-[var(--text-secondary)] hover:bg-[var(--bg-base)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60`}
+                    >
+                        <BackupIcon className="h-5 w-5 flex-shrink-0" />
+                        {!collapsed && <span>{isBackingUp ? 'Preparing backup...' : 'Download backup'}</span>}
+                    </button>
+                )}
 
                 {onToggleCollapse && (
                     <button
@@ -373,7 +411,7 @@ function RailContent({
     );
 }
 
-export default function AdminNavbar() {
+export default function AdminNavbar({ adminRole }: { adminRole: AdminRole }) {
     const pathname = usePathname();
     const { showToast } = useToast();
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -446,6 +484,7 @@ export default function AdminNavbar() {
                         key={`${pathname ?? 'root'}-${isCollapsed ? 'collapsed' : 'expanded'}-desktop`}
                         collapsed={isCollapsed}
                         pathname={pathname}
+                        adminRole={adminRole}
                         onToggleCollapse={() => setIsCollapsed((value) => !value)}
                         isBackingUp={isBackingUp}
                         onBackup={handleBackup}
@@ -486,6 +525,7 @@ export default function AdminNavbar() {
                                 key={`${pathname ?? 'root'}-mobile`}
                                 collapsed={false}
                                 pathname={pathname}
+                                adminRole={adminRole}
                                 onNavigate={() => setIsMobileOpen(false)}
                                 isBackingUp={isBackingUp}
                                 onBackup={handleBackup}

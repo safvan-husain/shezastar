@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { catchError } from '@/lib/errors/app-error';
 import { handleGetActivityLog } from '@/lib/activity/activity.controller';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function GETHandler(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        await requireAdminApiAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
         const { id } = await params;
         const { status, body } = await handleGetActivityLog(id);
         return NextResponse.json(body, { status });

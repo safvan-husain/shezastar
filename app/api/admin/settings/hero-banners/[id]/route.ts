@@ -3,13 +3,14 @@ import { revalidatePath } from 'next/cache';
 import { handleUpdateHeroBanner, handleDeleteHeroBanner, handleGetHeroBanners } from '@/lib/app-settings/app-settings.controller';
 import { saveImage, deleteImage } from '@/lib/utils/file-upload';
 import { HeroBannerWithId } from '@/lib/app-settings/app-settings.schema';
-import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function PATCHHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     try {
-        await requireAdminAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
 
         const formData = await req.formData();
         const imageFile = formData.get('image') as File | null;
@@ -55,7 +56,7 @@ async function PATCHHandler(req: Request, { params }: { params: Promise<{ id: st
 async function DELETEHandler(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     try {
-        await requireAdminAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
 
         // Get existing banner to delete image
         const { body: banners } = await handleGetHeroBanners();

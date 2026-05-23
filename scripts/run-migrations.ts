@@ -5,8 +5,9 @@ import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
 const migrations = [
+    'scripts/migrate-admin-roles.ts',
     'scripts/migrate-variant-prices.ts',
-    'scripts/migrate-descriptions.ts'
+    'scripts/migrate-descriptions.ts',
 ];
 
 console.log('🚀 Starting database migrations...');

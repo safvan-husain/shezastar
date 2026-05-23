@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { GET as listCategories, POST as createCategory } from '@/app/api/categories/route';
 import { GET as getCategory, DELETE as deleteCategory } from '@/app/api/categories/[id]/route';
 import { POST as addSubCategory } from '@/app/api/categories/[id]/subcategories/route';
@@ -9,6 +9,14 @@ import {
 } from '@/app/api/categories/[id]/subcategories/[subId]/subsubcategories/[subSubId]/route';
 import { clear } from '../test-db';
 import { createProduct as createProductService, getProduct } from '@/lib/product/product.service';
+
+vi.mock('@/lib/auth/admin-auth', () => ({
+    requireAdminApiAuth: vi.fn().mockResolvedValue({
+        _id: { toString: () => '507f1f77bcf86cd799439011' },
+        displayName: 'Admin',
+        role: 'super_admin',
+    }),
+}));
 
 describe('Category API Integration - Three Level Categories', () => {
     let categoryId: string;

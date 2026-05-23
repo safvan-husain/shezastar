@@ -1,9 +1,13 @@
 import { ObjectId } from 'mongodb';
 import { scryptSync, timingSafeEqual } from 'node:crypto';
 
+export type AdminRole = 'super_admin' | 'seo_manager';
+
 export interface AdminDocument {
     _id: ObjectId;
+    email: string;
     displayName?: string;
+    role: AdminRole;
     passwordHash: string;
     salt: string;
     createdAt: Date;

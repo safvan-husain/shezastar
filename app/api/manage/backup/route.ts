@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server';
 import { spawn } from 'child_process';
-import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { getMongoUri } from '@/lib/db/mongo-client';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function GETHandler(req: NextRequest) {
     // Check for admin authentication
     try {
-        await requireAdminAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
     } catch (e: any) {
         // Next.js redirect() throws a special error that should be allowed to bubble up
         // so that Next.js handles the redirect. However, for a GET request that is intended

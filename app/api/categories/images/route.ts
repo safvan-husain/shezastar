@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { saveImage } from '@/lib/utils/file-upload';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SEO_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
+import { catchError } from '@/lib/errors/app-error';
 
 async function POSTHandler(req: Request) {
     try {
-        await requireAdminApiAuth();
+        await requireAdminApiAuth({ roles: [...SEO_ADMIN_ROLES] });
 
         const formData = await req.formData();
         const image = formData.get('image');
@@ -16,11 +18,9 @@ async function POSTHandler(req: Request) {
 
         const imagePath = await saveImage(image);
         return NextResponse.json({ imagePath }, { status: 200 });
-    } catch (error: any) {
-        return NextResponse.json(
-            { error: error?.message || 'Failed to upload category image' },
-            { status: 500 }
-        );
+    } catch (error) {
+        const { status, body } = catchError(error);
+        return NextResponse.json(body, { status });
     }
 }
 

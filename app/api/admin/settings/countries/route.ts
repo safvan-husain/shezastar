@@ -5,12 +5,13 @@ import {
   handleCreateCountryPricing,
 } from '@/lib/app-settings/app-settings.controller';
 import { revalidateCountryPricingsCache } from '@/lib/app-settings/app-settings-cache';
-import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function GETHandler(_req: Request) {
   try {
-    await requireAdminAuth();
+    await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
     const { status, body } = await handleGetCountryPricings();
     return NextResponse.json(body, { status });
   } catch (error: any) {
@@ -21,7 +22,7 @@ async function GETHandler(_req: Request) {
 
 async function POSTHandler(req: Request) {
   try {
-    await requireAdminAuth();
+    await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
     const payload = await req.json().catch(() => ({}));
     const { status, body } = await handleCreateCountryPricing(payload);
 

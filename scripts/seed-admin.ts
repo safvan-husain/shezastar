@@ -42,15 +42,31 @@ function loadDotenv() {
 
 export async function seedAdmin() {
     const password = process.env.ADMIN_PASSWORD;
+    const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
     if (!password) {
         throw new Error('ADMIN_PASSWORD environment variable must be set before seeding the admin');
+    }
+    if (!email) {
+        throw new Error('ADMIN_EMAIL environment variable must be set before seeding the admin');
     }
     const displayName = process.env.ADMIN_DISPLAY_NAME?.trim() || 'Admin';
 
     const collection = await getCollection('admins');
-    const existingAdmin = await collection.findOne({});
+    const existingAdmin = await collection.findOne({ email });
     if (existingAdmin) {
-        console.log('Admin already exists. Skipping admin seeding.');
+        console.log('Admin already exists for this email. Skipping admin seeding.');
+        return;
+    }
+
+    const existingSuperAdmin = await collection.findOne({ role: 'super_admin' });
+    if (existingSuperAdmin) {
+        console.log('Super admin already exists. Skipping admin seeding.');
+        return;
+    }
+
+    const legacyAdmin = await collection.findOne({});
+    if (legacyAdmin) {
+        console.log('Admin account already exists. Skipping admin seeding.');
         return;
     }
 
@@ -59,7 +75,9 @@ export async function seedAdmin() {
     const now = new Date();
 
     await collection.insertOne({
+        email,
         displayName,
+        role: 'super_admin',
         passwordHash,
         salt,
         createdAt: now,

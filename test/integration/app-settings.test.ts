@@ -14,6 +14,7 @@ vi.mock('@/lib/utils/file-upload', () => ({
 
 vi.mock('@/lib/auth/admin-auth', () => ({
     requireAdminAuth: vi.fn().mockResolvedValue({ _id: { toString: () => 'mock-admin-id' } }),
+    requireAdminApiAuth: vi.fn().mockResolvedValue({ _id: { toString: () => 'mock-admin-id' }, role: 'super_admin' }),
     getAdminDocument: vi.fn().mockResolvedValue({ _id: { toString: () => 'mock-admin-id' } }),
     parseAdminSessionToken: vi.fn().mockReturnValue({ adminId: 'mock-admin-id' }),
 }));

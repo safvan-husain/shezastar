@@ -670,3 +670,152 @@ export async function getBroaderCategoryContextIds(ids: string[]): Promise<strin
 
     return Array.from(broaderIds);
 }
+
+type CategorySeoInput = {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    imagePath?: string | null;
+};
+
+function applyCategorySeoFields<T extends CategorySeoInput>(
+    target: T,
+    input: CategorySeoInput,
+): T {
+    return {
+        ...target,
+        ...(input.metaTitle !== undefined ? { metaTitle: input.metaTitle ?? null } : {}),
+        ...(input.metaDescription !== undefined ? { metaDescription: input.metaDescription ?? null } : {}),
+        ...(input.imagePath !== undefined ? { imagePath: input.imagePath ?? null } : {}),
+    };
+}
+
+export async function updateCategorySeo(categoryId: string, input: CategorySeoInput) {
+    const collection = await getCollection<CategoryDocument>(COLLECTION);
+    const objectId = parseObjectId(categoryId);
+
+    const existing = await collection.findOne({ _id: objectId });
+    if (!existing) {
+        throw new AppError(404, 'CATEGORY_NOT_FOUND');
+    }
+
+    const updateDoc: Partial<Omit<CategoryDocument, '_id'>> = {
+        updatedAt: new Date(),
+    };
+
+    if (input.metaTitle !== undefined) {
+        updateDoc.metaTitle = input.metaTitle ?? null;
+    }
+    if (input.metaDescription !== undefined) {
+        updateDoc.metaDescription = input.metaDescription ?? null;
+    }
+    if (input.imagePath !== undefined) {
+        updateDoc.imagePath = input.imagePath ?? null;
+    }
+
+    await collection.updateOne({ _id: objectId }, { $set: updateDoc });
+
+    const updated = await collection.findOne({ _id: objectId });
+    if (!updated) {
+        throw new AppError(500, 'FAILED_TO_UPDATE_CATEGORY');
+    }
+
+    cachedCategories = null;
+    cachedLineageMap = null;
+
+    return toCategory(updated);
+}
+
+export async function updateSubCategorySeo(
+    categoryId: string,
+    subCategoryId: string,
+    input: CategorySeoInput,
+) {
+    const collection = await getCollection<CategoryDocument>(COLLECTION);
+    const objectId = parseObjectId(categoryId);
+
+    const existing = await collection.findOne({ _id: objectId });
+    if (!existing) {
+        throw new AppError(404, 'CATEGORY_NOT_FOUND');
+    }
+
+    const subCategories = normalizeSubCategories(existing.name, existing.subCategories);
+    const subCategoryIndex = subCategories.findIndex((sub) => sub.id === subCategoryId);
+    if (subCategoryIndex === -1) {
+        throw new AppError(404, 'SUBCATEGORY_NOT_FOUND');
+    }
+
+    subCategories[subCategoryIndex] = applyCategorySeoFields(subCategories[subCategoryIndex], input);
+
+    await collection.updateOne(
+        { _id: objectId },
+        {
+            $set: {
+                subCategories,
+                updatedAt: new Date(),
+            },
+        },
+    );
+
+    const updated = await collection.findOne({ _id: objectId });
+    if (!updated) {
+        throw new AppError(500, 'FAILED_TO_UPDATE_SUBCATEGORY');
+    }
+
+    cachedCategories = null;
+    cachedLineageMap = null;
+
+    return toCategory(updated);
+}
+
+export async function updateSubSubCategorySeo(
+    categoryId: string,
+    subCategoryId: string,
+    subSubCategoryId: string,
+    input: CategorySeoInput,
+) {
+    const collection = await getCollection<CategoryDocument>(COLLECTION);
+    const objectId = parseObjectId(categoryId);
+
+    const existing = await collection.findOne({ _id: objectId });
+    if (!existing) {
+        throw new AppError(404, 'CATEGORY_NOT_FOUND');
+    }
+
+    const subCategories = normalizeSubCategories(existing.name, existing.subCategories);
+    const subCategoryIndex = subCategories.findIndex((sub) => sub.id === subCategoryId);
+    if (subCategoryIndex === -1) {
+        throw new AppError(404, 'SUBCATEGORY_NOT_FOUND');
+    }
+
+    const subCategory = subCategories[subCategoryIndex];
+    const subSubCategoryIndex = subCategory.subSubCategories.findIndex((item) => item.id === subSubCategoryId);
+    if (subSubCategoryIndex === -1) {
+        throw new AppError(404, 'SUBSUBCATEGORY_NOT_FOUND');
+    }
+
+    subCategory.subSubCategories[subSubCategoryIndex] = applyCategorySeoFields(
+        subCategory.subSubCategories[subSubCategoryIndex],
+        input,
+    );
+    subCategories[subCategoryIndex] = subCategory;
+
+    await collection.updateOne(
+        { _id: objectId },
+        {
+            $set: {
+                subCategories,
+                updatedAt: new Date(),
+            },
+        },
+    );
+
+    const updated = await collection.findOne({ _id: objectId });
+    if (!updated) {
+        throw new AppError(500, 'FAILED_TO_UPDATE_SUBSUBCATEGORY');
+    }
+
+    cachedCategories = null;
+    cachedLineageMap = null;
+
+    return toCategory(updated);
+}

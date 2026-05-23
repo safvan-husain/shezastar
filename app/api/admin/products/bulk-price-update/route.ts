@@ -3,13 +3,14 @@ import { bulkUpdatePrices } from '@/lib/product/product.service';
 import { BulkPriceUpdateSchema } from '@/lib/product/product.schema';
 import { AppError } from '@/lib/errors/app-error';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 import { revalidateProductCache } from '@/lib/product/product-cache';
 
 async function POSTHandler(req: Request) {
     try {
-        const admin = await requireAdminApiAuth();
+        const admin = await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
         const body = await req.json();
         const parsed = BulkPriceUpdateSchema.safeParse(body);
 

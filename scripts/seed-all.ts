@@ -1,5 +1,7 @@
+import { migrateAdminRoles } from './migrate-admin-roles';
 import { seedCategories } from './seed-categories';
 import { seedAdmin } from './seed-admin';
+import { seedSeoAdmin } from './seed-seo-admin';
 import { seedProducts } from './seed-products';
 import { seedCountries } from './seed-countries';
 
@@ -7,16 +9,22 @@ async function main() {
     console.log('--- Starting Database Seeding ---');
 
     try {
-        console.log('\n[1/3] Seeding Admin...');
+        console.log('\n[1/6] Migrating admin roles...');
+        await migrateAdminRoles();
+
+        console.log('\n[2/6] Seeding super admin...');
         await seedAdmin();
 
-        console.log('\n[2/3] Seeding Categories...');
+        console.log('\n[3/6] Seeding SEO manager...');
+        await seedSeoAdmin();
+
+        console.log('\n[4/6] Seeding categories...');
         await seedCategories();
 
-        console.log('\n[3/4] Seeding Countries...');
+        console.log('\n[5/6] Seeding countries...');
         await seedCountries();
 
-        console.log('\n[4/4] Seeding Products...');
+        console.log('\n[6/6] Seeding products...');
         await seedProducts();
 
         console.log('\n--- Seeding Completed Successfully ---');

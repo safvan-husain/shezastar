@@ -9,6 +9,7 @@ vi.mock('@/lib/auth/admin-auth', () => ({
     requireAdminApiAuth: vi.fn().mockResolvedValue({
         _id: { toString: () => '507f1f77bcf86cd799439011' },
         displayName: 'Safvan',
+        role: 'super_admin',
     }),
 }));
 

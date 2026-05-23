@@ -4,6 +4,7 @@ import { handleCreateBlog, handleGetAllBlogs } from '@/lib/blog/blog.controller'
 import { revalidateBlogPages } from '@/lib/blog/blog-cache';
 import type { Blog } from '@/lib/blog/model/blog.model';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { catchError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 import { saveImage } from '@/lib/utils/file-upload';
@@ -22,7 +23,7 @@ async function GETHandler(req: Request) {
     const status = requestedStatus === 'draft' || requestedStatus === 'all' ? requestedStatus : 'published';
 
     if (status !== 'published') {
-        await requireAdminApiAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
     }
 
     const { status: responseStatus, body } = await handleGetAllBlogs(status);
@@ -34,7 +35,7 @@ async function GETHandler(req: Request) {
 
 async function POSTHandler(req: Request) {
     try {
-        await requireAdminApiAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
         const contentType = req.headers.get('content-type');
         let input: Record<string, unknown>;
 

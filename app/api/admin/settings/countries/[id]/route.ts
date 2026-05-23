@@ -5,7 +5,8 @@ import {
   handleRemoveCountryPricing,
 } from '@/lib/app-settings/app-settings.controller';
 import { revalidateCountryPricingsCache } from '@/lib/app-settings/app-settings-cache';
-import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function PUTHandler(
@@ -15,7 +16,7 @@ async function PUTHandler(
   const { id } = await params;
 
   try {
-    await requireAdminAuth();
+    await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
     const payload = await req.json().catch(() => ({}));
     const { status, body } = await handleUpdateCountryPricing(id, payload);
 
@@ -40,7 +41,7 @@ async function DELETEHandler(
   const { id } = await params;
 
   try {
-    await requireAdminAuth();
+    await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
     const { status, body } = await handleRemoveCountryPricing(id);
 
     revalidatePath('/manage/settings/countries', 'page');

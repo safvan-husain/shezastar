@@ -756,3 +756,99 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: Acti
 
     return { modifiedCount: result.modifiedCount };
 }
+
+export async function getProductsSeoList(page = 1, limit = 20, search?: string) {
+    const collection = await getCollection<ProductDocument>(COLLECTION);
+    const skip = (page - 1) * limit;
+    const filter: Record<string, unknown> = {};
+
+    if (search?.trim()) {
+        filter.name = { $regex: search.trim(), $options: 'i' };
+    }
+
+    const [docs, total] = await Promise.all([
+        collection
+            .find(filter, {
+                projection: {
+                    name: 1,
+                    metaTitle: 1,
+                    metaDescription: 1,
+                },
+            })
+            .sort({ updatedAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray(),
+        collection.countDocuments(filter),
+    ]);
+
+    return {
+        products: docs.map((doc) => ({
+            id: doc._id.toString(),
+            name: doc.name,
+            metaTitle: doc.metaTitle ?? null,
+            metaDescription: doc.metaDescription ?? null,
+        })),
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.max(1, Math.ceil(total / limit)),
+        },
+    };
+}
+
+export async function updateProductSeo(
+    id: string,
+    input: { metaTitle?: string | null; metaDescription?: string | null },
+    actor?: ActivityActor,
+) {
+    const collection = await getCollection<ProductDocument>(COLLECTION);
+
+    let objectId: ObjectId;
+    try {
+        objectId = new ObjectId(id);
+    } catch {
+        throw new AppError(400, 'INVALID_ID');
+    }
+
+    const existing = await collection.findOne({ _id: objectId });
+    if (!existing) {
+        throw new AppError(404, 'PRODUCT_NOT_FOUND');
+    }
+
+    const updateDoc: Partial<ProductDocument> = {
+        updatedAt: new Date(),
+    };
+
+    if (input.metaTitle !== undefined) {
+        updateDoc.metaTitle = input.metaTitle;
+    }
+    if (input.metaDescription !== undefined) {
+        updateDoc.metaDescription = input.metaDescription;
+    }
+
+    await collection.updateOne({ _id: objectId }, { $set: updateDoc });
+
+    const updated = await collection.findOne({ _id: objectId });
+    if (!updated) {
+        throw new AppError(500, 'FAILED_TO_UPDATE_PRODUCT');
+    }
+
+    const product = toProduct(updated);
+
+    if (actor) {
+        await createActivityLog({
+            actionType: 'product.updated',
+            actor,
+            primaryEntity: buildProductEntity(product),
+            summary: buildProductSummary(actor, 'updated SEO for', product.name),
+            details: {
+                metaTitle: product.metaTitle,
+                metaDescription: product.metaDescription,
+            },
+        });
+    }
+
+    return product;
+}

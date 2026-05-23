@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { handleGetHeroBanners, handleCreateHeroBanner } from '@/lib/app-settings/app-settings.controller';
 import { saveImage } from '@/lib/utils/file-upload';
-import { requireAdminAuth } from '@/lib/auth/admin-auth';
+import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function GETHandler(_req: Request) {
@@ -18,7 +19,7 @@ async function GETHandler(_req: Request) {
 
 async function POSTHandler(req: Request) {
     try {
-        await requireAdminAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
 
         const formData = await req.formData();
         const imageFile = formData.get('image') as File | null;

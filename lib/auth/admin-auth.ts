@@ -5,10 +5,15 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { getCollection } from '@/lib/db/mongo-client';
 import { AppError } from '@/lib/errors/app-error';
-import { AdminDocument } from '@/lib/auth/admin-auth-core';
+import { AdminDocument, AdminRole } from '@/lib/auth/admin-auth-core';
+import {
+    getAdminRole,
+    getDefaultManagePathForRole,
+} from '@/lib/auth/admin-permissions';
 import { ObjectId } from 'mongodb';
 
 export * from '@/lib/auth/admin-auth-core';
+export * from '@/lib/auth/admin-permissions';
 
 const ADMIN_COOKIE_NAME = 'ss-admin-session';
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -18,6 +23,10 @@ interface AuthPayload {
     adminId: string;
     expires: number;
 }
+
+type AdminAuthOptions = {
+    roles?: AdminRole[];
+};
 
 export async function getAdminDocument(): Promise<AdminDocument | null> {
     const collection = await getCollection<AdminDocument>('admins');
@@ -31,6 +40,16 @@ export async function getAdminDocumentById(adminId: string): Promise<AdminDocume
 
     const collection = await getCollection<AdminDocument>('admins');
     return collection.findOne({ _id: new ObjectId(adminId) });
+}
+
+export async function getAdminByEmail(email: string): Promise<AdminDocument | null> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+        return null;
+    }
+
+    const collection = await getCollection<AdminDocument>('admins');
+    return collection.findOne({ email: normalizedEmail });
 }
 
 export function createAdminSessionToken(adminId: string) {
@@ -105,15 +124,20 @@ export async function revokeAdminSessionCookie() {
     });
 }
 
-export async function requireAdminAuth() {
-    const admin = await getAdminDocument();
-    if (!admin) {
+export async function requireAdminAuth(options?: AdminAuthOptions) {
+    const adminCount = await getCollection<AdminDocument>('admins').then((collection) => collection.countDocuments({}));
+    if (adminCount === 0) {
         redirect('/login?error=admin-not-configured');
     }
 
     const authenticatedAdmin = await getAuthenticatedAdmin();
-    if (!authenticatedAdmin || authenticatedAdmin._id.toString() !== admin?._id.toString()) {
+    if (!authenticatedAdmin) {
         redirect('/login');
+    }
+
+    const role = getAdminRole(authenticatedAdmin);
+    if (options?.roles && !options.roles.includes(role)) {
+        redirect(getDefaultManagePathForRole(role));
     }
 
     return authenticatedAdmin;
@@ -128,10 +152,15 @@ export async function getAuthenticatedAdmin(): Promise<AdminDocument | null> {
     return getAdminDocumentById(session.adminId);
 }
 
-export async function requireAdminApiAuth(): Promise<AdminDocument> {
+export async function requireAdminApiAuth(options?: AdminAuthOptions): Promise<AdminDocument> {
     const admin = await getAuthenticatedAdmin();
     if (!admin) {
         throw new AppError(401, 'UNAUTHORIZED', { message: 'Unauthorized' });
+    }
+
+    const role = getAdminRole(admin);
+    if (options?.roles && !options.roles.includes(role)) {
+        throw new AppError(403, 'FORBIDDEN', { message: 'Insufficient permissions' });
     }
 
     return admin;

@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
+import { SUPER_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { catchError } from '@/lib/errors/app-error';
 import { handleListActivityLogs } from '@/lib/activity/activity.controller';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
 async function GETHandler(req: Request) {
     try {
-        await requireAdminApiAuth();
+        await requireAdminApiAuth({ roles: [...SUPER_ADMIN_ROLES] });
         const { searchParams } = new URL(req.url);
         const { status, body } = await handleListActivityLogs({
             entityKind: searchParams.get('entityKind') ?? undefined,
