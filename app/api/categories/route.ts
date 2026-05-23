@@ -5,6 +5,7 @@ import {
     handleCreateCategory,
 } from '@/lib/category/category.controller';
 import { withRequestLogging } from '@/lib/logging/request-logger';
+import { revalidateCategoryCache } from '@/lib/category/category-cache';
 
 function withNoStoreHeaders(headers?: HeadersInit) {
     return {
@@ -22,6 +23,9 @@ async function GETHandler(_req: Request) {
 async function POSTHandler(req: Request) {
     const data = await req.json();
     const { status, body } = await handleCreateCategory(data);
+    if (status < 400) {
+        revalidateCategoryCache();
+    }
     return NextResponse.json(body, { status });
 }
 

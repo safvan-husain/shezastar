@@ -64,6 +64,9 @@ function normalizeSubSubCategory(
         id: subSubCategory.id,
         name: subSubCategory.name,
         slug: getSubSubCategorySlug(categoryName, subCategoryName, subSubCategory.name),
+        metaTitle: subSubCategory.metaTitle ?? null,
+        metaDescription: subSubCategory.metaDescription ?? null,
+        imagePath: subSubCategory.imagePath ?? null,
     };
 }
 
@@ -75,6 +78,9 @@ function normalizeSubCategory(
         id: subCategory.id,
         name: subCategory.name,
         slug: getSubCategorySlug(categoryName, subCategory.name),
+        metaTitle: subCategory.metaTitle ?? null,
+        metaDescription: subCategory.metaDescription ?? null,
+        imagePath: subCategory.imagePath ?? null,
         subSubCategories: (subCategory.subSubCategories ?? []).map(subSub =>
             normalizeSubSubCategory(categoryName, subCategory.name, subSub)
         ),
@@ -148,6 +154,9 @@ export async function createCategory(input: CreateCategoryInput) {
     const doc: Omit<CategoryDocument, '_id'> = {
         name: input.name,
         slug: getCategorySlug(input.name),
+        metaTitle: input.metaTitle ?? null,
+        metaDescription: input.metaDescription ?? null,
+        imagePath: input.imagePath ?? null,
         subCategories: normalizeSubCategories(input.name, input.subCategories),
         createdAt: now,
         updatedAt: now,
@@ -219,6 +228,15 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
         updateDoc.name = input.name;
         updateDoc.slug = getCategorySlug(input.name);
     }
+    if (input.metaTitle !== undefined) {
+        updateDoc.metaTitle = input.metaTitle ?? null;
+    }
+    if (input.metaDescription !== undefined) {
+        updateDoc.metaDescription = input.metaDescription ?? null;
+    }
+    if (input.imagePath !== undefined) {
+        updateDoc.imagePath = input.imagePath ?? null;
+    }
 
     if (input.subCategories) {
         updateDoc.subCategories = normalizeSubCategories(nextCategoryName, input.subCategories);
@@ -284,6 +302,9 @@ export async function addSubCategory(id: string, input: AddSubCategoryInput) {
         id: nanoid(),
         name: input.name,
         slug: getSubCategorySlug(existing.name, input.name),
+        metaTitle: input.metaTitle ?? null,
+        metaDescription: input.metaDescription ?? null,
+        imagePath: input.imagePath ?? null,
         subSubCategories: [],
     };
 
@@ -381,6 +402,9 @@ export async function addSubSubCategory(
         id: nanoid(),
         name: input.name,
         slug: getSubSubCategorySlug(existing.name, subCategory.name, input.name),
+        metaTitle: input.metaTitle ?? null,
+        metaDescription: input.metaDescription ?? null,
+        imagePath: input.imagePath ?? null,
     };
 
     subCategory.subSubCategories.push(newSubSubCategory);
@@ -506,6 +530,12 @@ export async function updateSubCategory(
     const updatedSubCategory = normalizeSubCategory(existing.name, {
         ...currentSubCategory,
         name: nextSubCategoryName,
+        metaTitle: input.metaTitle !== undefined ? input.metaTitle : currentSubCategory.metaTitle ?? null,
+        metaDescription:
+            input.metaDescription !== undefined
+                ? input.metaDescription
+                : currentSubCategory.metaDescription ?? null,
+        imagePath: input.imagePath !== undefined ? input.imagePath : currentSubCategory.imagePath ?? null,
         subSubCategories: nextSubSubCategories,
     });
 

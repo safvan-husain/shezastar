@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
+import { getStaticPageMetadata } from "@/lib/seo/static-page-seo";
 
 const WHATSAPP_E164 = "971504311624";
 const WHATSAPP_DISPLAY = "+971 50 431 1624";
 
-export const metadata: Metadata = {
-  title: "Contact Us | Sheza Star",
-  description:
-    "Get in touch with Sheza Star support, headquarters, and branch contact details.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getStaticPageMetadata("contact");
+}
 
 function DetailRow({
   label,

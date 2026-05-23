@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import { getStaticPageMetadata } from "@/lib/seo/static-page-seo";
 
-export const metadata: Metadata = {
-  title: "Return & Refund Policy | Sheza Star",
-  description: "Review return, refund, and exchange policies for Sheza Star.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getStaticPageMetadata("return-refund");
+}
 
 export default function ReturnRefundPolicyPage() {
   return (

@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 import { getAllBlogs } from '@/lib/blog/blog.service';
 import type { Blog } from '@/lib/blog/model/blog.model';
+import { getStaticPageMetadata } from '@/lib/seo/static-page-seo';
 
-export const metadata: Metadata = {
-    title: 'Blogs | Sheza Star',
-    description: 'Read the latest Sheza Star car accessory blogs and buying guides.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+    return getStaticPageMetadata('blogs');
+}
 
 async function fetchPublishedBlogs(): Promise<{ blogs: Blog[]; error: ToastErrorPayload | null }> {
     try {

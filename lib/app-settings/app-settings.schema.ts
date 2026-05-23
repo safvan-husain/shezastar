@@ -89,3 +89,42 @@ export const UpdateCountryPricingSchema = CountryPricingSchema.omit({ id: true }
 export type CountryPricing = z.infer<typeof CountryPricingSchema>;
 export type CreateCountryPricingInput = z.infer<typeof CreateCountryPricingSchema>;
 export type UpdateCountryPricingInput = z.infer<typeof UpdateCountryPricingSchema>;
+
+export const STATIC_PAGE_SEO_KEYS = [
+    'home',
+    'about',
+    'contact',
+    'privacy',
+    'terms',
+    'return-refund',
+    'products',
+    'blogs',
+    'category-landing',
+] as const;
+
+export const StaticPageSeoKeySchema = z.enum(STATIC_PAGE_SEO_KEYS);
+
+export const StaticPageSeoEntrySchema = z.object({
+    title: z.string().trim().min(1, 'Title is required'),
+    metaDescription: z.string().trim().min(1, 'Meta description is required'),
+    ogImage: z.string().trim().min(1, 'OG image path must not be empty').optional(),
+});
+
+export const StaticPageSeoSettingsSchema = z.object({
+    home: StaticPageSeoEntrySchema,
+    about: StaticPageSeoEntrySchema,
+    contact: StaticPageSeoEntrySchema,
+    privacy: StaticPageSeoEntrySchema,
+    terms: StaticPageSeoEntrySchema,
+    'return-refund': StaticPageSeoEntrySchema,
+    products: StaticPageSeoEntrySchema,
+    blogs: StaticPageSeoEntrySchema,
+    'category-landing': StaticPageSeoEntrySchema,
+});
+
+export const UpdateStaticPageSeoEntrySchema = StaticPageSeoEntrySchema;
+
+export type StaticPageSeoKey = z.infer<typeof StaticPageSeoKeySchema>;
+export type StaticPageSeoEntry = z.infer<typeof StaticPageSeoEntrySchema>;
+export type StaticPageSeoSettings = z.infer<typeof StaticPageSeoSettingsSchema>;
+export type UpdateStaticPageSeoEntryInput = z.infer<typeof UpdateStaticPageSeoEntrySchema>;

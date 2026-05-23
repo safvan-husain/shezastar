@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+import { getStaticPageMetadata } from "@/lib/seo/static-page-seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getStaticPageMetadata("category-landing");
+}
+
 export default function CategoryLandingPage() {
   return (
     <div className="container mx-auto px-4 py-12 space-y-4 mt-24">

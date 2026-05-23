@@ -37,6 +37,9 @@ async function PUTHandler(req: Request, { params }: { params: Promise<{ id: stri
     const { id } = await params;
     const data = await req.json();
     const { status, body } = await handleUpdateCategory(id, data);
+    if (status < 400) {
+        revalidateCategoryCache();
+    }
     return NextResponse.json(body, { status });
 }
 

@@ -11,12 +11,16 @@ interface BasicInfoStepProps {
     name: string;
     subtitle: string;
     description: string;
+    metaTitle: string;
+    metaDescription: string;
     basePrice: string;
     offerPercentage: string;
     specifications: Array<{ title: string; items: string[] }>;
     onNameChange: (value: string) => void;
     onSubtitleChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
+    onMetaTitleChange: (value: string) => void;
+    onMetaDescriptionChange: (value: string) => void;
     onBasePriceChange: (value: string) => void;
     onOfferPercentageChange: (value: string) => void;
     onSpecificationsChange: (value: Array<{ title: string; items: string[] }>) => void;
@@ -29,12 +33,16 @@ export function BasicInfoStep({
     name,
     subtitle,
     description,
+    metaTitle,
+    metaDescription,
     basePrice,
     offerPercentage,
     specifications,
     onNameChange,
     onSubtitleChange,
     onDescriptionChange,
+    onMetaTitleChange,
+    onMetaDescriptionChange,
     onBasePriceChange,
     onOfferPercentageChange,
     onSpecificationsChange,
@@ -89,6 +97,20 @@ export function BasicInfoStep({
                         value={description}
                         onChange={onDescriptionChange}
                         placeholder="Describe your product features and benefits..."
+                    />
+                </div>
+                <div className="grid md:grid-cols-2 gap-5">
+                    <Input
+                        label="SEO Meta Title (optional)"
+                        value={metaTitle}
+                        onChange={(e) => onMetaTitleChange(e.target.value)}
+                        placeholder="SEO title shown in search results"
+                    />
+                    <Input
+                        label="SEO Meta Description (optional)"
+                        value={metaDescription}
+                        onChange={(e) => onMetaDescriptionChange(e.target.value)}
+                        placeholder="SEO description shown in search results"
                     />
                 </div>
                 <div className="grid md:grid-cols-2 gap-5">

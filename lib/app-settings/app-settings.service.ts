@@ -11,6 +11,8 @@ import {
     CountryPricing,
     CreateCountryPricingInput,
     UpdateCountryPricingInput,
+    StaticPageSeoKey,
+    UpdateStaticPageSeoEntryInput,
 } from './app-settings.schema';
 import { nanoid } from 'nanoid';
 import { getProduct } from '@/lib/product/product.service';
@@ -534,6 +536,54 @@ function normalizeCountryCode(code: string) {
 export async function getCountryPricings() {
     const settings = await getAppSettings();
     return settings.countryPricings || [];
+}
+
+export async function getStaticPageSeoSettings() {
+    const settings = await getAppSettings();
+    return settings.staticPageSeo;
+}
+
+export async function updateStaticPageSeoEntry(key: StaticPageSeoKey, input: UpdateStaticPageSeoEntryInput) {
+    const collection = await getCollection<AppSettingsDocument>(COLLECTION);
+    const now = new Date();
+    const normalizedEntry = {
+        ...input,
+        ...(input.ogImage ? { ogImage: input.ogImage } : {}),
+    };
+
+    if (!input.ogImage) {
+        delete (normalizedEntry as { ogImage?: string }).ogImage;
+    }
+
+    const result = await collection.findOneAndUpdate(
+        {},
+        {
+            $set: {
+                [`staticPageSeo.${key}`]: normalizedEntry,
+                updatedAt: now,
+            },
+            $setOnInsert: {
+                homeHeroBanners: [],
+                customCards: getDefaultSettings().customCards,
+                featuredProductIds: [],
+                installationLocations: [],
+                countryPricings: [],
+                createdAt: now,
+            },
+        },
+        {
+            upsert: true,
+            returnDocument: 'after',
+        }
+    );
+
+    const updatedDoc = getResultDocument<AppSettingsDocument>(result);
+
+    if (!updatedDoc) {
+        throw new AppError(500, 'FAILED_TO_UPDATE_STATIC_PAGE_SEO');
+    }
+
+    return toAppSettings(updatedDoc);
 }
 
 export async function getActiveCountryPricings() {

@@ -73,6 +73,75 @@ describe('Category Service - Three Level Hierarchy', () => {
         const fetched = await getCategory(category.slug);
         expect(fetched.id).toBe(category.id);
     });
+
+    it('persists SEO fields across category levels', async () => {
+        const category = await createCategory({
+            name: 'SEO Category',
+            metaTitle: 'SEO Category Title',
+            metaDescription: 'SEO Category Description',
+            imagePath: '/uploads/category-og.jpg',
+            subCategories: [
+                {
+                    id: 'seo-sub',
+                    name: 'SEO Sub',
+                    metaTitle: 'SEO Sub Title',
+                    metaDescription: 'SEO Sub Description',
+                    imagePath: '/uploads/sub-og.jpg',
+                    subSubCategories: [
+                        {
+                            id: 'seo-sub-sub',
+                            name: 'SEO Sub Sub',
+                            metaTitle: 'SEO Sub Sub Title',
+                            metaDescription: 'SEO Sub Sub Description',
+                            imagePath: '/uploads/sub-sub-og.jpg',
+                        },
+                    ],
+                },
+            ],
+        });
+
+        const persisted = await getCategory(category.id);
+        expect(persisted.metaTitle).toBe('SEO Category Title');
+        expect(persisted.metaDescription).toBe('SEO Category Description');
+        expect(persisted.imagePath).toBe('/uploads/category-og.jpg');
+        expect(persisted.subCategories[0]).toMatchObject({
+            metaTitle: 'SEO Sub Title',
+            metaDescription: 'SEO Sub Description',
+            imagePath: '/uploads/sub-og.jpg',
+        });
+        expect(persisted.subCategories[0].subSubCategories[0]).toMatchObject({
+            metaTitle: 'SEO Sub Sub Title',
+            metaDescription: 'SEO Sub Sub Description',
+            imagePath: '/uploads/sub-sub-og.jpg',
+        });
+
+        const updated = await updateSubCategory(category.id, 'seo-sub', {
+            metaTitle: 'Updated SEO Sub Title',
+            metaDescription: 'Updated SEO Sub Description',
+            imagePath: '/uploads/sub-og-updated.jpg',
+            subSubCategories: [
+                {
+                    id: 'seo-sub-sub',
+                    name: 'SEO Sub Sub',
+                    metaTitle: 'Updated SEO Sub Sub Title',
+                    metaDescription: 'Updated SEO Sub Sub Description',
+                    imagePath: '/uploads/sub-sub-og-updated.jpg',
+                },
+            ],
+        });
+
+        const updatedSub = updated.subCategories.find((sub) => sub.id === 'seo-sub');
+        expect(updatedSub).toMatchObject({
+            metaTitle: 'Updated SEO Sub Title',
+            metaDescription: 'Updated SEO Sub Description',
+            imagePath: '/uploads/sub-og-updated.jpg',
+        });
+        expect(updatedSub?.subSubCategories[0]).toMatchObject({
+            metaTitle: 'Updated SEO Sub Sub Title',
+            metaDescription: 'Updated SEO Sub Sub Description',
+            imagePath: '/uploads/sub-sub-og-updated.jpg',
+        });
+    });
 });
 
 describe('getCategoryHierarchyIds', () => {

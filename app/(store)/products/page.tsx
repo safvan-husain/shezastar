@@ -1,11 +1,17 @@
+import type { Metadata } from "next";
 import { Product } from "@/lib/product/model/product.model";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ErrorToastHandler, type ToastErrorPayload } from "@/components/ErrorToastHandler";
 import { Pagination } from "@/components/storefront/Pagination";
 import { getAllProducts } from "@/lib/product/product.service";
+import { getStaticPageMetadata } from "@/lib/seo/static-page-seo";
 
 interface ProductsPageProps {
     searchParams: Promise<{ page?: string }>;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+    return getStaticPageMetadata("products");
 }
 
 async function fetchProducts(page = 1, limit = 24): Promise<{

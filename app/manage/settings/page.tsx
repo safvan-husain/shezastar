@@ -50,6 +50,15 @@ export default function SettingsPage() {
                         Manage country-specific VAT and shipping charges.
                     </p>
                 </Link>
+                <Link
+                    href="/manage/settings/seo"
+                    className="block p-6 bg-[var(--bg-elevated)] rounded-lg shadow-md hover:shadow-lg transition-shadow border border-[var(--border-subtle)]"
+                >
+                    <h2 className="text-xl font-semibold mb-2">SEO</h2>
+                    <p className="text-[var(--text-secondary)]">
+                        Manage static page title, meta description, and OG images.
+                    </p>
+                </Link>
             </div>
         </div>
     );

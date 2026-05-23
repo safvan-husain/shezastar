@@ -5,6 +5,8 @@ import {
     handleDeleteCustomCard,
     handleGetCustomCard,
     handleGetCustomCards,
+    handleGetStaticPageSeoSettings,
+    handleUpdateStaticPageSeoEntry,
 } from '@/lib/app-settings/app-settings.controller';
 import * as appSettingsService from '@/lib/app-settings/app-settings.service';
 import { AppError } from '@/lib/errors/app-error';
@@ -143,6 +145,54 @@ describe('App Settings Controller Unit Tests', () => {
             expect(result.status).toBe(200);
             expect(result.body).toEqual(mockCards);
             expect(appSettingsService.getCustomCards).toHaveBeenCalled();
+        });
+    });
+
+    describe('handleGetStaticPageSeoSettings', () => {
+        it('should return static page seo settings successfully', async () => {
+            const mockSeo = {
+                home: { title: 'Home', metaDescription: 'Home desc' },
+                about: { title: 'About', metaDescription: 'About desc' },
+            };
+            vi.mocked(appSettingsService.getStaticPageSeoSettings).mockResolvedValue(mockSeo as any);
+
+            const result = await handleGetStaticPageSeoSettings();
+
+            expect(result.status).toBe(200);
+            expect(result.body).toEqual(mockSeo);
+            expect(appSettingsService.getStaticPageSeoSettings).toHaveBeenCalled();
+        });
+    });
+
+    describe('handleUpdateStaticPageSeoEntry', () => {
+        it('should update static page seo entry successfully', async () => {
+            const payload = {
+                title: 'Updated',
+                metaDescription: 'Updated desc',
+                ogImage: '/uploads/og.jpg',
+            };
+            const serviceResponse = {
+                staticPageSeo: {
+                    home: payload,
+                },
+            };
+            vi.mocked(appSettingsService.updateStaticPageSeoEntry).mockResolvedValue(serviceResponse as any);
+
+            const result = await handleUpdateStaticPageSeoEntry('home', payload);
+
+            expect(result.status).toBe(200);
+            expect(result.body).toEqual(payload);
+            expect(appSettingsService.updateStaticPageSeoEntry).toHaveBeenCalledWith('home', payload);
+        });
+
+        it('should return 400 for invalid seo key', async () => {
+            const result = await handleUpdateStaticPageSeoEntry('invalid-key', {
+                title: 'Test',
+                metaDescription: 'Test',
+            });
+
+            expect(result.status).toBe(400);
+            expect(appSettingsService.updateStaticPageSeoEntry).not.toHaveBeenCalled();
         });
     });
 });

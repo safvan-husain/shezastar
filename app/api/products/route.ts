@@ -22,6 +22,12 @@ function withNoStoreHeaders(headers?: HeadersInit) {
     };
 }
 
+function parseOptionalMetaField(value: FormDataEntryValue | null): string | null | undefined {
+    if (value === null) return undefined;
+    const normalized = String(value).trim();
+    return normalized ? normalized : null;
+}
+
 async function GETHandler(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -97,6 +103,8 @@ async function POSTHandler(req: Request) {
             const name = formData.get('name') as string;
             const subtitle = formData.get('subtitle') as string;
             const description = formData.get('description') as string | null;
+            const metaTitle = parseOptionalMetaField(formData.get('metaTitle'));
+            const metaDescription = parseOptionalMetaField(formData.get('metaDescription'));
             const basePrice = parseFloat(formData.get('basePrice') as string);
             const offerPercentage = formData.get('offerPercentage') ? parseFloat(formData.get('offerPercentage') as string) : undefined;
             const specifications = formData.get('specifications')
@@ -138,6 +146,8 @@ async function POSTHandler(req: Request) {
                 name,
                 subtitle,
                 description,
+                metaTitle,
+                metaDescription,
                 basePrice,
                 offerPercentage,
                 specifications,

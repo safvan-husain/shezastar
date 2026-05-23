@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Product } from "@/lib/product/model/product.model";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ErrorToastHandler, type ToastErrorPayload } from "@/components/ErrorToastHandler";
@@ -8,6 +9,11 @@ import type { HeroBannerWithId, CustomCard } from "@/lib/app-settings/app-settin
 import { getCustomCards, getFeaturedProducts, getHeroBanners } from "@/lib/app-settings/app-settings.service";
 import { getAllProducts } from "@/lib/product/product.service";
 import { Pagination } from "@/components/storefront/Pagination";
+import { getStaticPageMetadata } from "@/lib/seo/static-page-seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getStaticPageMetadata("home");
+}
 
 async function fetchHeroBanners(): Promise<{ banners: HeroBannerWithId[]; error: ToastErrorPayload | null }> {
   try {

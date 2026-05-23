@@ -2,6 +2,8 @@ import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
 import { GET } from '@/app/api/admin/settings/route';
 import { GET as GET_BANNERS, POST } from '@/app/api/admin/settings/hero-banners/route';
 import { PATCH, DELETE } from '@/app/api/admin/settings/hero-banners/[id]/route';
+import { GET as GET_STATIC_SEO } from '@/app/api/admin/settings/seo/route';
+import { PATCH as PATCH_STATIC_SEO } from '@/app/api/admin/settings/seo/[key]/route';
 import { clear } from '../test-db';
 
 // Mock file-upload utility
@@ -39,6 +41,8 @@ describe('App Settings API Integration', () => {
         expect(res.status).toBe(200);
         expect(body.id).toBeDefined();
         expect(body.homeHeroBanners).toEqual([]);
+        expect(body.staticPageSeo).toBeDefined();
+        expect(body.staticPageSeo.home.title).toBe('Sheza Star | Car Accessories & Services');
     });
 
     it('should get empty hero banners list via GET /hero-banners', async () => {
@@ -225,5 +229,54 @@ describe('App Settings API Integration', () => {
 
         expect(body.homeHeroBanners).toHaveLength(1);
         expect(body.homeHeroBanners[0].title).toBe('Persistent Sale');
+    });
+
+    it('should return static page seo settings via GET /seo', async () => {
+        const res = await GET_STATIC_SEO(
+            new Request('http://localhost/api/admin/settings/seo', {
+                method: 'GET',
+            })
+        );
+        const body = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(body.about).toBeDefined();
+        expect(body['category-landing']).toBeDefined();
+    });
+
+    it('should update and persist static page seo entry via PATCH /seo/[key]', async () => {
+        const formData = new FormData();
+        formData.append('title', 'Updated About SEO Title');
+        formData.append('metaDescription', 'Updated About SEO Description');
+        formData.append('currentOgImage', '');
+        formData.append('removeOgImage', 'false');
+        formData.append('ogImageFile', new File(['seo-image'], 'seo.jpg', { type: 'image/jpeg' }));
+
+        const updateReq = new Request('http://localhost/api/admin/settings/seo/about', {
+            method: 'PATCH',
+            body: formData,
+        });
+
+        const updateRes = await PATCH_STATIC_SEO(updateReq, {
+            params: Promise.resolve({ key: 'about' }),
+        });
+        const updateBody = await updateRes.json();
+
+        expect(updateRes.status).toBe(200);
+        expect(updateBody.title).toBe('Updated About SEO Title');
+        expect(updateBody.metaDescription).toBe('Updated About SEO Description');
+        expect(updateBody.ogImage).toBe('/uploads/test-banner.jpg');
+
+        const settingsRes = await GET(
+            new Request('http://localhost/api/admin/settings', {
+                method: 'GET',
+            })
+        );
+        const settingsBody = await settingsRes.json();
+
+        expect(settingsRes.status).toBe(200);
+        expect(settingsBody.staticPageSeo.about.title).toBe('Updated About SEO Title');
+        expect(settingsBody.staticPageSeo.about.metaDescription).toBe('Updated About SEO Description');
+        expect(settingsBody.staticPageSeo.about.ogImage).toBe('/uploads/test-banner.jpg');
     });
 });

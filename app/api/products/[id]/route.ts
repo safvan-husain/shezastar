@@ -13,6 +13,12 @@ import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
+function parseOptionalMetaField(value: FormDataEntryValue | null): string | null | undefined {
+    if (value === null) return undefined;
+    const normalized = String(value).trim();
+    return normalized ? normalized : null;
+}
+
 async function GETHandler(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -40,6 +46,8 @@ async function PUTHandler(
             const name = formData.get('name') as string | null;
             const subtitle = formData.get('subtitle') as string | null;
             const description = formData.get('description') as string | null;
+            const metaTitle = parseOptionalMetaField(formData.get('metaTitle'));
+            const metaDescription = parseOptionalMetaField(formData.get('metaDescription'));
             const basePrice = formData.get('basePrice') ? parseFloat(formData.get('basePrice') as string) : undefined;
             const offerPercentage = formData.get('offerPercentage') ? parseFloat(formData.get('offerPercentage') as string) : undefined;
             const specifications = formData.get('specifications')
@@ -80,6 +88,8 @@ async function PUTHandler(
             if (name) productData.name = name;
             if (subtitle !== null) productData.subtitle = subtitle;
             if (description !== null) productData.description = description;
+            if (metaTitle !== undefined) productData.metaTitle = metaTitle;
+            if (metaDescription !== undefined) productData.metaDescription = metaDescription;
             if (basePrice !== undefined) productData.basePrice = basePrice;
             if (offerPercentage !== undefined) productData.offerPercentage = offerPercentage;
             if (specifications !== undefined) productData.specifications = specifications;

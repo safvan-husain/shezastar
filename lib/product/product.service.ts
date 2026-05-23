@@ -56,6 +56,8 @@ export async function createProduct(input: CreateProductInput, actor?: ActivityA
         name: input.name,
         subtitle: input.subtitle,
         description: input.description,
+        metaTitle: input.metaTitle,
+        metaDescription: input.metaDescription,
         basePrice: input.basePrice,
         offerPercentage: input.offerPercentage,
         images,
@@ -288,6 +290,8 @@ export async function updateProduct(id: string, input: UpdateProductInput, actor
     if (input.name) updateDoc.name = input.name;
     if (input.subtitle !== undefined) updateDoc.subtitle = input.subtitle;
     if (input.description !== undefined) updateDoc.description = input.description;
+    if (input.metaTitle !== undefined) updateDoc.metaTitle = input.metaTitle;
+    if (input.metaDescription !== undefined) updateDoc.metaDescription = input.metaDescription;
     if (input.basePrice !== undefined) updateDoc.basePrice = input.basePrice;
     if (input.offerPercentage !== undefined) updateDoc.offerPercentage = input.offerPercentage;
     if (input.variantStock !== undefined) updateDoc.variantStock = input.variantStock;

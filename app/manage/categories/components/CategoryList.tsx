@@ -1,31 +1,62 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { SingleImageUploader } from '@/components/ui/SingleImageUploader';
 
 interface SubSubCategory {
     id: string;
     name: string;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    imagePath?: string | null;
 }
 
 interface SubCategory {
     id: string;
     name: string;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    imagePath?: string | null;
     subSubCategories: SubSubCategory[];
 }
 
 interface Category {
     id: string;
     name: string;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    imagePath?: string | null;
     subCategories: SubCategory[];
 }
 
 type LoadingType = 'category' | 'subcategory' | 'subsubcategory';
 type LoadingAction = { type: LoadingType; id: string } | null;
+interface SeoDraft {
+    metaTitle: string;
+    metaDescription: string;
+    imagePath: string;
+    imageFile: File | null;
+}
+
+function createSeoDraft(initial?: { metaTitle?: string | null; metaDescription?: string | null; imagePath?: string | null }): SeoDraft {
+    return {
+        metaTitle: initial?.metaTitle || '',
+        metaDescription: initial?.metaDescription || '',
+        imagePath: initial?.imagePath || '',
+        imageFile: null,
+    };
+}
+
+function normalizeSeoValue(value: string) {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
 type DeleteTarget = {
     type: LoadingType;
     id: string;
@@ -34,9 +65,31 @@ type DeleteTarget = {
     message: string;
     confirmText: string;
     successMessage: string;
-    onSuccess: (data: any) => void;
+    onSuccess: (data: unknown) => void;
     force?: boolean;
 };
+
+function getApiPayloadMessage(payload: unknown, fallback: string) {
+    if (!payload || typeof payload !== 'object') {
+        return fallback;
+    }
+    const message = 'message' in payload ? payload.message : undefined;
+    if (typeof message === 'string' && message.trim().length > 0) {
+        return message;
+    }
+    const error = 'error' in payload ? payload.error : undefined;
+    if (typeof error === 'string' && error.trim().length > 0) {
+        return error;
+    }
+    return fallback;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof Error && error.message.trim().length > 0) {
+        return error.message;
+    }
+    return fallback;
+}
 
 export function CategoryList() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -44,18 +97,20 @@ export function CategoryList() {
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
     const [expandedSubCategories, setExpandedSubCategories] = useState<Set<string>>(new Set());
     const [newSubCategoryNames, setNewSubCategoryNames] = useState<Record<string, string>>({});
+    const [newSubCategorySeo, setNewSubCategorySeo] = useState<Record<string, SeoDraft>>({});
     const [newSubSubCategoryNames, setNewSubSubCategoryNames] = useState<Record<string, string>>({});
+    const [newSubSubCategorySeo, setNewSubSubCategorySeo] = useState<Record<string, SeoDraft>>({});
     const [editingSubCategoryId, setEditingSubCategoryId] = useState<string | null>(null);
     const [editingSubCategoryName, setEditingSubCategoryName] = useState('');
+    const [editingSubCategorySeo, setEditingSubCategorySeo] = useState<SeoDraft>(createSeoDraft());
+    const [editingSubSubCategoryId, setEditingSubSubCategoryId] = useState<string | null>(null);
+    const [editingSubSubCategoryName, setEditingSubSubCategoryName] = useState('');
+    const [editingSubSubCategorySeo, setEditingSubSubCategorySeo] = useState<SeoDraft>(createSeoDraft());
     const [actionLoading, setActionLoading] = useState<LoadingAction>(null);
     const [pendingDelete, setPendingDelete] = useState<DeleteTarget | null>(null);
     const { showToast } = useToast();
 
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch('/api/categories');
@@ -73,8 +128,8 @@ export function CategoryList() {
 
             const data = await res.json();
             setCategories(data);
-        } catch (err: any) {
-            const message = err.message || 'Failed to load categories';
+        } catch (err: unknown) {
+            const message = getErrorMessage(err, 'Failed to load categories');
             showToast(message, 'error', {
                 url: '/api/categories',
                 method: 'GET',
@@ -83,7 +138,11 @@ export function CategoryList() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        void fetchCategories();
+    }, [fetchCategories]);
 
     const toggleExpand = (id: string) => {
         const newExpanded = new Set(expandedCategories);
@@ -111,15 +170,43 @@ export function CategoryList() {
         );
     };
 
+    const uploadCategoryImage = async (file: File) => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const res = await fetch('/api/categories/images', {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.imagePath) {
+            throw new Error(data.message || data.error || 'Failed to upload category image');
+        }
+        return data.imagePath as string;
+    };
+
     const executeDelete = async (target: DeleteTarget) => {
         const url = target.force ? `${target.url}?force=true` : target.url;
         setActionLoading({ type: target.type, id: target.id });
         try {
             const res = await fetch(url, { method: 'DELETE' });
-            const data = await res.json();
+            const data: unknown = await res.json();
 
-            if (res.status === 409 && data.code === 'CATEGORY_IN_USE') {
-                const productCount = data.details?.productCount ?? 0;
+            if (
+                res.status === 409 &&
+                data &&
+                typeof data === 'object' &&
+                'code' in data &&
+                data.code === 'CATEGORY_IN_USE'
+            ) {
+                const details =
+                    'details' in data && data.details && typeof data.details === 'object'
+                        ? data.details
+                        : null;
+                const productCount =
+                    details && 'productCount' in details && typeof details.productCount === 'number'
+                        ? details.productCount
+                        : 0;
                 setPendingDelete({
                     ...target,
                     force: true,
@@ -131,7 +218,7 @@ export function CategoryList() {
             }
 
             if (!res.ok) {
-                const message = data.message || data.error || 'Failed to delete category';
+                const message = getApiPayloadMessage(data, 'Failed to delete category');
                 showToast(message, 'error', {
                     status: res.status,
                     body: data,
@@ -141,7 +228,13 @@ export function CategoryList() {
                 return;
             }
 
-            const cleanedProductCount = data.cleanedProductCount ?? 0;
+            const cleanedProductCount =
+                data &&
+                typeof data === 'object' &&
+                'cleanedProductCount' in data &&
+                typeof data.cleanedProductCount === 'number'
+                    ? data.cleanedProductCount
+                    : 0;
             showToast(
                 cleanedProductCount > 0
                     ? `${target.successMessage}. Cleaned ${cleanedProductCount} product${cleanedProductCount === 1 ? '' : 's'}.`
@@ -150,8 +243,8 @@ export function CategoryList() {
             );
             target.onSuccess(data);
             setPendingDelete(null);
-        } catch (err: any) {
-            const message = err.message || 'Failed to delete category';
+        } catch (err: unknown) {
+            const message = getErrorMessage(err, 'Failed to delete category');
             showToast(message, 'error', {
                 url: target.url,
                 method: 'DELETE',
@@ -185,15 +278,24 @@ export function CategoryList() {
 
         setActionLoading({ type: 'subcategory', id: categoryId });
         try {
+            const seoDraft = newSubCategorySeo[categoryId] || createSeoDraft();
+            const imagePath = seoDraft.imageFile
+                ? await uploadCategoryImage(seoDraft.imageFile)
+                : normalizeSeoValue(seoDraft.imagePath);
             const res = await fetch(`/api/categories/${categoryId}/subcategories`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({
+                    name,
+                    metaTitle: normalizeSeoValue(seoDraft.metaTitle),
+                    metaDescription: normalizeSeoValue(seoDraft.metaDescription),
+                    imagePath,
+                }),
             });
 
-            const data = await res.json();
+            const data: unknown = await res.json();
             if (!res.ok) {
-                const message = data.message || data.error || 'Failed to add subcategory';
+                const message = getApiPayloadMessage(data, 'Failed to add subcategory');
                 showToast(message, 'error', {
                     status: res.status,
                     body: data,
@@ -204,10 +306,11 @@ export function CategoryList() {
             }
 
             showToast('Subcategory added', 'success');
-            updateCategoryState(data);
+            updateCategoryState(data as Category);
             setNewSubCategoryNames(prev => ({ ...prev, [categoryId]: '' }));
-        } catch (err: any) {
-            const message = err.message || 'Failed to add subcategory';
+            setNewSubCategorySeo(prev => ({ ...prev, [categoryId]: createSeoDraft() }));
+        } catch (err: unknown) {
+            const message = getErrorMessage(err, 'Failed to add subcategory');
             showToast(message, 'error', {
                 url: `/api/categories/${categoryId}/subcategories`,
                 method: 'POST',
@@ -227,7 +330,7 @@ export function CategoryList() {
             message: `Delete ${subCategory.name} and all nested items? This cannot be undone.`,
             confirmText: 'Delete',
             successMessage: 'Subcategory removed',
-            onSuccess: updateCategoryState,
+            onSuccess: (data) => updateCategoryState(data as Category),
         });
     };
 
@@ -236,15 +339,23 @@ export function CategoryList() {
 
         setActionLoading({ type: 'subcategory', id: subCategoryId });
         try {
+            const imagePath = editingSubCategorySeo.imageFile
+                ? await uploadCategoryImage(editingSubCategorySeo.imageFile)
+                : normalizeSeoValue(editingSubCategorySeo.imagePath);
             const res = await fetch(`/api/categories/${categoryId}/subcategories/${subCategoryId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: editingSubCategoryName.trim() }),
+                body: JSON.stringify({
+                    name: editingSubCategoryName.trim(),
+                    metaTitle: normalizeSeoValue(editingSubCategorySeo.metaTitle),
+                    metaDescription: normalizeSeoValue(editingSubCategorySeo.metaDescription),
+                    imagePath,
+                }),
             });
 
-            const data = await res.json();
+            const data: unknown = await res.json();
             if (!res.ok) {
-                const message = data.message || data.error || 'Failed to update subcategory';
+                const message = getApiPayloadMessage(data, 'Failed to update subcategory');
                 showToast(message, 'error', {
                     status: res.status,
                     body: data,
@@ -254,12 +365,13 @@ export function CategoryList() {
                 return;
             }
 
-            updateCategoryState(data);
+            updateCategoryState(data as Category);
             setEditingSubCategoryId(null);
             setEditingSubCategoryName('');
+            setEditingSubCategorySeo(createSeoDraft());
             showToast('Subcategory updated', 'success');
-        } catch (err: any) {
-            const message = err.message || 'Failed to update subcategory';
+        } catch (err: unknown) {
+            const message = getErrorMessage(err, 'Failed to update subcategory');
             showToast(message, 'error', {
                 url: `/api/categories/${categoryId}/subcategories/${subCategoryId}`,
                 method: 'PUT',
@@ -277,18 +389,27 @@ export function CategoryList() {
 
         setActionLoading({ type: 'subsubcategory', id: key });
         try {
+            const seoDraft = newSubSubCategorySeo[key] || createSeoDraft();
+            const imagePath = seoDraft.imageFile
+                ? await uploadCategoryImage(seoDraft.imageFile)
+                : normalizeSeoValue(seoDraft.imagePath);
             const res = await fetch(
                 `/api/categories/${categoryId}/subcategories/${subCategoryId}/subsubcategories`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name }),
+                    body: JSON.stringify({
+                        name,
+                        metaTitle: normalizeSeoValue(seoDraft.metaTitle),
+                        metaDescription: normalizeSeoValue(seoDraft.metaDescription),
+                        imagePath,
+                    }),
                 }
             );
 
-            const data = await res.json();
+            const data: unknown = await res.json();
             if (!res.ok) {
-                const message = data.message || data.error || 'Failed to add level 3 category';
+                const message = getApiPayloadMessage(data, 'Failed to add level 3 category');
                 showToast(message, 'error', {
                     status: res.status,
                     body: data,
@@ -298,14 +419,76 @@ export function CategoryList() {
                 return;
             }
 
-            updateCategoryState(data);
+            updateCategoryState(data as Category);
             setNewSubSubCategoryNames(prev => ({ ...prev, [key]: '' }));
+            setNewSubSubCategorySeo(prev => ({ ...prev, [key]: createSeoDraft() }));
             showToast('Level 3 category added', 'success');
-        } catch (err: any) {
-            const message = err.message || 'Failed to add level 3 category';
+        } catch (err: unknown) {
+            const message = getErrorMessage(err, 'Failed to add level 3 category');
             showToast(message, 'error', {
                 url: `/api/categories/${categoryId}/subcategories/${subCategoryId}/subsubcategories`,
                 method: 'POST',
+                body: { error: message },
+            });
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleUpdateSubSubCategory = async (
+        categoryId: string,
+        subCategory: SubCategory,
+        subSubCategoryId: string
+    ) => {
+        if (!editingSubSubCategoryName.trim()) return;
+
+        setActionLoading({ type: 'subsubcategory', id: subSubCategoryId });
+        try {
+            const imagePath = editingSubSubCategorySeo.imageFile
+                ? await uploadCategoryImage(editingSubSubCategorySeo.imageFile)
+                : normalizeSeoValue(editingSubSubCategorySeo.imagePath);
+            const nextSubSubCategories = subCategory.subSubCategories.map((item) =>
+                item.id === subSubCategoryId
+                    ? {
+                        ...item,
+                        name: editingSubSubCategoryName.trim(),
+                        metaTitle: normalizeSeoValue(editingSubSubCategorySeo.metaTitle),
+                        metaDescription: normalizeSeoValue(editingSubSubCategorySeo.metaDescription),
+                        imagePath,
+                    }
+                    : item
+            );
+
+            const res = await fetch(`/api/categories/${categoryId}/subcategories/${subCategory.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subSubCategories: nextSubSubCategories,
+                }),
+            });
+
+            const data: unknown = await res.json();
+            if (!res.ok) {
+                const message = getApiPayloadMessage(data, 'Failed to update level 3 category');
+                showToast(message, 'error', {
+                    status: res.status,
+                    body: data,
+                    url: res.url,
+                    method: 'PUT',
+                });
+                return;
+            }
+
+            updateCategoryState(data as Category);
+            setEditingSubSubCategoryId(null);
+            setEditingSubSubCategoryName('');
+            setEditingSubSubCategorySeo(createSeoDraft());
+            showToast('Level 3 category updated', 'success');
+        } catch (err: unknown) {
+            const message = getErrorMessage(err, 'Failed to update level 3 category');
+            showToast(message, 'error', {
+                url: `/api/categories/${categoryId}/subcategories/${subCategory.id}`,
+                method: 'PUT',
                 body: { error: message },
             });
         } finally {
@@ -328,7 +511,7 @@ export function CategoryList() {
             confirmText: 'Delete',
             successMessage: 'Level 3 category removed',
             onSuccess: (data) => {
-                updateCategoryState(data);
+                updateCategoryState(data as Category);
                 setNewSubSubCategoryNames(prev => ({ ...prev, [key]: '' }));
             },
         });
@@ -417,6 +600,52 @@ export function CategoryList() {
                                         }
                                     }}
                                 />
+                                <Input
+                                    placeholder="Meta title"
+                                    value={newSubCategorySeo[category.id]?.metaTitle || ''}
+                                    onChange={e =>
+                                        setNewSubCategorySeo(prev => ({
+                                            ...prev,
+                                            [category.id]: {
+                                                ...(prev[category.id] || createSeoDraft()),
+                                                metaTitle: e.target.value,
+                                            },
+                                        }))
+                                    }
+                                />
+                                <Input
+                                    placeholder="Meta description"
+                                    value={newSubCategorySeo[category.id]?.metaDescription || ''}
+                                    onChange={e =>
+                                        setNewSubCategorySeo(prev => ({
+                                            ...prev,
+                                            [category.id]: {
+                                                ...(prev[category.id] || createSeoDraft()),
+                                                metaDescription: e.target.value,
+                                            },
+                                        }))
+                                    }
+                                />
+                                <div className="md:w-72">
+                                    <SingleImageUploader
+                                        label="OG image"
+                                        value={
+                                            newSubCategorySeo[category.id]?.imageFile
+                                                ? URL.createObjectURL(newSubCategorySeo[category.id].imageFile!)
+                                                : newSubCategorySeo[category.id]?.imagePath || undefined
+                                        }
+                                        onChange={(file) =>
+                                            setNewSubCategorySeo(prev => ({
+                                                ...prev,
+                                                [category.id]: {
+                                                    ...(prev[category.id] || createSeoDraft()),
+                                                    imageFile: file,
+                                                    imagePath: file ? prev[category.id]?.imagePath || '' : '',
+                                                },
+                                            }))
+                                        }
+                                    />
+                                </div>
                                 <Button
                                     type="button"
                                     onClick={() => handleAddSubCategory(category.id)}
@@ -465,11 +694,48 @@ export function CategoryList() {
                                                             </svg>
                                                         </button>
                                                         {isEditing ? (
-                                                            <Input
-                                                                value={editingSubCategoryName}
-                                                                onChange={e => setEditingSubCategoryName(e.target.value)}
-                                                                className="flex-1"
-                                                            />
+                                                            <div className="w-full space-y-2">
+                                                                <Input
+                                                                    value={editingSubCategoryName}
+                                                                    onChange={e => setEditingSubCategoryName(e.target.value)}
+                                                                    className="flex-1"
+                                                                />
+                                                                <Input
+                                                                    placeholder="Meta title"
+                                                                    value={editingSubCategorySeo.metaTitle}
+                                                                    onChange={e =>
+                                                                        setEditingSubCategorySeo(prev => ({
+                                                                            ...prev,
+                                                                            metaTitle: e.target.value,
+                                                                        }))
+                                                                    }
+                                                                />
+                                                                <Input
+                                                                    placeholder="Meta description"
+                                                                    value={editingSubCategorySeo.metaDescription}
+                                                                    onChange={e =>
+                                                                        setEditingSubCategorySeo(prev => ({
+                                                                            ...prev,
+                                                                            metaDescription: e.target.value,
+                                                                        }))
+                                                                    }
+                                                                />
+                                                                <SingleImageUploader
+                                                                    label="OG image"
+                                                                    value={
+                                                                        editingSubCategorySeo.imageFile
+                                                                            ? URL.createObjectURL(editingSubCategorySeo.imageFile)
+                                                                            : editingSubCategorySeo.imagePath || undefined
+                                                                    }
+                                                                    onChange={(file) =>
+                                                                        setEditingSubCategorySeo(prev => ({
+                                                                            ...prev,
+                                                                            imageFile: file,
+                                                                            imagePath: file ? prev.imagePath : '',
+                                                                        }))
+                                                                    }
+                                                                />
+                                                            </div>
                                                         ) : (
                                                             <div>
                                                                 <p className="font-medium">{sub.name}</p>
@@ -499,6 +765,7 @@ export function CategoryList() {
                                                                     onClick={() => {
                                                                         setEditingSubCategoryId(null);
                                                                         setEditingSubCategoryName('');
+                                                                        setEditingSubCategorySeo(createSeoDraft());
                                                                     }}
                                                                 >
                                                                     Cancel
@@ -512,6 +779,7 @@ export function CategoryList() {
                                                                     onClick={() => {
                                                                         setEditingSubCategoryId(sub.id);
                                                                         setEditingSubCategoryName(sub.name);
+                                                                        setEditingSubCategorySeo(createSeoDraft(sub));
                                                                     }}
                                                                 >
                                                                     Rename
@@ -541,40 +809,126 @@ export function CategoryList() {
                                                             sub.subSubCategories.map(subSub => (
                                                                 <div
                                                                     key={subSub.id}
-                                                                    className="flex items-center justify-between p-2 rounded-lg bg-[var(--card)]"
+                                                                    className="p-2 rounded-lg bg-[var(--card)]"
                                                                 >
-                                                                    <div className="flex items-center gap-2">
-                                                                        <svg
-                                                                            className="w-3.5 h-3.5 text-[var(--muted-foreground)]"
-                                                                            fill="none"
-                                                                            stroke="currentColor"
-                                                                            viewBox="0 0 24 24"
-                                                                        >
-                                                                            <path
-                                                                                strokeLinecap="round"
-                                                                                strokeLinejoin="round"
-                                                                                strokeWidth={2}
-                                                                                d="M9 5l7 7-7 7"
+                                                                    {editingSubSubCategoryId === subSub.id ? (
+                                                                        <div className="space-y-2">
+                                                                            <Input
+                                                                                value={editingSubSubCategoryName}
+                                                                                onChange={e => setEditingSubSubCategoryName(e.target.value)}
                                                                             />
-                                                                        </svg>
-                                                                        <span className="text-sm">{subSub.name}</span>
-                                                                    </div>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        onClick={() =>
-                                                                            handleRemoveSubSubCategory(
-                                                                                category.id,
-                                                                                sub.id,
-                                                                                subSub
-                                                                            )
-                                                                        }
-                                                                        disabled={isActionLoading('subsubcategory', subSub.id)}
-                                                                    >
-                                                                        {isActionLoading('subsubcategory', subSub.id)
-                                                                            ? 'Removing...'
-                                                                            : 'Delete'}
-                                                                    </Button>
+                                                                            <Input
+                                                                                placeholder="Meta title"
+                                                                                value={editingSubSubCategorySeo.metaTitle}
+                                                                                onChange={e =>
+                                                                                    setEditingSubSubCategorySeo(prev => ({
+                                                                                        ...prev,
+                                                                                        metaTitle: e.target.value,
+                                                                                    }))
+                                                                                }
+                                                                            />
+                                                                            <Input
+                                                                                placeholder="Meta description"
+                                                                                value={editingSubSubCategorySeo.metaDescription}
+                                                                                onChange={e =>
+                                                                                    setEditingSubSubCategorySeo(prev => ({
+                                                                                        ...prev,
+                                                                                        metaDescription: e.target.value,
+                                                                                    }))
+                                                                                }
+                                                                            />
+                                                                            <SingleImageUploader
+                                                                                label="OG image"
+                                                                                value={
+                                                                                    editingSubSubCategorySeo.imageFile
+                                                                                        ? URL.createObjectURL(editingSubSubCategorySeo.imageFile)
+                                                                                        : editingSubSubCategorySeo.imagePath || undefined
+                                                                                }
+                                                                                onChange={(file) =>
+                                                                                    setEditingSubSubCategorySeo(prev => ({
+                                                                                        ...prev,
+                                                                                        imageFile: file,
+                                                                                        imagePath: file ? prev.imagePath : '',
+                                                                                    }))
+                                                                                }
+                                                                            />
+                                                                            <div className="flex gap-2">
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="outline"
+                                                                                    onClick={() =>
+                                                                                        handleUpdateSubSubCategory(
+                                                                                            category.id,
+                                                                                            sub,
+                                                                                            subSub.id
+                                                                                        )
+                                                                                    }
+                                                                                    disabled={isActionLoading('subsubcategory', subSub.id)}
+                                                                                >
+                                                                                    Save
+                                                                                </Button>
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="outline"
+                                                                                    onClick={() => {
+                                                                                        setEditingSubSubCategoryId(null);
+                                                                                        setEditingSubSubCategoryName('');
+                                                                                        setEditingSubSubCategorySeo(createSeoDraft());
+                                                                                    }}
+                                                                                >
+                                                                                    Cancel
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <svg
+                                                                                    className="w-3.5 h-3.5 text-[var(--muted-foreground)]"
+                                                                                    fill="none"
+                                                                                    stroke="currentColor"
+                                                                                    viewBox="0 0 24 24"
+                                                                                >
+                                                                                    <path
+                                                                                        strokeLinecap="round"
+                                                                                        strokeLinejoin="round"
+                                                                                        strokeWidth={2}
+                                                                                        d="M9 5l7 7-7 7"
+                                                                                    />
+                                                                                </svg>
+                                                                                <span className="text-sm">{subSub.name}</span>
+                                                                            </div>
+                                                                            <div className="flex gap-2">
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="outline"
+                                                                                    onClick={() => {
+                                                                                        setEditingSubSubCategoryId(subSub.id);
+                                                                                        setEditingSubSubCategoryName(subSub.name);
+                                                                                        setEditingSubSubCategorySeo(createSeoDraft(subSub));
+                                                                                    }}
+                                                                                >
+                                                                                    Edit
+                                                                                </Button>
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="outline"
+                                                                                    onClick={() =>
+                                                                                        handleRemoveSubSubCategory(
+                                                                                            category.id,
+                                                                                            sub.id,
+                                                                                            subSub
+                                                                                        )
+                                                                                    }
+                                                                                    disabled={isActionLoading('subsubcategory', subSub.id)}
+                                                                                >
+                                                                                    {isActionLoading('subsubcategory', subSub.id)
+                                                                                        ? 'Removing...'
+                                                                                        : 'Delete'}
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))
                                                         )}
@@ -596,6 +950,52 @@ export function CategoryList() {
                                                                     }
                                                                 }}
                                                             />
+                                                            <Input
+                                                                placeholder="Meta title"
+                                                                value={newSubSubCategorySeo[subKey]?.metaTitle || ''}
+                                                                onChange={e =>
+                                                                    setNewSubSubCategorySeo(prev => ({
+                                                                        ...prev,
+                                                                        [subKey]: {
+                                                                            ...(prev[subKey] || createSeoDraft()),
+                                                                            metaTitle: e.target.value,
+                                                                        },
+                                                                    }))
+                                                                }
+                                                            />
+                                                            <Input
+                                                                placeholder="Meta description"
+                                                                value={newSubSubCategorySeo[subKey]?.metaDescription || ''}
+                                                                onChange={e =>
+                                                                    setNewSubSubCategorySeo(prev => ({
+                                                                        ...prev,
+                                                                        [subKey]: {
+                                                                            ...(prev[subKey] || createSeoDraft()),
+                                                                            metaDescription: e.target.value,
+                                                                        },
+                                                                    }))
+                                                                }
+                                                            />
+                                                            <div className="md:w-72">
+                                                                <SingleImageUploader
+                                                                    label="OG image"
+                                                                    value={
+                                                                        newSubSubCategorySeo[subKey]?.imageFile
+                                                                            ? URL.createObjectURL(newSubSubCategorySeo[subKey].imageFile!)
+                                                                            : newSubSubCategorySeo[subKey]?.imagePath || undefined
+                                                                    }
+                                                                    onChange={(file) =>
+                                                                        setNewSubSubCategorySeo(prev => ({
+                                                                            ...prev,
+                                                                            [subKey]: {
+                                                                                ...(prev[subKey] || createSeoDraft()),
+                                                                                imageFile: file,
+                                                                                imagePath: file ? prev[subKey]?.imagePath || '' : '',
+                                                                            },
+                                                                        }))
+                                                                    }
+                                                                />
+                                                            </div>
                                                             <Button
                                                                 size="sm"
                                                                 onClick={() => handleAddSubSubCategory(category.id, sub.id)}

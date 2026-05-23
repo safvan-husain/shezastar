@@ -7,6 +7,8 @@ export interface ProductDocument {
     name: string;
     subtitle?: string | null;
     description?: string | null;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
     basePrice: number;
     offerPercentage?: number;
     images: ProductImage[];
@@ -26,6 +28,8 @@ export interface Product {
     name: string;
     subtitle?: string | null;
     description?: string | null;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
     basePrice: number;
     offerPercentage?: number;
     images: ProductImage[];
@@ -50,6 +54,8 @@ export function toProduct(doc: ProductDocument): Product {
         name: doc.name,
         subtitle: doc.subtitle,
         description: doc.description,
+        metaTitle: doc.metaTitle,
+        metaDescription: doc.metaDescription,
         basePrice: doc.basePrice,
         offerPercentage: doc.offerPercentage,
         images: doc.images,

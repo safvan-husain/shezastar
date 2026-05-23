@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { cache, Suspense } from 'react';
 import { ProductGrid } from '@/components/ProductGrid';
 import { getAllCategories } from '@/lib/category/category.service';
@@ -8,6 +9,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { CategoryErrorHandler, CategoryPageError } from '../components/CategoryErrorHandler';
 import { Breadcrumbs, BreadcrumbItem } from '../components/Breadcrumbs';
 import { CategoryPageSkeleton } from '../components/CategoryPageSkeleton';
+import { buildCategoryPath } from '@/lib/seo/canonical';
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -78,6 +80,9 @@ interface CategoryMatch {
   title: string;
   filterId: string;
   level: CategoryLevel;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImagePath: string | null;
   breadcrumbs: BreadcrumbItem[];
 }
 
@@ -93,6 +98,9 @@ function findCategoryBySlug(categories: Category[], slug: string): CategoryMatch
         title: category.name,
         filterId,
         level: 'category',
+        metaTitle: category.metaTitle ?? null,
+        metaDescription: category.metaDescription ?? null,
+        ogImagePath: category.imagePath ?? null,
         breadcrumbs: [{ id: category.id, label: category.name }],
       };
     }
@@ -104,6 +112,9 @@ function findCategoryBySlug(categories: Category[], slug: string): CategoryMatch
           title: sub.name,
           filterId,
           level: 'subCategory',
+          metaTitle: sub.metaTitle ?? null,
+          metaDescription: sub.metaDescription ?? null,
+          ogImagePath: sub.imagePath ?? category.imagePath ?? null,
           breadcrumbs: [
             { id: category.slug || category.id, label: category.name, href: `/category/${category.slug}` },
             { id: sub.slug || sub.id, label: sub.name },
@@ -118,6 +129,9 @@ function findCategoryBySlug(categories: Category[], slug: string): CategoryMatch
           title: subSub.name,
           filterId,
           level: 'subSubCategory',
+          metaTitle: subSub.metaTitle ?? null,
+          metaDescription: subSub.metaDescription ?? null,
+          ogImagePath: subSub.imagePath ?? sub.imagePath ?? category.imagePath ?? null,
           breadcrumbs: [
             { id: category.slug || category.id, label: category.name, href: `/category/${category.slug}` },
             { id: sub.slug || sub.id, label: sub.name, href: `/category/${sub.slug}` },
@@ -141,6 +155,62 @@ function buildDescription(level: CategoryLevel, title: string, hasProducts: bool
   }
 
   return `Products in ${title}.${hasProducts ? '' : ' No items yet.'}`;
+}
+
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  try {
+    const { categories, error } = await fetchCategories();
+    if (error) {
+      return {
+        title: 'Category | Sheza Star',
+        description: 'Browse categories on Sheza Star.',
+      };
+    }
+
+    const match = findCategoryBySlug(categories, slug);
+    if (!match) {
+      return {
+        title: 'Category not found | Sheza Star',
+        description: 'Browse categories on Sheza Star.',
+        alternates: {
+          canonical: buildCategoryPath(slug),
+        },
+      };
+    }
+
+    const title = match.metaTitle || `${match.title} | Sheza Star`;
+    const description = match.metaDescription || buildDescription(match.level, match.title, true);
+    const imageUrl = match.ogImagePath || undefined;
+    const canonical = buildCategoryPath(slug);
+
+    return {
+      title,
+      description,
+      alternates: {
+        canonical,
+      },
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+        url: canonical,
+        images: imageUrl ? [{ url: imageUrl, alt: match.title }] : undefined,
+      },
+      twitter: {
+        card: imageUrl ? 'summary_large_image' : 'summary',
+        title,
+        description,
+        images: imageUrl ? [imageUrl] : undefined,
+      },
+    };
+  } catch {
+    return {
+      title: 'Category | Sheza Star',
+      description: 'Browse categories on Sheza Star.',
+    };
+  }
 }
 
 function CategoryLoadErrorState({ error }: { error: CategoryPageError }) {

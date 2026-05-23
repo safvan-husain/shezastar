@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getStaticPageMetadata } from "@/lib/seo/static-page-seo";
 
-export const metadata: Metadata = {
-  title: "Terms & Conditions | Sheza Star",
-  description:
-    "Review the terms and conditions for using the Sheza Star website and services.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getStaticPageMetadata("terms");
+}
 
 export default function TermsAndConditionsPage() {
   return (

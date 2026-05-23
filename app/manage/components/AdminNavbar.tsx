@@ -180,6 +180,7 @@ const NAV_ITEMS: NavItem[] = [
             { href: '/manage/settings/featured-products', label: 'Featured products' },
             { href: '/manage/settings/installation-locations', label: 'Installation locations' },
             { href: '/manage/settings/countries', label: 'Countries & taxes' },
+            { href: '/manage/settings/seo', label: 'Static page SEO' },
         ],
     },
 ];

@@ -10,6 +10,8 @@ import {
     deleteCustomCard,
     getCustomCard,
     getCustomCards,
+    getStaticPageSeoSettings,
+    updateStaticPageSeoEntry,
 } from '@/lib/app-settings/app-settings.service';
 import { AppError } from '@/lib/errors/app-error';
 import { clear } from '../test-db';
@@ -353,5 +355,48 @@ describe('Custom Cards Service Unit Tests', () => {
         expect(cards.card4).toBeNull();
         expect(cards.card5).toBeNull();
         expect(cards.card6).toBeNull();
+    });
+});
+
+describe('Static Page SEO Service Unit Tests', () => {
+    beforeEach(async () => {
+        await clear();
+    });
+
+    it('should return default static seo settings', async () => {
+        const result = await getStaticPageSeoSettings();
+        expect(result.home.title).toBe('Sheza Star | Car Accessories & Services');
+        expect(result.about.title).toBe('Our Story | Sheza Star');
+        expect(result['category-landing'].title).toBe('Browse by Category | Sheza Star');
+    });
+
+    it('should update specific static seo entry and keep others unchanged', async () => {
+        const updated = await updateStaticPageSeoEntry('blogs', {
+            title: 'Updated Blogs Title',
+            metaDescription: 'Updated blogs description',
+            ogImage: '/uploads/blogs-og.jpg',
+        });
+
+        expect(updated.staticPageSeo.blogs.title).toBe('Updated Blogs Title');
+        expect(updated.staticPageSeo.blogs.metaDescription).toBe('Updated blogs description');
+        expect(updated.staticPageSeo.blogs.ogImage).toBe('/uploads/blogs-og.jpg');
+        expect(updated.staticPageSeo.home.title).toBe('Sheza Star | Car Accessories & Services');
+    });
+
+    it('should remove ogImage when updated entry omits it', async () => {
+        await updateStaticPageSeoEntry('contact', {
+            title: 'Contact SEO',
+            metaDescription: 'Contact SEO description',
+            ogImage: '/uploads/contact-og.jpg',
+        });
+
+        const updated = await updateStaticPageSeoEntry('contact', {
+            title: 'Contact SEO no image',
+            metaDescription: 'Contact SEO no image description',
+        });
+
+        expect(updated.staticPageSeo.contact.title).toBe('Contact SEO no image');
+        expect(updated.staticPageSeo.contact.metaDescription).toBe('Contact SEO no image description');
+        expect(updated.staticPageSeo.contact.ogImage).toBeUndefined();
     });
 });

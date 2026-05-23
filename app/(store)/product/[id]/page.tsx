@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
-import { Product } from '@/lib/product/model/product.model';
+import { Product, isProductInStock } from '@/lib/product/model/product.model';
 import { ProductErrorHandler, ProductPageError } from '../components/ProductErrorHandler';
 import { ProductDetails } from '../components/ProductDetails';
 import { RelatedProductsClient } from '../components/RelatedProductsClient';
 import { RecentlyViewed } from '@/components/storefront/RecentlyViewed';
 import { getCachedProduct, getCachedProductIds } from '@/lib/product/product-cache';
 import { AppError } from '@/lib/errors/app-error';
+import { buildProductCanonicalUrl, buildProductPath } from '@/lib/seo/canonical';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -53,7 +54,43 @@ function stripHtml(value?: string | null) {
 }
 
 function buildProductDescription(product: Product) {
-  return product.subtitle || stripHtml(product.description) || `Shop ${product.name} at Sheza Star.`;
+  return product.metaDescription || product.subtitle || stripHtml(product.description) || `Shop ${product.name} at Sheza Star.`;
+}
+
+function buildProductTitle(product: Product) {
+  return product.metaTitle || `${product.name} | Sheza Star`;
+}
+
+function getPrimaryImageUrl(product: Product) {
+  return product.images[0]?.url;
+}
+
+function getProductStructuredData(product: Product) {
+  const description = buildProductDescription(product);
+  const primaryImage = getPrimaryImageUrl(product);
+  const defaultVariant = product.variantStock.find((entry) => entry.variantCombinationKey === 'default');
+  const price = defaultVariant?.price ?? product.basePrice;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description,
+    image: primaryImage ? [primaryImage] : undefined,
+    offers: {
+      '@type': 'Offer',
+      price,
+      priceCurrency: 'AED',
+      availability: isProductInStock(product)
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+      url: buildProductCanonicalUrl(product.id),
+    },
+  };
+}
+
+function serializeJsonLd(value: unknown) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
 }
 
 async function fetchProduct(id: string): Promise<{ product: Product | null; error: ProductPageError | null }> {
@@ -77,23 +114,26 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   try {
     const product = await getCachedProduct(id);
     const description = buildProductDescription(product);
-    const imageUrl = product.images.find((image) => image.url)?.url;
+    const title = buildProductTitle(product);
+    const imageUrl = getPrimaryImageUrl(product);
+    const canonical = buildProductPath(id);
 
     return {
-      title: `${product.name} | Sheza Star`,
+      title,
       description,
       alternates: {
-        canonical: `/product/${id}`,
+        canonical,
       },
       openGraph: {
-        title: `${product.name} | Sheza Star`,
+        title,
         description,
         type: 'website',
+        url: canonical,
         images: imageUrl ? [{ url: imageUrl, alt: product.name }] : undefined,
       },
       twitter: {
         card: imageUrl ? 'summary_large_image' : 'summary',
-        title: `${product.name} | Sheza Star`,
+        title,
         description,
         images: imageUrl ? [imageUrl] : undefined,
       },
@@ -155,6 +195,10 @@ async function CachedProductPage({ id }: { id: string }) {
         <ProductErrorState error={productError} />
       ) : product ? (
         <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: serializeJsonLd(getProductStructuredData(product)) }}
+          />
           <ProductDetails
             product={product}
             tabbyConfig={getTabbyConfig()}

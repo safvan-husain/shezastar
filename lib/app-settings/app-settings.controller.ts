@@ -7,6 +7,8 @@ import {
     AddFeaturedProductSchema,
     CreateCountryPricingSchema,
     UpdateCountryPricingSchema,
+    StaticPageSeoKeySchema,
+    UpdateStaticPageSeoEntrySchema,
 } from './app-settings.schema';
 import * as appSettingsService from './app-settings.service';
 
@@ -184,6 +186,26 @@ export async function handleRemoveCountryPricing(id: string) {
     try {
         const result = await appSettingsService.removeCountryPricing(id);
         return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleGetStaticPageSeoSettings() {
+    try {
+        const result = await appSettingsService.getStaticPageSeoSettings();
+        return { status: 200, body: result };
+    } catch (err) {
+        return catchError(err);
+    }
+}
+
+export async function handleUpdateStaticPageSeoEntry(key: string, input: unknown) {
+    try {
+        const parsedKey = StaticPageSeoKeySchema.parse(key);
+        const parsedInput = UpdateStaticPageSeoEntrySchema.parse(input);
+        const result = await appSettingsService.updateStaticPageSeoEntry(parsedKey, parsedInput);
+        return { status: 200, body: result.staticPageSeo[parsedKey] };
     } catch (err) {
         return catchError(err);
     }

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import { getStaticPageMetadata } from "@/lib/seo/static-page-seo";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | Sheza Star",
-  description: "Learn how Sheza Star collects, uses, and protects your data.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getStaticPageMetadata("privacy");
+}
 
 export default function PrivacyPolicyPage() {
   return (

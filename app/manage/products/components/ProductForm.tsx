@@ -54,6 +54,8 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
     const [name, setName] = useState(initialData?.name || '');
     const [subtitle, setSubtitle] = useState(initialData?.subtitle || '');
     const [description, setDescription] = useState(initialData?.description || '');
+    const [metaTitle, setMetaTitle] = useState(initialData?.metaTitle || '');
+    const [metaDescription, setMetaDescription] = useState(initialData?.metaDescription || '');
     const [specifications, setSpecifications] = useState<ProductSpecification[]>(initialData?.specifications || []);
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
     const [offerPercentage, setOfferPercentage] = useState(initialData?.offerPercentage || '');
@@ -129,6 +131,8 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                 return str.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
             };
             formData.append('description', ensureHtml(description || ''));
+            formData.append('metaTitle', metaTitle.trim());
+            formData.append('metaDescription', metaDescription.trim());
             formData.append('basePrice', basePrice);
             if (offerPercentage) {
                 formData.append('offerPercentage', offerPercentage);
@@ -307,10 +311,14 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                     description={description}
                     basePrice={basePrice}
                     offerPercentage={offerPercentage}
+                    metaTitle={metaTitle}
+                    metaDescription={metaDescription}
                     specifications={specifications}
                     onNameChange={setName}
                     onSubtitleChange={setSubtitle}
                     onDescriptionChange={setDescription}
+                    onMetaTitleChange={setMetaTitle}
+                    onMetaDescriptionChange={setMetaDescription}
                     onBasePriceChange={setBasePrice}
                     onOfferPercentageChange={setOfferPercentage}
                     onSpecificationsChange={setSpecifications}

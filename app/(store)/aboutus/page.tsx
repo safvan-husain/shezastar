@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { getStaticPageMetadata } from "@/lib/seo/static-page-seo";
 
-export const metadata: Metadata = {
-  title: "Our Story | Sheza Star",
-  description: "Learn about SHEZA STAR CAR ACCESSORIES SPS LLC and our journey.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getStaticPageMetadata("about");
+}
 
 export default function AboutUsPage() {
   return (
