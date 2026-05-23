@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const getCachedProductIds = vi.fn();
 const getCachedAllCategories = vi.fn();
+const getCachedPublishedBlogSitemapEntries = vi.fn();
 
 vi.mock('@/lib/product/product-cache', () => ({
     getCachedProductIds,
@@ -11,9 +12,16 @@ vi.mock('@/lib/category/category-cache', () => ({
     getCachedAllCategories,
 }));
 
+vi.mock('@/lib/blog/blog-cache', () => ({
+    getCachedPublishedBlogSitemapEntries,
+}));
+
 describe('sitemap generation', () => {
-    it('includes static, product, and category URLs', async () => {
+    it('includes static, product, category, and blog URLs', async () => {
         getCachedProductIds.mockResolvedValue(['prod-1', 'prod-2']);
+        getCachedPublishedBlogSitemapEntries.mockResolvedValue([
+            { slug: 'test-blog', updatedAt: '2026-01-16T00:00:00.000Z' },
+        ]);
         getCachedAllCategories.mockResolvedValue([
             {
                 id: 'cat-1',
@@ -49,6 +57,7 @@ describe('sitemap generation', () => {
         expect(urls).toContain('https://shezastar.com/category/audio');
         expect(urls).toContain('https://shezastar.com/category/audio-speakers');
         expect(urls).toContain('https://shezastar.com/category/audio-speakers-bluetooth');
+        expect(urls).toContain('https://shezastar.com/blogs/test-blog');
         expect(entries.every(entry => entry.lastModified instanceof Date)).toBe(true);
     });
 });

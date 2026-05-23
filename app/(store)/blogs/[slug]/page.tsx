@@ -2,10 +2,22 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getPublishedBlogBySlug } from '@/lib/blog/blog.service';
+import type { Blog } from '@/lib/blog/model/blog.model';
+import {
+    getCachedPublishedBlogBySlug,
+    getCachedPublishedBlogSlugs,
+} from '@/lib/blog/blog-cache';
+import { AppError } from '@/lib/errors/app-error';
+import { buildBlogCanonicalUrl, buildBlogPath } from '@/lib/seo/canonical';
+import { buildSocialMetadata, serializeJsonLd } from '@/lib/seo/metadata';
 
 interface BlogDetailPageProps {
     params: Promise<{ slug: string }>;
+}
+
+export async function generateStaticParams() {
+    const slugs = await getCachedPublishedBlogSlugs();
+    return slugs.map((slug) => ({ slug }));
 }
 
 function formatDate(value?: string) {
@@ -18,34 +30,80 @@ function formatDate(value?: string) {
     }).format(new Date(value));
 }
 
+function getBlogStructuredData(blog: Blog) {
+    const canonicalUrl = buildBlogCanonicalUrl(blog.slug);
+    const datePublished = blog.publishedAt || blog.createdAt;
+
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: blog.title,
+        description: blog.excerpt,
+        image: blog.coverImageUrl ? [blog.coverImageUrl] : undefined,
+        datePublished,
+        dateModified: blog.updatedAt,
+        mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': canonicalUrl,
+        },
+    };
+}
+
 export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
     const { slug } = await params;
-    const blog = await getPublishedBlogBySlug(slug).catch(() => null);
 
-    if (!blog) {
+    try {
+        const blog = await getCachedPublishedBlogBySlug(slug);
+        const title = `${blog.title} | Sheza Star`;
+
+        return {
+            title,
+            description: blog.excerpt,
+            ...buildSocialMetadata({
+                title,
+                description: blog.excerpt,
+                canonicalPath: buildBlogPath(slug),
+                imageUrl: blog.coverImageUrl,
+                type: 'article',
+                publishedTime: blog.publishedAt || blog.createdAt,
+                modifiedTime: blog.updatedAt,
+            }),
+        };
+    } catch {
         return {
             title: 'Blog | Sheza Star',
         };
     }
-
-    return {
-        title: `${blog.title} | Sheza Star`,
-        description: blog.excerpt,
-    };
 }
 
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     const { slug } = await params;
-    const blog = await getPublishedBlogBySlug(slug).catch(() => null);
 
-    if (!blog) {
-        notFound();
+    return <CachedBlogPage slug={slug} />;
+}
+
+async function CachedBlogPage({ slug }: { slug: string }) {
+    'use cache';
+
+    let blog: Blog | null = null;
+
+    try {
+        blog = await getCachedPublishedBlogBySlug(slug);
+    } catch (error) {
+        if (error instanceof AppError && error.status === 404) {
+            notFound();
+        }
+        throw error;
     }
 
     const publishedDate = formatDate(blog.publishedAt || blog.createdAt);
 
     return (
         <div className="min-h-screen bg-[var(--storefront-bg)] pt-24 md:pt-34 pb-16">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(getBlogStructuredData(blog)) }}
+            />
             <article className="container mx-auto max-w-6xl px-4">
                 <nav aria-label="Breadcrumb" className="mb-8 text-sm">
                     <ol className="flex flex-wrap items-center gap-2 text-[var(--storefront-text-muted)]">

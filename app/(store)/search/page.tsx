@@ -1,13 +1,30 @@
 
+import type { Metadata } from 'next';
 import { searchProducts } from '@/lib/product/product.service';
 import { ProductGrid } from '@/components/ProductGrid';
-import { Metadata } from 'next';
+import { buildNoIndexMetadata } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-    title: 'Search Results | ShezaStar',
-    description: 'Search results for your query',
-};
+export async function generateMetadata(props: {
+    searchParams: Promise<{ q?: string }>;
+}): Promise<Metadata> {
+    const searchParams = await props.searchParams;
+    const query = searchParams.q?.trim();
 
+    const title = query
+        ? `Search Results for "${query}" | Sheza Star`
+        : 'Search Results | Sheza Star';
+
+    return {
+        ...buildNoIndexMetadata({
+            title,
+            description: 'Search Sheza Star products.',
+            follow: true,
+        }),
+        alternates: {
+            canonical: '/search',
+        },
+    };
+}
 
 export default async function SearchPage(props: {
     searchParams: Promise<{ q?: string }>;

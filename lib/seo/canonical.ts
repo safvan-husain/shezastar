@@ -49,6 +49,14 @@ export function buildCategoryCanonicalUrl(slug: string) {
     return buildCanonicalUrl(buildCategoryPath(slug));
 }
 
+export function buildBlogPath(slug: string) {
+    return `/blogs/${encodeURIComponent(slug)}`;
+}
+
+export function buildBlogCanonicalUrl(slug: string) {
+    return buildCanonicalUrl(buildBlogPath(slug));
+}
+
 export const STATIC_PAGE_PATHS = {
     home: '/',
     about: '/aboutus',

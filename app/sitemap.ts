@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next';
+import { getCachedPublishedBlogSitemapEntries } from '@/lib/blog/blog-cache';
 import { getCachedProductIds } from '@/lib/product/product-cache';
 import { getCachedAllCategories } from '@/lib/category/category-cache';
 import { Category } from '@/lib/category/model/category.model';
 import {
     STATIC_SITEMAP_PATHS,
     buildCanonicalUrl,
+    buildBlogPath,
     buildCategoryPath,
     buildProductPath,
 } from '@/lib/seo/canonical';
@@ -34,17 +36,28 @@ function collectCategoryPaths(categories: Category[]) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const [productIds, categories] = await Promise.all([
+    const [productIds, categories, blogEntries] = await Promise.all([
         getCachedProductIds(),
         getCachedAllCategories(),
+        getCachedPublishedBlogSitemapEntries(),
     ]);
 
-    const productPaths = productIds.map(buildProductPath);
-    const categoryPaths = collectCategoryPaths(categories);
-    const lastModified = new Date();
-
-    return [...STATIC_SITEMAP_PATHS, ...productPaths, ...categoryPaths].map(path => ({
-        url: buildCanonicalUrl(path),
-        lastModified,
+    const productEntries = productIds.map((id) => ({
+        url: buildCanonicalUrl(buildProductPath(id)),
+        lastModified: new Date(),
     }));
+    const categoryEntries = collectCategoryPaths(categories).map((path) => ({
+        url: buildCanonicalUrl(path),
+        lastModified: new Date(),
+    }));
+    const staticEntries = STATIC_SITEMAP_PATHS.map((path) => ({
+        url: buildCanonicalUrl(path),
+        lastModified: new Date(),
+    }));
+    const blogSitemapEntries = blogEntries.map((entry) => ({
+        url: buildCanonicalUrl(buildBlogPath(entry.slug)),
+        lastModified: new Date(entry.updatedAt),
+    }));
+
+    return [...staticEntries, ...productEntries, ...categoryEntries, ...blogSitemapEntries];
 }

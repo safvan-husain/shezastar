@@ -1,4 +1,6 @@
+import type { Metadata } from 'next';
 import { getOrCreateStorefrontSession } from '@/app/actions/session';
+import { buildNoIndexMetadata } from '@/lib/seo/metadata';
 import { getOrdersBySessionId } from '@/lib/order/order.service';
 import { getReturnWindowState, resolveReturnDeliveryDate } from '@/lib/order/return-window';
 import { Suspense } from 'react';
@@ -7,6 +9,10 @@ import Image from 'next/image';
 import { OrderCancellationRequestButton } from './components/OrderCancellationRequestButton';
 import { OrderReturnRequestButton } from './components/OrderReturnRequestButton';
 import { OrderShipmentTracking } from './components/OrderShipmentTracking';
+
+export const metadata: Metadata = buildNoIndexMetadata({
+    title: 'Orders | Sheza Star',
+});
 
 function formatStatus(status: string) {
     if (/^[A-Z]{2,3}$/.test(status)) {

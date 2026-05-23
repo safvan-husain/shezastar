@@ -7,6 +7,7 @@ import { RecentlyViewed } from '@/components/storefront/RecentlyViewed';
 import { getCachedProduct, getCachedProductIds } from '@/lib/product/product-cache';
 import { AppError } from '@/lib/errors/app-error';
 import { buildProductCanonicalUrl, buildProductPath } from '@/lib/seo/canonical';
+import { serializeJsonLd } from '@/lib/seo/metadata';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -77,6 +78,14 @@ function getProductStructuredData(product: Product) {
     name: product.name,
     description,
     image: primaryImage ? [primaryImage] : undefined,
+    ...(product.brand
+      ? {
+          brand: {
+            '@type': 'Brand',
+            name: product.brand.name,
+          },
+        }
+      : {}),
     offers: {
       '@type': 'Offer',
       price,
@@ -87,10 +96,6 @@ function getProductStructuredData(product: Product) {
       url: buildProductCanonicalUrl(product.id),
     },
   };
-}
-
-function serializeJsonLd(value: unknown) {
-  return JSON.stringify(value).replace(/</g, '\\u003c');
 }
 
 async function fetchProduct(id: string): Promise<{ product: Product | null; error: ProductPageError | null }> {

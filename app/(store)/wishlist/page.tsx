@@ -1,5 +1,7 @@
 import type { ToastErrorPayload } from '@/components/ErrorToastHandler';
+import type { Metadata } from 'next';
 import { ErrorToastHandler } from '@/components/ErrorToastHandler';
+import { buildNoIndexMetadata } from '@/lib/seo/metadata';
 import { ProductGrid } from '@/components/ProductGrid';
 import { GuestAuthBanner } from '@/components/storefront/GuestAuthBanner';
 import { Suspense } from 'react';
@@ -58,6 +60,10 @@ async function fetchWishlistProducts(): Promise<{
     return { products: [], error };
   }
 }
+
+export const metadata: Metadata = buildNoIndexMetadata({
+  title: 'Wishlist | Sheza Star',
+});
 
 export default function WishlistPage() {
   return (

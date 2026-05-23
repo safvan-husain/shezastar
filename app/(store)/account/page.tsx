@@ -1,5 +1,11 @@
+import type { Metadata } from 'next';
 import LoginForm from '@/components/auth/login-form';
 import Link from 'next/link';
+import { buildNoIndexMetadata } from '@/lib/seo/metadata';
+
+export const metadata: Metadata = buildNoIndexMetadata({
+    title: 'Sign In | Sheza Star',
+});
 
 export default function LoginPage() {
     return (

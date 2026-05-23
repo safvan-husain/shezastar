@@ -5,6 +5,8 @@ import {
     handleGetBlog,
     handleUpdateBlog,
 } from '@/lib/blog/blog.controller';
+import { revalidateBlogPages } from '@/lib/blog/blog-cache';
+import type { Blog } from '@/lib/blog/model/blog.model';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { catchError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
@@ -47,7 +49,9 @@ async function PUTHandler(
         }
 
         const { status, body } = await handleUpdateBlog(id, input);
-        revalidatePath('/(store)/blogs', 'page');
+        if (status < 400) {
+            revalidateBlogPages((body as Blog).slug);
+        }
         revalidatePath('/manage/blogs', 'page');
 
         return NextResponse.json(body, { status });
@@ -64,8 +68,11 @@ async function DELETEHandler(
     try {
         await requireAdminApiAuth();
         const { id } = await params;
+        const existing = await handleGetBlog(id);
         const { status, body } = await handleDeleteBlog(id);
-        revalidatePath('/(store)/blogs', 'page');
+        if (status < 400) {
+            revalidateBlogPages((existing.body as Blog).slug);
+        }
         revalidatePath('/manage/blogs', 'page');
 
         return NextResponse.json(body, { status });

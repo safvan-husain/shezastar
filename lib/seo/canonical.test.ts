@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     STATIC_SITEMAP_PATHS,
+    buildBlogCanonicalUrl,
     buildCanonicalUrl,
     buildCategoryCanonicalUrl,
     buildProductCanonicalUrl,
@@ -19,9 +20,10 @@ describe('SEO canonical helpers', () => {
         expect(getSiteUrl().toString()).toBe('https://shezastar.com/');
     });
 
-    it('builds product, category, and static canonical URLs', () => {
+    it('builds product, category, blog, and static canonical URLs', () => {
         expect(buildProductCanonicalUrl('abc123')).toBe('https://shezastar.com/product/abc123');
         expect(buildCategoryCanonicalUrl('audio-accessories')).toBe('https://shezastar.com/category/audio-accessories');
+        expect(buildBlogCanonicalUrl('test-blog')).toBe('https://shezastar.com/blogs/test-blog');
         expect(buildCanonicalUrl('/aboutus')).toBe('https://shezastar.com/aboutus');
     });
 

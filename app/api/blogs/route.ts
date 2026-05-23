@@ -1,6 +1,8 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { handleCreateBlog, handleGetAllBlogs } from '@/lib/blog/blog.controller';
+import { revalidateBlogPages } from '@/lib/blog/blog-cache';
+import type { Blog } from '@/lib/blog/model/blog.model';
 import { requireAdminApiAuth } from '@/lib/auth/admin-auth';
 import { catchError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
@@ -53,7 +55,9 @@ async function POSTHandler(req: Request) {
         }
 
         const { status, body } = await handleCreateBlog(input);
-        revalidatePath('/(store)/blogs', 'page');
+        if (status < 400) {
+            revalidateBlogPages((body as Blog).slug);
+        }
         revalidatePath('/manage/blogs', 'page');
 
         return NextResponse.json(body, { status });

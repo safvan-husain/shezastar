@@ -11,7 +11,7 @@ describe('robots rules', () => {
         expect(rule.userAgent).toBe('*');
         expect(allowRules).toEqual(expect.arrayContaining(['/products', '/blogs', '/category', '/product/']));
         expect(disallowRules).toEqual(
-            expect.arrayContaining(['/cart', '/checkout', '/account', '/orders', '/wishlist', '/manage', '/api', '/auth', '/admin'])
+            expect.arrayContaining(['/cart', '/checkout', '/account', '/orders', '/wishlist', '/search', '/manage', '/api', '/auth', '/admin'])
         );
         expect(config.sitemap).toBe('https://shezastar.com/sitemap.xml');
     });

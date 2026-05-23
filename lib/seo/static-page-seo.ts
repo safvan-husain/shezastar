@@ -3,30 +3,18 @@ import { getCachedStaticPageSeoSettings } from '@/lib/app-settings/app-settings-
 import type { StaticPageSeoEntry, StaticPageSeoKey } from '@/lib/app-settings/app-settings.schema';
 import { getDefaultStaticPageSeoSettings } from '@/lib/app-settings/model/app-settings.model';
 import { buildStaticPagePath } from '@/lib/seo/canonical';
+import { buildSocialMetadata } from '@/lib/seo/metadata';
 
 function toMetadata(entry: StaticPageSeoEntry, key: StaticPageSeoKey): Metadata {
-    const imageUrl = entry.ogImage;
-    const canonical = buildStaticPagePath(key);
-
     return {
         title: entry.title,
         description: entry.metaDescription,
-        alternates: {
-            canonical,
-        },
-        openGraph: {
+        ...buildSocialMetadata({
             title: entry.title,
             description: entry.metaDescription,
-            type: 'website',
-            url: canonical,
-            images: imageUrl ? [{ url: imageUrl, alt: entry.title }] : undefined,
-        },
-        twitter: {
-            card: imageUrl ? 'summary_large_image' : 'summary',
-            title: entry.title,
-            description: entry.metaDescription,
-            images: imageUrl ? [imageUrl] : undefined,
-        },
+            canonicalPath: buildStaticPagePath(key),
+            imageUrl: entry.ogImage,
+        }),
     };
 }
 

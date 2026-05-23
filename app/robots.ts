@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
             {
                 userAgent: '*',
                 allow: ['/', '/aboutus', '/contact-us', '/privacy-policy', '/terms-and-conditions', '/return-refund-policy', '/products', '/blogs', '/category', '/product/'],
-                disallow: ['/cart', '/checkout', '/account', '/orders', '/wishlist', '/manage', '/api', '/auth', '/admin', '/login', '/register'],
+                disallow: ['/cart', '/checkout', '/account', '/orders', '/wishlist', '/search', '/manage', '/api', '/auth', '/admin', '/login', '/register'],
             },
         ],
         sitemap: buildCanonicalUrl('/sitemap.xml'),

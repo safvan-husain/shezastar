@@ -1,5 +1,11 @@
+import type { Metadata } from 'next';
 import RegisterForm from '@/components/auth/register-form';
 import Link from 'next/link';
+import { buildNoIndexMetadata } from '@/lib/seo/metadata';
+
+export const metadata: Metadata = buildNoIndexMetadata({
+    title: 'Create Account | Sheza Star',
+});
 
 export default function RegisterPage() {
     return (

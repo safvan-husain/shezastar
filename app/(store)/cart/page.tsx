@@ -1,4 +1,6 @@
 import { ErrorToastHandler, type ToastErrorPayload } from "@/components/ErrorToastHandler";
+import type { Metadata } from "next";
+import { buildNoIndexMetadata } from "@/lib/seo/metadata";
 import { Suspense } from "react";
 import { CartPageContent } from "./components/CartPageContent";
 import { getCartForCurrentSession } from "@/lib/cart";
@@ -9,6 +11,10 @@ import { validateStockAvailability } from "@/lib/product/product.service-stock";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
 
 type ProductsById = Record<string, Product | null>;
+
+export const metadata: Metadata = buildNoIndexMetadata({
+  title: "Cart | Sheza Star",
+});
 
 function buildErrorPayload(error: unknown, overrides?: Partial<ToastErrorPayload>): ToastErrorPayload {
   if (error instanceof AppError) {
