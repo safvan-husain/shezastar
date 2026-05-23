@@ -1,5 +1,6 @@
 
 import { ErrorToastHandler, type ToastErrorPayload } from "@/components/ErrorToastHandler";
+import { Suspense } from "react";
 import { CheckoutPageContent } from "./components/CheckoutPageContent";
 import { getCartForCurrentSession } from "@/lib/cart";
 import { getProduct } from "@/lib/product/product.service";
@@ -39,7 +40,15 @@ function buildErrorPayload(error: unknown, overrides?: Partial<ToastErrorPayload
     };
 }
 
-export default async function CheckoutPage() {
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={null}>
+            <CheckoutPageContentLoader />
+        </Suspense>
+    );
+}
+
+async function CheckoutPageContentLoader() {
     const tabbyPublicKey = process.env.TABBY_PUBLIC_KEY || '';
     const tabbyMerchantCode = process.env.TABBY_MERCHANT_CODE || '';
     const tabbyConfig = (tabbyPublicKey && tabbyMerchantCode)

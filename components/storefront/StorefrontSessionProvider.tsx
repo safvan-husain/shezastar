@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { handleApiError } from '@/lib/utils/api-error-handler';
 
 interface StorefrontSessionContextValue {
-    session: StorefrontSession;
+    session: StorefrontSession | null;
     refreshSession: () => Promise<StorefrontSession>;
     isRefreshing: boolean;
 }
@@ -15,12 +15,12 @@ interface StorefrontSessionContextValue {
 const StorefrontSessionContext = createContext<StorefrontSessionContextValue | undefined>(undefined);
 
 interface StorefrontSessionProviderProps {
-    initialSession: StorefrontSession;
+    initialSession?: StorefrontSession | null;
     children: React.ReactNode;
 }
 
-export function StorefrontSessionProvider({ initialSession, children }: StorefrontSessionProviderProps) {
-    const [session, setSession] = useState(initialSession);
+export function StorefrontSessionProvider({ initialSession = null, children }: StorefrontSessionProviderProps) {
+    const [session, setSession] = useState<StorefrontSession | null>(initialSession);
 
     // Sync state with prop when server re-renders (e.g. after router.refresh())
     useEffect(() => {
@@ -29,22 +29,11 @@ export function StorefrontSessionProvider({ initialSession, children }: Storefro
     const [isRefreshing, setIsRefreshing] = useState(false);
     const { showToast } = useToast();
 
-    // Initialize session cookie on mount
-    useEffect(() => {
-        const initSession = async () => {
-            try {
-                await fetch('/api/storefront/session', { method: 'GET' });
-            } catch (error) {
-                console.error('Failed to initialize session:', error);
-            }
-        };
-        initSession();
-    }, []);
-
     const refreshSession = useCallback(async () => {
         setIsRefreshing(true);
+        const url = '/api/storefront/session';
         try {
-            const response = await fetch('/api/storefront/session', {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -59,13 +48,22 @@ export function StorefrontSessionProvider({ initialSession, children }: Storefro
             return data;
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to refresh session';
-            console.error('[PROVIDER] Refresh failed:', message);
-            showToast(message, 'error');
+            showToast(message, 'error', { url, method: 'POST' });
             throw error;
         } finally {
             setIsRefreshing(false);
         }
     }, [showToast]);
+
+    useEffect(() => {
+        if (initialSession) {
+            return;
+        }
+
+        refreshSession().catch(() => {
+            // Error has already been surfaced through the toast system.
+        });
+    }, [initialSession, refreshSession]);
 
     const value = useMemo<StorefrontSessionContextValue>(
         () => ({

@@ -47,6 +47,16 @@ export async function getCachedProduct(id: string) {
     return product;
 }
 
+export async function getCachedProductIds() {
+    'use cache';
+    cacheLife('days');
+    cacheTag(PRODUCTS_CACHE_TAG);
+
+    const collection = await getCachedCollection<ProductDocument>('products');
+    const docs = await collection.find({}, { projection: { _id: 1 } }).toArray();
+    return docs.map(doc => doc._id.toString());
+}
+
 export function revalidateProductCache(id?: string) {
     revalidateTag(PRODUCTS_CACHE_TAG, { expire: 0 });
     revalidatePath('/(store)/products', 'page');

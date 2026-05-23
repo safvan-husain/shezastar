@@ -43,11 +43,11 @@ interface StorefrontCartContextValue {
 const StorefrontCartContext = createContext<StorefrontCartContextValue | undefined>(undefined);
 
 interface StorefrontCartProviderProps {
-    initialCart: Cart | null;
+    initialCart?: Cart | null;
     children: React.ReactNode;
 }
 
-export function StorefrontCartProvider({ initialCart, children }: StorefrontCartProviderProps) {
+export function StorefrontCartProvider({ initialCart = null, children }: StorefrontCartProviderProps) {
     const [cart, setCart] = useState<Cart | null>(initialCart);
 
     // Sync state with prop when server re-renders
@@ -61,8 +61,9 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
 
     const refreshCart = useCallback(async () => {
         setIsLoading(true);
+        const url = '/api/storefront/cart';
         try {
-            const response = await fetch('/api/storefront/cart', {
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -79,12 +80,21 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : 'Failed to refresh cart';
-            console.error('[CART] Refresh failed:', message);
-            showToast(message, 'error');
+            showToast(message, 'error', { url, method: 'GET' });
         } finally {
             setIsLoading(false);
         }
     }, [showToast]);
+
+    useEffect(() => {
+        if (initialCart) {
+            return;
+        }
+
+        refreshCart().catch(() => {
+            // Error has already been surfaced through the toast system.
+        });
+    }, [initialCart, refreshCart]);
 
     const mutateCart = useCallback(
         async (
@@ -115,8 +125,6 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
             } catch (error) {
                 const message =
                     error instanceof Error ? error.message : 'Cart action failed';
-                console.error('[CART] Mutation failed:', message);
-                // For network errors or unexpected failures, show a generic toast
                 showToast(message, 'error');
             } finally {
                 setIsLoading(false);
@@ -205,7 +213,6 @@ export function StorefrontCartProvider({ initialCart, children }: StorefrontCart
                 return data;
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Failed to save building address';
-                console.error('[CART] Billing details failed:', message);
                 showToast(message, 'error', {
                     url,
                     method: 'PUT',
@@ -245,4 +252,3 @@ export function useStorefrontCart() {
     }
     return context;
 }
-

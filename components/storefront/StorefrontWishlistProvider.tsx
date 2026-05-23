@@ -86,7 +86,6 @@ export function StorefrontWishlistProvider({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to load wishlist';
-      console.error('[WISHLIST] Fetch failed:', message);
       showToast(message, 'error');
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
@@ -161,7 +160,6 @@ export function StorefrontWishlistProvider({
           err instanceof Error
             ? err.message
             : 'Failed to update wishlist';
-        console.error('[WISHLIST] Toggle failed:', message);
         showToast(message, 'error');
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
@@ -203,4 +201,3 @@ export function useStorefrontWishlist() {
   }
   return context;
 }
-

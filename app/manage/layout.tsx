@@ -1,10 +1,23 @@
 // app/manage/layout.tsx
 import { connection } from 'next/server';
+import { Suspense } from 'react';
 import { requireAdminAuth } from '@/lib/auth/admin-auth';
 
 import AdminNavbar from './components/AdminNavbar';
 
-export default async function ManageLayout({
+export default function ManageLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    return (
+        <Suspense fallback={null}>
+            <ManageLayoutContent>{children}</ManageLayoutContent>
+        </Suspense>
+    );
+}
+
+async function ManageLayoutContent({
     children,
 }: {
     children: React.ReactNode;

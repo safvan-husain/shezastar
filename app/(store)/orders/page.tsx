@@ -1,6 +1,7 @@
 import { getOrCreateStorefrontSession } from '@/app/actions/session';
 import { getOrdersBySessionId } from '@/lib/order/order.service';
 import { getReturnWindowState, resolveReturnDeliveryDate } from '@/lib/order/return-window';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { OrderCancellationRequestButton } from './components/OrderCancellationRequestButton';
@@ -31,7 +32,15 @@ function getReturnWindowMessage(daysRemaining: number) {
     return `You can return this order within ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}.`;
 }
 
-export default async function OrdersPage() {
+export default function OrdersPage() {
+    return (
+        <Suspense fallback={null}>
+            <OrdersPageContent />
+        </Suspense>
+    );
+}
+
+async function OrdersPageContent() {
     const session = await getOrCreateStorefrontSession();
     const orders = await getOrdersBySessionId(session.sessionId);
 

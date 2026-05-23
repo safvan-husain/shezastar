@@ -4,6 +4,7 @@ import {
   handleGetCountryPricings,
   handleCreateCountryPricing,
 } from '@/lib/app-settings/app-settings.controller';
+import { revalidateCountryPricingsCache } from '@/lib/app-settings/app-settings-cache';
 import { requireAdminAuth } from '@/lib/auth/admin-auth';
 import { withRequestLogging } from '@/lib/logging/request-logger';
 
@@ -26,6 +27,7 @@ async function POSTHandler(req: Request) {
 
     revalidatePath('/manage/settings/countries', 'page');
     revalidatePath('/(store)', 'layout');
+    revalidateCountryPricingsCache();
 
     return NextResponse.json(body, { status });
   } catch (error: any) {

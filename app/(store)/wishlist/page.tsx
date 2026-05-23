@@ -2,6 +2,7 @@ import type { ToastErrorPayload } from '@/components/ErrorToastHandler';
 import { ErrorToastHandler } from '@/components/ErrorToastHandler';
 import { ProductGrid } from '@/components/ProductGrid';
 import { GuestAuthBanner } from '@/components/storefront/GuestAuthBanner';
+import { Suspense } from 'react';
 import type { Product } from '@/lib/product/model/product.model';
 import { getProduct } from '@/lib/product/product.service';
 import { getWishlistForCurrentSession } from '@/lib/wishlist/wishlist.service';
@@ -58,7 +59,15 @@ async function fetchWishlistProducts(): Promise<{
   }
 }
 
-export default async function WishlistPage() {
+export default function WishlistPage() {
+  return (
+    <Suspense fallback={null}>
+      <WishlistPageContent />
+    </Suspense>
+  );
+}
+
+async function WishlistPageContent() {
   const { products, error } = await fetchWishlistProducts();
 
   return (
@@ -82,4 +91,3 @@ export default async function WishlistPage() {
     </div>
   );
 }
-

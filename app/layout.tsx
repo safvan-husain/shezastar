@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import { Suspense } from "react";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 
@@ -16,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://shezastar.com"),
   title: "Sheza Star",
   description: "Sheza Star",
 };
@@ -61,9 +61,7 @@ gtag('config', 'G-FNR2XYCV84');`}
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ToastProvider>
-          <Suspense fallback={null}>
-            {children}
-          </Suspense>
+          {children}
         </ToastProvider>
       </body>
     </html>

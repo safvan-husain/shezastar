@@ -1,17 +1,7 @@
-import { getAllCategories } from '@/lib/category/category.service';
-import { getStorefrontSession } from '@/lib/storefront-session';
+import { getCachedAllCategories } from '@/lib/category/category-cache';
 import { Navbar } from './Navbar';
 
 export async function NavbarWrapper() {
-  try {
-    const [categories, session] = await Promise.all([
-      getAllCategories(),
-      getStorefrontSession(),
-    ]);
-    return <Navbar categories={categories} />;
-  } catch (error) {
-    console.error('Failed to load categories for navbar:', error);
-    // Return empty navbar if categories fail to load
-    return <Navbar categories={[]} />;
-  }
+  const categories = await getCachedAllCategories();
+  return <Navbar categories={categories} />;
 }

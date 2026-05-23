@@ -2,32 +2,29 @@ import { NavbarWrapper } from "@/components/NavbarWrapper";
 import { FooterWrapper } from "@/components/FooterWrapper";
 import { StorefrontSessionProvider } from "@/components/storefront/StorefrontSessionProvider";
 import { StorefrontWishlistProvider } from "@/components/storefront/StorefrontWishlistProvider";
-import { getOrCreateStorefrontSession } from "@/app/actions/session";
-import { ensureWishlist } from "@/lib/wishlist";
-import { getCartForCurrentSession } from "@/lib/cart";
 import { StorefrontCartProvider } from "@/components/storefront/StorefrontCartProvider";
 import { StorefrontAuthSuggestionProvider } from "@/components/storefront/StorefrontAuthSuggestionProvider";
 import { CurrencyProvider } from "@/lib/currency/CurrencyContext";
 import { getExchangeRates } from "@/lib/currency/currency.service";
 import { WhatsAppFloatingButton } from "@/components/storefront/WhatsAppFloatingButton";
 import { CountryProvider } from "@/lib/country/CountryContext";
-import { getActiveCountryPricings } from "@/lib/app-settings/app-settings.service";
+import { getCachedActiveCountryPricings } from "@/lib/app-settings/app-settings-cache";
 
 export default async function StorefrontLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getOrCreateStorefrontSession();
-  const cart = await getCartForCurrentSession();
+  'use cache';
+
   const rates = await getExchangeRates();
-  const countries = await getActiveCountryPricings();
+  const countries = await getCachedActiveCountryPricings();
 
   return (
-    <StorefrontSessionProvider initialSession={session}>
+    <StorefrontSessionProvider>
       <StorefrontAuthSuggestionProvider>
-        <StorefrontWishlistProvider initialWishlist={await ensureWishlist(session)}>
-          <StorefrontCartProvider initialCart={cart}>
+        <StorefrontWishlistProvider>
+          <StorefrontCartProvider>
             <CountryProvider initialCountries={countries}>
               <CurrencyProvider initialRates={rates}>
                 <div className="bg-white min-h-screen flex flex-col">
