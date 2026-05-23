@@ -1,7 +1,8 @@
-import 'server-only';
-
 import { mkdir, appendFile } from 'node:fs/promises';
 import path from 'node:path';
+import { enforceServerOnly } from '@/lib/utils/server-only';
+
+enforceServerOnly('lib/logging/logger');
 
 export type LogLevel = 'log' | 'error' | 'debug';
 

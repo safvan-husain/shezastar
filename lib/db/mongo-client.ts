@@ -18,8 +18,26 @@ export function getMongoDbName() {
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 
+function shouldUseNextRequestConnection() {
+  if (process.env.VITEST || process.env.NODE_ENV === 'test') {
+    return false;
+  }
+
+  const lifecycleEvent = process.env.npm_lifecycle_event ?? '';
+  if (
+    lifecycleEvent.startsWith('seed') ||
+    lifecycleEvent.startsWith('migrate')
+  ) {
+    return false;
+  }
+
+  return !process.argv.some((arg) => /(^|\/)scripts\/.*\.[cm]?[jt]sx?$/.test(arg));
+}
+
 export async function connectToDatabase() {
-  await connection();
+  if (shouldUseNextRequestConnection()) {
+    await connection();
+  }
 
   return connectToDatabaseWithoutRequestConnection();
 }

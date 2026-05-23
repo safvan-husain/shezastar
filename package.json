@@ -49,6 +49,7 @@
     "mongodb-memory-server": "^10.3.0",
     "node-mocks-http": "^1.17.2",
     "tailwindcss": "^4",
+    "tsx": "^4.22.3",
     "typescript": "^5",
     "vitest": "^4.0.13"
   }
