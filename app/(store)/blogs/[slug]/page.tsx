@@ -9,7 +9,7 @@ import {
 } from '@/lib/blog/blog-cache';
 import { AppError } from '@/lib/errors/app-error';
 import { buildBlogCanonicalUrl, buildBlogPath } from '@/lib/seo/canonical';
-import { buildSocialMetadata, serializeJsonLd } from '@/lib/seo/metadata';
+import { buildSocialMetadata, serializeJsonLd, resolveMetadataImageUrl } from '@/lib/seo/metadata';
 
 interface BlogDetailPageProps {
     params: Promise<{ slug: string }>;
@@ -39,7 +39,9 @@ function getBlogStructuredData(blog: Blog) {
         '@type': 'BlogPosting',
         headline: blog.title,
         description: blog.excerpt,
-        image: blog.coverImageUrl ? [blog.coverImageUrl] : undefined,
+        image: blog.coverImageUrl
+            ? [resolveMetadataImageUrl(blog.coverImageUrl)].filter(Boolean)
+            : undefined,
         datePublished,
         dateModified: blog.updatedAt,
         mainEntityOfPage: {

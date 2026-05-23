@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { buildCanonicalUrl } from '@/lib/seo/canonical';
 
 type SocialMetadataOptions = {
     title: string;
@@ -10,6 +11,19 @@ type SocialMetadataOptions = {
     modifiedTime?: string;
 };
 
+export function resolveMetadataImageUrl(imageUrl?: string | null) {
+    if (!imageUrl?.trim()) {
+        return undefined;
+    }
+
+    const trimmed = imageUrl.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        return trimmed;
+    }
+
+    return buildCanonicalUrl(trimmed);
+}
+
 export function buildSocialMetadata({
     title,
     description,
@@ -19,7 +33,8 @@ export function buildSocialMetadata({
     publishedTime,
     modifiedTime,
 }: SocialMetadataOptions): Pick<Metadata, 'alternates' | 'openGraph' | 'twitter'> {
-    const image = imageUrl?.trim() || undefined;
+    const image = resolveMetadataImageUrl(imageUrl);
+    const canonicalUrl = buildCanonicalUrl(canonicalPath);
 
     return {
         alternates: {
@@ -29,8 +44,17 @@ export function buildSocialMetadata({
             title,
             description,
             type,
-            url: canonicalPath,
-            images: image ? [{ url: image, alt: title }] : undefined,
+            url: canonicalUrl,
+            siteName: 'Sheza Star',
+            images: image
+                ? [
+                      {
+                          url: image,
+                          secureUrl: image,
+                          alt: title,
+                      },
+                  ]
+                : undefined,
             ...(publishedTime ? { publishedTime } : {}),
             ...(modifiedTime ? { modifiedTime } : {}),
         },

@@ -32,11 +32,18 @@ describe('blog detail metadata', () => {
         expect(metadata.alternates?.canonical).toBe('/blogs/test-blog');
         expect(metadata.openGraph).toMatchObject({
             type: 'article',
-            url: '/blogs/test-blog',
+            url: 'https://shezastar.com/blogs/test-blog',
+            siteName: 'Sheza Star',
             publishedTime: '2026-01-15T00:00:00.000Z',
             modifiedTime: '2026-01-16T00:00:00.000Z',
-            images: [{ url: '/uploads/test-blog-cover.jpg', alt: 'Test Blog | Sheza Star' }],
+            images: [
+                {
+                    url: 'https://shezastar.com/uploads/test-blog-cover.jpg',
+                    secureUrl: 'https://shezastar.com/uploads/test-blog-cover.jpg',
+                    alt: 'Test Blog | Sheza Star',
+                },
+            ],
         });
-        expect(metadata.twitter?.images).toEqual(['/uploads/test-blog-cover.jpg']);
+        expect(metadata.twitter?.images).toEqual(['https://shezastar.com/uploads/test-blog-cover.jpg']);
     });
 });

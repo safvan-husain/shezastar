@@ -16,14 +16,21 @@ describe('SEO metadata helpers', () => {
             title: 'About | Sheza Star',
             description: 'Learn about Sheza Star.',
             type: 'website',
-            url: '/aboutus',
-            images: [{ url: '/uploads/about.jpg', alt: 'About | Sheza Star' }],
+            url: 'https://shezastar.com/aboutus',
+            siteName: 'Sheza Star',
+            images: [
+                {
+                    url: 'https://shezastar.com/uploads/about.jpg',
+                    secureUrl: 'https://shezastar.com/uploads/about.jpg',
+                    alt: 'About | Sheza Star',
+                },
+            ],
         });
         expect(metadata.twitter).toMatchObject({
             card: 'summary_large_image',
             title: 'About | Sheza Star',
             description: 'Learn about Sheza Star.',
-            images: ['/uploads/about.jpg'],
+            images: ['https://shezastar.com/uploads/about.jpg'],
         });
     });
 
