@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
-import { Product, isProductInStock } from '@/lib/product/model/product.model';
+import { Product } from '@/lib/product/model/product.model';
 import { ProductErrorHandler, ProductPageError } from '../components/ProductErrorHandler';
 import { ProductDetails } from '../components/ProductDetails';
 import { RelatedProductsClient } from '../components/RelatedProductsClient';
 import { RecentlyViewed } from '@/components/storefront/RecentlyViewed';
 import { getCachedProduct, getCachedProductIds } from '@/lib/product/product-cache';
 import { AppError } from '@/lib/errors/app-error';
-import { buildProductCanonicalUrl, buildProductPath } from '@/lib/seo/canonical';
+import { buildProductPath } from '@/lib/seo/canonical';
 import { serializeJsonLd } from '@/lib/seo/metadata';
+import { buildProductStructuredData } from '@/lib/seo/product-structured-data';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -64,38 +65,6 @@ function buildProductTitle(product: Product) {
 
 function getPrimaryImageUrl(product: Product) {
   return product.images[0]?.url;
-}
-
-function getProductStructuredData(product: Product) {
-  const description = buildProductDescription(product);
-  const primaryImage = getPrimaryImageUrl(product);
-  const defaultVariant = product.variantStock.find((entry) => entry.variantCombinationKey === 'default');
-  const price = defaultVariant?.price ?? product.basePrice;
-
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.name,
-    description,
-    image: primaryImage ? [primaryImage] : undefined,
-    ...(product.brand
-      ? {
-          brand: {
-            '@type': 'Brand',
-            name: product.brand.name,
-          },
-        }
-      : {}),
-    offers: {
-      '@type': 'Offer',
-      price,
-      priceCurrency: 'AED',
-      availability: isProductInStock(product)
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-      url: buildProductCanonicalUrl(product.id),
-    },
-  };
 }
 
 async function fetchProduct(id: string): Promise<{ product: Product | null; error: ProductPageError | null }> {
@@ -202,7 +171,14 @@ async function CachedProductPage({ id }: { id: string }) {
         <>
           <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: serializeJsonLd(getProductStructuredData(product)) }}
+            dangerouslySetInnerHTML={{
+              __html: serializeJsonLd(
+                buildProductStructuredData(product, {
+                  description: buildProductDescription(product),
+                  primaryImage: getPrimaryImageUrl(product),
+                }),
+              ),
+            }}
           />
           <ProductDetails
             product={product}
