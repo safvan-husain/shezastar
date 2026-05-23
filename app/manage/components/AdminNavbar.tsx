@@ -146,6 +146,20 @@ const CloseIcon = ({ className }: IconProps) => (
     </svg>
 );
 
+const PRODUCTS_NAV_GROUP: NavGroupItem = {
+    type: 'group',
+    id: 'products',
+    href: '/manage/products',
+    label: 'Products',
+    shortLabel: 'Prod',
+    Icon: ProductIcon,
+    children: [
+        { href: '/manage/products', label: 'View products' },
+        { href: '/manage/products/new', label: 'Add product' },
+        { href: '/manage/products/bulk-price-update', label: 'Update bulk' },
+    ],
+};
+
 const SEO_NAV_ITEMS: NavItem[] = [
     {
         type: 'group',
@@ -163,21 +177,18 @@ const SEO_NAV_ITEMS: NavItem[] = [
     },
 ];
 
+const SEO_MANAGER_PRODUCTS_NAV_GROUP: NavGroupItem = {
+    ...PRODUCTS_NAV_GROUP,
+    children: PRODUCTS_NAV_GROUP.children.filter(
+        (child) => child.href !== '/manage/products/bulk-price-update',
+    ),
+};
+
+const SEO_MANAGER_NAV_ITEMS: NavItem[] = [SEO_MANAGER_PRODUCTS_NAV_GROUP, ...SEO_NAV_ITEMS];
+
 const NAV_ITEMS: NavItem[] = [
     { type: 'link', href: '/manage', label: 'Dashboard', shortLabel: 'Dash', Icon: DashboardIcon },
-    {
-        type: 'group',
-        id: 'products',
-        href: '/manage/products',
-        label: 'Products',
-        shortLabel: 'Prod',
-        Icon: ProductIcon,
-        children: [
-            { href: '/manage/products', label: 'View products' },
-            { href: '/manage/products/new', label: 'Add product' },
-            { href: '/manage/products/bulk-price-update', label: 'Update bulk' },
-        ],
-    },
+    PRODUCTS_NAV_GROUP,
     { type: 'link', href: '/manage/categories', label: 'Categories', shortLabel: 'Cats', Icon: CategoryIcon },
     { type: 'link', href: '/manage/brands', label: 'Brands', shortLabel: 'Brand', Icon: BrandIcon },
     { type: 'link', href: '/manage/variant-types', label: 'Variant Types', shortLabel: 'Vars', Icon: VariantIcon },
@@ -226,7 +237,7 @@ type NavPanelProps = {
 type OpenGroups = Record<'products' | 'orders' | 'settings' | 'seo', boolean>;
 
 function getNavItemsForRole(adminRole: AdminRole): NavItem[] {
-    return adminRole === 'seo_manager' ? SEO_NAV_ITEMS : NAV_ITEMS;
+    return adminRole === 'seo_manager' ? SEO_MANAGER_NAV_ITEMS : NAV_ITEMS;
 }
 
 function isPathActive(pathname: string | null, href: string) {

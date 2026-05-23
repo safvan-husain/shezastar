@@ -35,11 +35,14 @@ describe('admin permissions', () => {
         expect(isSuperAdmin(createAdmin('super_admin'))).toBe(true);
     });
 
-    it('allows seo manager only under /manage/seo', () => {
+    it('allows seo manager under /manage/seo and /manage/products only', () => {
         expect(canAccessManagePath('seo_manager', '/manage/seo')).toBe(true);
         expect(canAccessManagePath('seo_manager', '/manage/seo/products')).toBe(true);
-        expect(canAccessManagePath('seo_manager', '/manage/products')).toBe(false);
+        expect(canAccessManagePath('seo_manager', '/manage/products')).toBe(true);
+        expect(canAccessManagePath('seo_manager', '/manage/products/new')).toBe(true);
+        expect(canAccessManagePath('seo_manager', '/manage/products/bulk-price-update')).toBe(false);
         expect(canAccessManagePath('seo_manager', '/manage')).toBe(false);
+        expect(canAccessManagePath('seo_manager', '/manage/categories')).toBe(false);
     });
 
     it('allows super admin everywhere in manage', () => {

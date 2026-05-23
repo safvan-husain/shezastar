@@ -2,7 +2,8 @@ import { beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
 import { ObjectId } from 'mongodb';
 import { GET as listProductSeo } from '@/app/api/admin/seo/products/route';
 import { PATCH as patchProductSeoById } from '@/app/api/admin/seo/products/[id]/route';
-import { PUT as updateProduct } from '@/app/api/products/[id]/route';
+import { POST as createProductRoute } from '@/app/api/products/route';
+import { PUT as updateProduct, DELETE as deleteProduct } from '@/app/api/products/[id]/route';
 import { PATCH as patchStaticSeo } from '@/app/api/admin/settings/seo/[key]/route';
 import { createProduct } from '@/lib/product/product.service';
 import { clear } from '../test-db';
@@ -98,7 +99,7 @@ describe('admin SEO permissions integration', () => {
         expect(patchBody.metaDescription).toBe('SEO Description');
     });
 
-    it('blocks seo manager from full product updates', async () => {
+    it('allows seo manager full product updates', async () => {
         const response = await updateProduct(
             new Request(`http://localhost/api/products/${productId}`, {
                 method: 'PUT',
@@ -112,8 +113,38 @@ describe('admin SEO permissions integration', () => {
         );
         const body = await response.json();
 
-        expect(response.status).toBe(403);
-        expect(body.code).toBe('FORBIDDEN');
+        expect(response.status).toBe(200);
+        expect(body.name).toBe('Renamed Product');
+        expect(body.basePrice).toBe(999);
+    });
+
+    it('allows seo manager to create and delete products', async () => {
+        const createResponse = await createProductRoute(
+            new Request('http://localhost/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'SEO Manager Created Product',
+                    basePrice: 250,
+                    images: [],
+                    variants: [],
+                    variantStock: [],
+                    specifications: [],
+                    subCategoryIds: [],
+                }),
+            }),
+        );
+        const created = await createResponse.json();
+
+        expect(createResponse.status).toBe(201);
+        expect(created.name).toBe('SEO Manager Created Product');
+
+        const deleteResponse = await deleteProduct(
+            new Request(`http://localhost/api/products/${created.id}`, { method: 'DELETE' }),
+            { params: Promise.resolve({ id: created.id }) },
+        );
+
+        expect(deleteResponse.status).toBe(200);
     });
 
     it('allows seo manager to update static page SEO', async () => {
