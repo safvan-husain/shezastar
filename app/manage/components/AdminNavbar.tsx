@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 import { useToast } from '@/components/ui/Toast';
@@ -121,6 +121,14 @@ const BackupIcon = ({ className }: IconProps) => (
     </svg>
 );
 
+const LogoutIcon = ({ className }: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M10 17l-5-5 5-5" />
+        <path d="M5 12h12" />
+        <path d="M14 4h3a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-3" />
+    </svg>
+);
+
 const CollapseIcon = ({ className }: IconProps) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="M15 18l-6-6 6-6" />
@@ -232,6 +240,8 @@ type NavPanelProps = {
     onToggleCollapse?: () => void;
     isBackingUp: boolean;
     onBackup: () => Promise<void>;
+    isLoggingOut: boolean;
+    onLogout: () => Promise<void>;
 };
 
 type OpenGroups = Record<'products' | 'orders' | 'settings' | 'seo', boolean>;
@@ -260,6 +270,8 @@ function RailContent({
     onToggleCollapse,
     isBackingUp,
     onBackup,
+    isLoggingOut,
+    onLogout,
 }: NavPanelProps) {
     const navItems = getNavItemsForRole(adminRole);
     const [openGroups, setOpenGroups] = useState<OpenGroups>({
@@ -406,6 +418,18 @@ function RailContent({
                     </button>
                 )}
 
+                <button
+                    type="button"
+                    onClick={onLogout}
+                    disabled={isLoggingOut}
+                    aria-label={collapsed ? 'Logout' : undefined}
+                    title={collapsed ? 'Logout' : undefined}
+                    className={`${baseRowClass} ${collapsed ? 'justify-center' : ''} text-[var(--text-secondary)] hover:bg-[var(--bg-base)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                    <LogoutIcon className="h-5 w-5 flex-shrink-0" />
+                    {!collapsed && <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>}
+                </button>
+
                 {onToggleCollapse && (
                     <button
                         type="button"
@@ -424,10 +448,12 @@ function RailContent({
 
 export default function AdminNavbar({ adminRole }: { adminRole: AdminRole }) {
     const pathname = usePathname();
+    const router = useRouter();
     const { showToast } = useToast();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isBackingUp, setIsBackingUp] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const desktopWidthClass = useMemo(
         () => (isCollapsed ? 'lg:w-[5rem]' : 'lg:w-[15rem]'),
@@ -487,6 +513,39 @@ export default function AdminNavbar({ adminRole }: { adminRole: AdminRole }) {
         }
     };
 
+    const handleLogout = async () => {
+        if (isLoggingOut) return;
+
+        const url = '/api/admin/auth/logout';
+        setIsLoggingOut(true);
+
+        try {
+            const response = await fetch(url, { method: 'POST' });
+
+            if (!response.ok) {
+                const body = await safeParseBody(response);
+                showToast(body?.message ?? body?.error ?? 'Failed to logout', 'error', {
+                    status: response.status,
+                    body,
+                    url: response.url,
+                    method: 'POST',
+                });
+                return;
+            }
+
+            router.replace('/login');
+            router.refresh();
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Failed to logout', 'error', {
+                body: error instanceof Error ? { message: error.message, stack: error.stack } : { error },
+                url,
+                method: 'POST',
+            });
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
+
     return (
         <>
             <aside className={`sticky top-3 hidden self-start lg:block ${desktopWidthClass}`}>
@@ -499,6 +558,8 @@ export default function AdminNavbar({ adminRole }: { adminRole: AdminRole }) {
                         onToggleCollapse={() => setIsCollapsed((value) => !value)}
                         isBackingUp={isBackingUp}
                         onBackup={handleBackup}
+                        isLoggingOut={isLoggingOut}
+                        onLogout={handleLogout}
                     />
                 </div>
             </aside>
@@ -540,6 +601,8 @@ export default function AdminNavbar({ adminRole }: { adminRole: AdminRole }) {
                                 onNavigate={() => setIsMobileOpen(false)}
                                 isBackingUp={isBackingUp}
                                 onBackup={handleBackup}
+                                isLoggingOut={isLoggingOut}
+                                onLogout={handleLogout}
                             />
                         </div>
                     </div>
