@@ -2,7 +2,7 @@ import type { AdminDocument, AdminRole } from '@/lib/auth/admin-auth-core';
 
 export const SUPER_ADMIN_ROLES = ['super_admin'] as const satisfies readonly AdminRole[];
 export const SEO_ADMIN_ROLES = ['super_admin', 'seo_manager'] as const satisfies readonly AdminRole[];
-export const PRODUCT_ADMIN_ROLES = ['super_admin', 'seo_manager'] as const satisfies readonly AdminRole[];
+export const PRODUCT_ADMIN_ROLES = ['super_admin'] as const satisfies readonly AdminRole[];
 
 export const SEO_MANAGER_ALLOWED_PATH_PREFIXES = ['/manage/seo', '/manage/products'] as const;
 export const SEO_MANAGER_BLOCKED_PATH_PREFIXES = ['/manage/products/bulk-price-update'] as const;
@@ -24,17 +24,15 @@ export function canAccessManagePath(role: AdminRole, pathname: string) {
         return true;
     }
 
-    if (
-        SEO_MANAGER_BLOCKED_PATH_PREFIXES.some(
-            (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-        )
-    ) {
+    if (SEO_MANAGER_BLOCKED_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
         return false;
     }
 
-    return SEO_MANAGER_ALLOWED_PATH_PREFIXES.some(
-        (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-    );
+    if (pathname === '/manage/products') {
+        return true;
+    }
+
+    return pathname === '/manage/seo' || pathname.startsWith('/manage/seo/');
 }
 
 export function getDefaultManagePathForRole(role: AdminRole) {

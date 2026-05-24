@@ -188,7 +188,7 @@ const SEO_NAV_ITEMS: NavItem[] = [
 const SEO_MANAGER_PRODUCTS_NAV_GROUP: NavGroupItem = {
     ...PRODUCTS_NAV_GROUP,
     children: PRODUCTS_NAV_GROUP.children.filter(
-        (child) => child.href !== '/manage/products/bulk-price-update',
+        (child) => child.href === '/manage/products',
     ),
 };
 

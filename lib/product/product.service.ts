@@ -768,13 +768,7 @@ export async function getProductsSeoList(page = 1, limit = 20, search?: string) 
 
     const [docs, total] = await Promise.all([
         collection
-            .find(filter, {
-                projection: {
-                    name: 1,
-                    metaTitle: 1,
-                    metaDescription: 1,
-                },
-            })
+            .find(filter)
             .sort({ updatedAt: -1 })
             .skip(skip)
             .limit(limit)
@@ -783,12 +777,7 @@ export async function getProductsSeoList(page = 1, limit = 20, search?: string) 
     ]);
 
     return {
-        products: docs.map((doc) => ({
-            id: doc._id.toString(),
-            name: doc.name,
-            metaTitle: doc.metaTitle ?? null,
-            metaDescription: doc.metaDescription ?? null,
-        })),
+        products: docs.map(toProduct),
         pagination: {
             page,
             limit,

@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Input } from '@/components/ui/Input';
-import { useToast } from '@/components/ui/Toast';
-import type { ProductSeoListItem } from '@/lib/seo/admin-seo.schema';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
+import type { Product } from '@/lib/product/model/product.model';
+import ProductCard from '@/app/manage/products/components/ProductCard';
 
 interface ProductSeoListResponse {
-    products: ProductSeoListItem[];
+    products: Product[];
     pagination: {
         page: number;
         limit: number;
@@ -16,28 +18,23 @@ interface ProductSeoListResponse {
     };
 }
 
-type ProductDraft = {
-    metaTitle: string;
-    metaDescription: string;
-};
-
 export default function ProductSeoClient() {
-    const { showToast } = useToast();
-    const [products, setProducts] = useState<ProductSeoListItem[]>([]);
-    const [drafts, setDrafts] = useState<Record<string, ProductDraft>>({});
+    const [products, setProducts] = useState<Product[]>([]);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [loading, setLoading] = useState(true);
-    const [savingId, setSavingId] = useState<string | null>(null);
+    const [error, setError] = useState<ToastErrorPayload | null>(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
     const fetchProducts = useCallback(async (page: number, search: string) => {
         setLoading(true);
+        setError(null);
+
         const params = new URLSearchParams({
             page: page.toString(),
             limit: '20',
@@ -50,206 +47,259 @@ export default function ProductSeoClient() {
 
         try {
             const response = await fetch(url, { cache: 'no-store' });
-            const body = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                showToast(body.message || body.error || 'Failed to load products', 'error', {
+                let body: any = {};
+                try {
+                    body = await response.json();
+                } catch {
+                    body = { error: 'Failed to parse response body' };
+                }
+
+                setError({
+                    message: body.message || body.error || 'Failed to load products',
                     status: response.status,
                     body,
-                    url,
+                    url: response.url,
                     method: 'GET',
                 });
                 setProducts([]);
+                setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 });
                 return;
             }
 
-            const data = body as ProductSeoListResponse;
+            const data = (await response.json()) as ProductSeoListResponse;
             setProducts(data.products);
             setPagination(data.pagination);
-            setDrafts(
-                data.products.reduce<Record<string, ProductDraft>>((acc, product) => {
-                    acc[product.id] = {
-                        metaTitle: product.metaTitle || '',
-                        metaDescription: product.metaDescription || '',
-                    };
-                    return acc;
-                }, {}),
-            );
-        } catch (error) {
-            showToast('Failed to load products', 'error', {
-                body: error,
+        } catch (err) {
+            setError({
+                message: err instanceof Error ? err.message : 'Failed to load products',
+                body: err instanceof Error ? { stack: err.stack } : { error: err },
                 url,
                 method: 'GET',
             });
+            setProducts([]);
+            setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 });
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, []);
 
     useEffect(() => {
-        fetchProducts(1, debouncedSearch);
-    }, [debouncedSearch, fetchProducts]);
+        fetchProducts(pagination.page, debouncedSearch);
+    }, [pagination.page, debouncedSearch, fetchProducts]);
 
-    const handleSave = async (productId: string) => {
-        const draft = drafts[productId];
-        if (!draft) {
-            return;
+    useEffect(() => {
+        if (pagination.page !== 1) {
+            setPagination(prev => ({ ...prev, page: 1 }));
         }
+    }, [debouncedSearch]);
 
-        const url = `/api/admin/seo/products/${productId}`;
-        setSavingId(productId);
+    const handlePreviousPage = () => {
+        if (pagination.page > 1) {
+            setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+        }
+    };
 
-        try {
-            const response = await fetch(url, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    metaTitle: draft.metaTitle.trim() || null,
-                    metaDescription: draft.metaDescription.trim() || null,
-                }),
-            });
-            const body = await response.json().catch(() => ({}));
-
-            if (!response.ok) {
-                showToast(body.message || body.error || 'Failed to update product SEO', 'error', {
-                    status: response.status,
-                    body,
-                    url,
-                    method: 'PATCH',
-                });
-                return;
-            }
-
-            showToast('Product SEO updated', 'success');
-            await fetchProducts(pagination.page, debouncedSearch);
-        } catch (error) {
-            showToast('Failed to update product SEO', 'error', {
-                body: error,
-                url,
-                method: 'PATCH',
-            });
-        } finally {
-            setSavingId(null);
+    const handleNextPage = () => {
+        if (pagination.page < pagination.totalPages) {
+            setPagination(prev => ({ ...prev, page: prev.page + 1 }));
         }
     };
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto max-w-7xl px-4 py-8">
+            {error && <ErrorToastHandler error={error} />}
+
             <Link
                 href="/manage/seo"
                 className="mb-4 inline-block text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
             >
                 ← Back to SEO
             </Link>
-            <div className="mb-8">
-                <h1 className="mb-2 text-3xl font-bold">Product SEO</h1>
-                <p className="text-[var(--text-secondary)]">
-                    Edit meta titles and descriptions only. Product pricing, images, and inventory are not editable here.
-                </p>
+
+            <div className="mb-10 text-primary">
+                <div className="mb-3">
+                    <h1 className="mb-2 text-4xl font-bold text-[var(--text-primary)]">Product SEO</h1>
+                    <p className="text-lg text-[var(--text-secondary)]">
+                        Search products and update storefront meta titles and descriptions only.
+                    </p>
+                </div>
+                <div className="h-1 w-24 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--ring)]" />
             </div>
 
             <div className="mb-6">
-                <Input
-                    placeholder="Search products by name..."
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                />
+                <div className="relative max-w-md">
+                    <input
+                        type="text"
+                        placeholder="Search products by name..."
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-3 pl-12 text-[var(--foreground)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                    />
+                    <svg
+                        className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--muted-foreground)]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    {searchQuery && (
+                        <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                            aria-label="Clear product search"
+                        >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+                {debouncedSearch && (
+                    <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+                        Searching for: <span className="font-medium text-[var(--foreground)]">{debouncedSearch}</span>
+                    </p>
+                )}
             </div>
 
             {loading ? (
-                <p className="text-[var(--text-secondary)]">Loading products...</p>
+                <Card className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent" />
+                        <p className="text-[var(--muted-foreground)]">Loading products...</p>
+                    </div>
+                </Card>
+            ) : error ? (
+                <Card className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--muted)]">
+                            <svg className="h-10 w-10 text-[var(--muted-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 11-12.728 0m12.728 0L12 12m0 0L5.636 5.636" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">Unable to load products</h3>
+                            <p className="mb-6 max-w-md text-[var(--muted-foreground)]">
+                                Please try again later. Use the toast details to report the failure if it keeps happening.
+                            </p>
+                            <Button onClick={() => fetchProducts(pagination.page, debouncedSearch)}>Retry</Button>
+                        </div>
+                    </div>
+                </Card>
             ) : products.length === 0 ? (
-                <p className="text-[var(--text-secondary)]">No products found.</p>
+                <Card className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--muted)]">
+                            <svg className="h-10 w-10 text-[var(--muted-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">
+                                {debouncedSearch ? 'No products found' : 'No products yet'}
+                            </h3>
+                            <p className="mb-6 max-w-md text-[var(--muted-foreground)]">
+                                {debouncedSearch
+                                    ? `No products match "${debouncedSearch}". Try a different search term.`
+                                    : 'Products will appear here when they are added by a super admin.'}
+                            </p>
+                        </div>
+                    </div>
+                </Card>
             ) : (
-                <div className="space-y-4">
-                    {products.map((product) => {
-                        const draft = drafts[product.id];
-                        return (
-                            <section
-                                key={product.id}
-                                className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-5 shadow-sm"
-                            >
-                                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{product.name}</h2>
-                                        <p className="text-sm text-[var(--text-secondary)]">ID: {product.id}</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSave(product.id)}
-                                        disabled={savingId === product.id || !draft}
-                                        className="rounded-md bg-[var(--secondary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--secondary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        {savingId === product.id ? 'Saving...' : 'Save'}
-                                    </button>
+                <>
+                    <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <Card className="bg-[var(--bg-subtle)] text-[var(--text-primary)]">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="mb-1 text-sm opacity-90">{debouncedSearch ? 'Search Results' : 'Total Products'}</p>
+                                    <p className="text-3xl font-bold">{pagination.total}</p>
                                 </div>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-elevated)]">
+                                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className="bg-[var(--bg-subtle)] text-[var(--text-primary)]">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="mb-1 text-sm opacity-90">With Meta Title</p>
+                                    <p className="text-3xl font-bold">{products.filter((product) => Boolean(product.metaTitle)).length}</p>
+                                </div>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-elevated)]">
+                                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h10" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className="bg-[var(--bg-subtle)] text-[var(--text-primary)]">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="mb-1 text-sm opacity-90">With Meta Description</p>
+                                    <p className="text-3xl font-bold">{products.filter((product) => Boolean(product.metaDescription)).length}</p>
+                                </div>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-elevated)]">
+                                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h5m-8 6h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
 
-                                {draft && (
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium">Meta title</label>
-                                            <Input
-                                                value={draft.metaTitle}
-                                                onChange={(event) =>
-                                                    setDrafts((prev) => ({
-                                                        ...prev,
-                                                        [product.id]: {
-                                                            ...prev[product.id],
-                                                            metaTitle: event.target.value,
-                                                        },
-                                                    }))
-                                                }
-                                                placeholder="Optional SEO title"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="mb-1 block text-sm font-medium">Meta description</label>
-                                            <textarea
-                                                value={draft.metaDescription}
-                                                onChange={(event) =>
-                                                    setDrafts((prev) => ({
-                                                        ...prev,
-                                                        [product.id]: {
-                                                            ...prev[product.id],
-                                                            metaDescription: event.target.value,
-                                                        },
-                                                    }))
-                                                }
-                                                placeholder="Optional SEO description"
-                                                rows={3}
-                                                className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-primary)]"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </section>
-                        );
-                    })}
-                </div>
-            )}
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+                        {products.map((product) => (
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                editHref={`/manage/seo/products/${product.id}/edit`}
+                                editLabel="Edit SEO"
+                                showFeaturedAction={false}
+                            />
+                        ))}
+                    </div>
 
-            {pagination.totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-between">
-                    <button
-                        type="button"
-                        disabled={pagination.page <= 1 || loading}
-                        onClick={() => fetchProducts(pagination.page - 1, debouncedSearch)}
-                        className="rounded-md border border-[var(--border-subtle)] px-4 py-2 text-sm disabled:opacity-50"
-                    >
-                        Previous
-                    </button>
-                    <span className="text-sm text-[var(--text-secondary)]">
-                        Page {pagination.page} of {pagination.totalPages}
-                    </span>
-                    <button
-                        type="button"
-                        disabled={pagination.page >= pagination.totalPages || loading}
-                        onClick={() => fetchProducts(pagination.page + 1, debouncedSearch)}
-                        className="rounded-md border border-[var(--border-subtle)] px-4 py-2 text-sm disabled:opacity-50"
-                    >
-                        Next
-                    </button>
-                </div>
+                    {pagination.totalPages > 1 && (
+                        <div className="mt-8 flex items-center justify-center gap-4">
+                            <Button
+                                onClick={handlePreviousPage}
+                                disabled={pagination.page === 1}
+                                variant="outline"
+                                className="flex items-center gap-2"
+                            >
+                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Previous
+                            </Button>
+
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="font-medium text-[var(--foreground)]">
+                                    Page {pagination.page} of {pagination.totalPages}
+                                </span>
+                                <span className="text-[var(--muted-foreground)]">({pagination.total} total)</span>
+                            </div>
+
+                            <Button
+                                onClick={handleNextPage}
+                                disabled={pagination.page === pagination.totalPages}
+                                variant="outline"
+                                className="flex items-center gap-2"
+                            >
+                                Next
+                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </Button>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );

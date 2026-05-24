@@ -38,8 +38,10 @@ describe('admin permissions', () => {
     it('allows seo manager under /manage/seo and /manage/products only', () => {
         expect(canAccessManagePath('seo_manager', '/manage/seo')).toBe(true);
         expect(canAccessManagePath('seo_manager', '/manage/seo/products')).toBe(true);
+        expect(canAccessManagePath('seo_manager', '/manage/seo/products/507f1f77bcf86cd799439011/edit')).toBe(true);
         expect(canAccessManagePath('seo_manager', '/manage/products')).toBe(true);
-        expect(canAccessManagePath('seo_manager', '/manage/products/new')).toBe(true);
+        expect(canAccessManagePath('seo_manager', '/manage/products/new')).toBe(false);
+        expect(canAccessManagePath('seo_manager', '/manage/products/507f1f77bcf86cd799439011/edit')).toBe(false);
         expect(canAccessManagePath('seo_manager', '/manage/products/bulk-price-update')).toBe(false);
         expect(canAccessManagePath('seo_manager', '/manage')).toBe(false);
         expect(canAccessManagePath('seo_manager', '/manage/categories')).toBe(false);

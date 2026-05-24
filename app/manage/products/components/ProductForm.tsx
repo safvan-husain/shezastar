@@ -4,6 +4,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ImagesStep } from './steps/ImagesStep';
@@ -13,8 +15,10 @@ import { VariantStockStep } from './steps/VariantStockStep';
 import { InstallationServiceStep } from './steps/InstallationServiceStep';
 import { ImageMappingStep } from './steps/ImageMappingStep';
 import { ReviewStep } from './steps/ReviewStep';
+import { ProductCardImage } from './ProductCardImage';
 import { InstallationLocation } from '@/lib/app-settings/app-settings.schema';
 import { ProductInstallationLocation } from '@/lib/product/product.schema';
+import { stripHtml } from '@/lib/utils/string.utils';
 
 interface ImageFile {
     id: string;
@@ -43,11 +47,62 @@ interface ProductFormProps {
     initialData?: any;
     globalInstallationLocations?: InstallationLocation[];
     brands?: any[];
+    mode?: 'full' | 'seo';
 }
 
-export function ProductForm({ initialData, globalInstallationLocations = [], brands = [] }: ProductFormProps) {
+function ReadOnlyValue({ label, value }: { label: string; value: string }) {
+    return (
+        <Input
+            label={label}
+            value={value}
+            disabled
+            className="cursor-not-allowed opacity-80"
+            readOnly
+        />
+    );
+}
+
+function ReadOnlyTextarea({ label, value, rows = 4 }: { label: string; value: string; rows?: number }) {
+    return (
+        <div className="w-full">
+            <label className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">{label}</label>
+            <textarea
+                value={value}
+                disabled
+                readOnly
+                rows={rows}
+                className="w-full cursor-not-allowed rounded-lg border-2 border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-4 py-2.5 text-[var(--text-primary)] opacity-80"
+            />
+        </div>
+    );
+}
+
+function ReadOnlyPillList({ label, items, emptyLabel }: { label: string; items: string[]; emptyLabel: string }) {
+    return (
+        <div>
+            <p className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">{label}</p>
+            {items.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                    {items.map((item) => (
+                        <span
+                            key={item}
+                            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-3 py-1 text-sm text-[var(--text-secondary)]"
+                        >
+                            {item}
+                        </span>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-sm text-[var(--text-muted)]">{emptyLabel}</p>
+            )}
+        </div>
+    );
+}
+
+export function ProductForm({ initialData, globalInstallationLocations = [], brands = [], mode = 'full' }: ProductFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
+    const isSeoMode = mode === 'seo';
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -331,6 +386,252 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             setLoading(false);
         }
     };
+
+    const handleSeoSubmit = async () => {
+        if (!initialData?.id) return;
+
+        const url = `/api/admin/seo/products/${initialData.id}`;
+        const method = 'PATCH';
+        setLoading(true);
+        setError('');
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    metaTitle: metaTitle.trim() || null,
+                    metaDescription: metaDescription.trim() || null,
+                }),
+            });
+            const body = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                const message = body.message || body.error || 'Failed to update product SEO';
+                setError(message);
+                showToast(message, 'error', {
+                    status: res.status,
+                    body,
+                    url: res.url,
+                    method,
+                });
+                return;
+            }
+
+            showToast('Product SEO updated successfully', 'success');
+            router.push('/manage/seo/products');
+            router.refresh();
+        } catch (err: any) {
+            const message = err.message || 'Failed to update product SEO';
+            setError(message);
+            showToast(message, 'error', {
+                url,
+                method,
+                body: { error: message },
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (isSeoMode) {
+        return (
+            <div className="space-y-6 pb-32">
+                {error && (
+                    <div className="flex items-start gap-3 rounded-xl border-2 border-[var(--danger)] bg-[var(--danger)]/10 px-5 py-4 text-[var(--danger)]">
+                        <svg className="mt-0.5 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                            <p className="font-semibold">Error</p>
+                            <p className="text-sm">{error}</p>
+                        </div>
+                    </div>
+                )}
+
+                <Card>
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--ring)]">
+                            <svg className="h-5 w-5 text-[var(--text-inverted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h10" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-[var(--foreground)]">SEO Fields</h2>
+                            <p className="text-sm text-[var(--muted-foreground)]">Only these fields can be changed from this page.</p>
+                        </div>
+                    </div>
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <Input
+                            label="SEO Meta Title (optional)"
+                            value={metaTitle}
+                            onChange={(event) => setMetaTitle(event.target.value)}
+                            placeholder="SEO title shown in search results"
+                        />
+                        <div className="md:col-span-2">
+                            <label className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">
+                                SEO Meta Description (optional)
+                            </label>
+                            <textarea
+                                value={metaDescription}
+                                onChange={(event) => setMetaDescription(event.target.value)}
+                                placeholder="SEO description shown in search results"
+                                rows={4}
+                                className="w-full rounded-lg border-2 border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-4 py-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all duration-200 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                            />
+                        </div>
+                    </div>
+                </Card>
+
+                <Card>
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--bg-subtle)]">
+                            <svg className="h-5 w-5 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-[var(--foreground)]">Product Details</h2>
+                            <p className="text-sm text-[var(--muted-foreground)]">Product content is read-only for SEO editing.</p>
+                        </div>
+                    </div>
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <ReadOnlyValue label="Product Name" value={name} />
+                        <ReadOnlyValue label="Subtitle" value={subtitle || 'Not set'} />
+                        <ReadOnlyValue
+                            label="Brand"
+                            value={brands.find((brand: any) => brand.id === brandId)?.name || 'No brand'}
+                        />
+                        <ReadOnlyValue label="Price" value={basePrice ? `AED ${basePrice}` : 'Not set'} />
+                        <ReadOnlyValue label="Offer Percentage" value={offerPercentage ? `${offerPercentage}%` : '0%'} />
+                        <div className="md:col-span-2">
+                            <ReadOnlyTextarea label="Description" value={description ? stripHtml(description) : 'No description'} />
+                        </div>
+                    </div>
+                </Card>
+
+                <Card>
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--bg-subtle)]">
+                            <svg className="h-5 w-5 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-[var(--foreground)]">Product Images</h2>
+                            <p className="text-sm text-[var(--muted-foreground)]">{images.length} image{images.length !== 1 ? 's' : ''} uploaded</p>
+                        </div>
+                    </div>
+                    {images.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                            {images.map((image) => (
+                                <div key={image.id} className="relative aspect-square overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
+                                    <ProductCardImage src={image.preview || image.url} alt={name || 'Product image'} />
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-[var(--text-muted)]">No images uploaded.</p>
+                    )}
+                </Card>
+
+                <Card>
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--bg-subtle)]">
+                            <svg className="h-5 w-5 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-[var(--foreground)]">Catalog Settings</h2>
+                            <p className="text-sm text-[var(--muted-foreground)]">Classification, variants, stock, and installation settings are locked here.</p>
+                        </div>
+                    </div>
+                    <div className="space-y-6">
+                        <ReadOnlyPillList label="Assigned Categories" items={subCategoryIds} emptyLabel="No categories assigned." />
+                        <ReadOnlyPillList
+                            label="Variants"
+                            items={variants.map((variant) => `${variant.variantTypeName}: ${variant.selectedItems.map((item) => item.name).join(', ')}`)}
+                            emptyLabel="No variants configured."
+                        />
+                        <ReadOnlyPillList
+                            label="Variant Stock"
+                            items={variantStock.map((stock) => `${stock.variantCombinationKey}: ${stock.stockCount} in stock${stock.price ? `, AED ${stock.price}` : ''}`)}
+                            emptyLabel="No variant stock configured."
+                        />
+                        <ReadOnlyValue label="Installation Service" value={installationEnabled ? 'Enabled' : 'Disabled'} />
+                    </div>
+                </Card>
+
+                <Card>
+                    <div className="mb-6 flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--bg-subtle)]">
+                            <svg className="h-5 w-5 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M7 8h10" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-[var(--foreground)]">Specifications</h2>
+                            <p className="text-sm text-[var(--muted-foreground)]">Specification content is read-only for SEO editing.</p>
+                        </div>
+                    </div>
+                    {specifications.length > 0 ? (
+                        <div className="space-y-4">
+                            {specifications.map((specification, index) => (
+                                <div key={`${specification.title}-${index}`} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-subtle)]/30 p-4">
+                                    <p className="font-semibold text-[var(--foreground)]">{specification.title}</p>
+                                    {specification.items.length > 0 && (
+                                        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--text-secondary)]">
+                                            {specification.items.map((item, itemIndex) => (
+                                                <li key={`${item}-${itemIndex}`}>{item}</li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-[var(--text-muted)]">No specifications added.</p>
+                    )}
+                </Card>
+
+                <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--bg-base)]/80 p-4 backdrop-blur-md">
+                    <div className="mx-auto flex max-w-6xl flex-col justify-between gap-4 sm:flex-row">
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={() => router.push('/manage/seo/products')}
+                            disabled={loading}
+                        >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Cancel
+                        </Button>
+
+                        <Button size="lg" onClick={handleSeoSubmit} disabled={loading}>
+                            {loading ? (
+                                <>
+                                    <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Update Product SEO
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
 
     return (

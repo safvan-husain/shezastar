@@ -12,12 +12,23 @@ import { stripHtml } from '@/lib/utils/string.utils';
 
 interface ProductCardProps {
     product: Product;
+    editHref?: string;
+    editLabel?: string;
+    showFeaturedAction?: boolean;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({
+    product,
+    editHref = `/manage/products/${product.id}/edit`,
+    editLabel = 'Edit Product',
+    showFeaturedAction = true,
+}: ProductCardProps) {
     const [showFeaturedButton, setShowFeaturedButton] = useState(false);
 
     const handleContextMenu = (e: React.MouseEvent) => {
+        if (!showFeaturedAction) {
+            return;
+        }
         e.preventDefault(); // Prevent default browser context menu
         setShowFeaturedButton(true);
     };
@@ -71,11 +82,13 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </div>
 
                     {/* Add to Featured Button - appears on double-tap or hover */}
-                    <AddToFeaturedButton
-                        productId={product.id}
-                        show={showFeaturedButton}
-                        onHide={() => setShowFeaturedButton(false)}
-                    />
+                    {showFeaturedAction && (
+                        <AddToFeaturedButton
+                            productId={product.id}
+                            show={showFeaturedButton}
+                            onHide={() => setShowFeaturedButton(false)}
+                        />
+                    )}
                 </div>
 
                 {/* Product Info */}
@@ -136,12 +149,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </div>
 
                     {/* Action Button */}
-                    <Link href={`/manage/products/${product.id}/edit`}>
+                    <Link href={editHref}>
                         <Button size="sm" className="w-full">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                            Edit Product
+                            {editLabel}
                         </Button>
                     </Link>
                 </div>

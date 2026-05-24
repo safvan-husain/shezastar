@@ -99,7 +99,7 @@ describe('admin SEO permissions integration', () => {
         expect(patchBody.metaDescription).toBe('SEO Description');
     });
 
-    it('allows seo manager full product updates', async () => {
+    it('blocks seo manager from full product updates', async () => {
         const response = await updateProduct(
             new Request(`http://localhost/api/products/${productId}`, {
                 method: 'PUT',
@@ -113,12 +113,11 @@ describe('admin SEO permissions integration', () => {
         );
         const body = await response.json();
 
-        expect(response.status).toBe(200);
-        expect(body.name).toBe('Renamed Product');
-        expect(body.basePrice).toBe(999);
+        expect(response.status).toBe(403);
+        expect(body.code).toBe('FORBIDDEN');
     });
 
-    it('allows seo manager to create and delete products', async () => {
+    it('blocks seo manager from creating and deleting products', async () => {
         const createResponse = await createProductRoute(
             new Request('http://localhost/api/products', {
                 method: 'POST',
@@ -134,17 +133,19 @@ describe('admin SEO permissions integration', () => {
                 }),
             }),
         );
-        const created = await createResponse.json();
+        const createBody = await createResponse.json();
 
-        expect(createResponse.status).toBe(201);
-        expect(created.name).toBe('SEO Manager Created Product');
+        expect(createResponse.status).toBe(403);
+        expect(createBody.code).toBe('FORBIDDEN');
 
         const deleteResponse = await deleteProduct(
-            new Request(`http://localhost/api/products/${created.id}`, { method: 'DELETE' }),
-            { params: Promise.resolve({ id: created.id }) },
+            new Request(`http://localhost/api/products/${productId}`, { method: 'DELETE' }),
+            { params: Promise.resolve({ id: productId }) },
         );
+        const deleteBody = await deleteResponse.json();
 
-        expect(deleteResponse.status).toBe(200);
+        expect(deleteResponse.status).toBe(403);
+        expect(deleteBody.code).toBe('FORBIDDEN');
     });
 
     it('allows seo manager to update static page SEO', async () => {
@@ -167,8 +168,28 @@ describe('admin SEO permissions integration', () => {
         expect(body.title).toBe('Updated Home Title');
     });
 
-    it('allows super admin through protected product update routes', async () => {
+    it('allows super admin through protected product mutation routes', async () => {
         authState.role = 'super_admin';
+
+        const createResponse = await createProductRoute(
+            new Request('http://localhost/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: 'Super Admin Created Product',
+                    basePrice: 250,
+                    images: [],
+                    variants: [],
+                    variantStock: [],
+                    specifications: [],
+                    subCategoryIds: [],
+                }),
+            }),
+        );
+        const created = await createResponse.json();
+
+        expect(createResponse.status).toBe(201);
+        expect(created.name).toBe('Super Admin Created Product');
 
         const response = await updateProduct(
             new Request(`http://localhost/api/products/${productId}`, {
@@ -185,5 +206,12 @@ describe('admin SEO permissions integration', () => {
 
         expect(response.status).toBe(200);
         expect(body.name).toBe('Super Admin Rename');
+
+        const deleteResponse = await deleteProduct(
+            new Request(`http://localhost/api/products/${created.id}`, { method: 'DELETE' }),
+            { params: Promise.resolve({ id: created.id }) },
+        );
+
+        expect(deleteResponse.status).toBe(200);
     });
 });

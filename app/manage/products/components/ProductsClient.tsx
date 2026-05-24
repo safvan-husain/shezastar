@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 import { Product } from '@/lib/product/model/product.model';
 import ProductCard from './ProductCard';
+import type { AdminRole } from '@/lib/auth/admin-auth-core';
 
 interface ProductListResponse {
     products: Product[];
@@ -18,7 +19,7 @@ interface ProductListResponse {
     };
 }
 
-export default function ProductsClient() {
+export default function ProductsClient({ adminRole = 'super_admin' }: { adminRole?: AdminRole }) {
     const [products, setProducts] = useState<Product[]>([]);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
     const [searchQuery, setSearchQuery] = useState('');
@@ -132,14 +133,16 @@ export default function ProductsClient() {
                             Manage your product catalog and inventory
                         </p>
                     </div>
-                    <Link href="/manage/products/new">
-                        <Button size="lg" className="whitespace-nowrap">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Create Product
-                        </Button>
-                    </Link>
+                    {adminRole === 'super_admin' && (
+                        <Link href="/manage/products/new">
+                            <Button size="lg" className="whitespace-nowrap">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Create Product
+                            </Button>
+                        </Link>
+                    )}
                 </div>
                 <div className="h-1 w-24 bg-gradient-to-r from-[var(--primary)] to-[var(--ring)] rounded-full"></div>
             </div>
@@ -227,7 +230,7 @@ export default function ProductsClient() {
                                     : 'Create your first product to start building your catalog. Add images, variants, and pricing.'
                                 }
                             </p>
-                            {!debouncedSearch && (
+                            {!debouncedSearch && adminRole === 'super_admin' && (
                                 <Link href="/manage/products/new">
                                     <Button>Get Started</Button>
                                 </Link>
@@ -289,7 +292,17 @@ export default function ProductsClient() {
                     {/* Products Grid */}
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
                         {products.map((product: Product) => (
-                            <ProductCard key={product.id} product={product} />
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                editHref={
+                                    adminRole === 'seo_manager'
+                                        ? `/manage/seo/products/${product.id}/edit`
+                                        : `/manage/products/${product.id}/edit`
+                                }
+                                editLabel={adminRole === 'seo_manager' ? 'Edit SEO' : 'Edit Product'}
+                                showFeaturedAction={adminRole === 'super_admin'}
+                            />
                         ))}
                     </div>
 
