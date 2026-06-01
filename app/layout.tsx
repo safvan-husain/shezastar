@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
   title: "Sheza Star",
   description: "Sheza Star",
+  verification: {
+    google: "F-okKleFkRCZUcJ63vdcySGzx-e_hcI_pK9eGKBdgMU",
+  },
 };
 
 export default async function RootLayout({
@@ -31,14 +34,14 @@ export default async function RootLayout({
       <head>
         <Script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-FNR2XYCV84"
+          src="https://www.googletagmanager.com/gtag/js?id=G-4GE35E5NBK"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', 'G-FNR2XYCV84');`}
+gtag('config', 'G-4GE35E5NBK');`}
         </Script>
         <Script id="strip-extension-body-attrs" strategy="beforeInteractive">
           {`(function () {
