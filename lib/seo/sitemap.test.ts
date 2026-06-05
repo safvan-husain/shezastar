@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const getCachedProductIds = vi.fn();
+const getCachedProductSlugs = vi.fn();
 const getCachedAllCategories = vi.fn();
 const getCachedPublishedBlogSitemapEntries = vi.fn();
 
 vi.mock('@/lib/product/product-cache', () => ({
-    getCachedProductIds,
+    getCachedProductSlugs,
 }));
 
 vi.mock('@/lib/category/category-cache', () => ({
@@ -18,7 +18,7 @@ vi.mock('@/lib/blog/blog-cache', () => ({
 
 describe('sitemap generation', () => {
     it('includes static, product, category, and blog URLs', async () => {
-        getCachedProductIds.mockResolvedValue(['prod-1', 'prod-2']);
+        getCachedProductSlugs.mockResolvedValue(['dash-cam-pro', 'rear-camera-lite']);
         getCachedPublishedBlogSitemapEntries.mockResolvedValue([
             { slug: 'test-blog', updatedAt: '2026-01-16T00:00:00.000Z' },
         ]);
@@ -52,8 +52,8 @@ describe('sitemap generation', () => {
 
         expect(urls).toContain('https://shezastar.com/');
         expect(urls).toContain('https://shezastar.com/products');
-        expect(urls).toContain('https://shezastar.com/product/prod-1');
-        expect(urls).toContain('https://shezastar.com/product/prod-2');
+        expect(urls).toContain('https://shezastar.com/product/dash-cam-pro');
+        expect(urls).toContain('https://shezastar.com/product/rear-camera-lite');
         expect(urls).toContain('https://shezastar.com/category/audio');
         expect(urls).toContain('https://shezastar.com/category/audio-speakers');
         expect(urls).toContain('https://shezastar.com/category/audio-speakers-bluetooth');

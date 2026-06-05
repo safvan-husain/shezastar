@@ -12,6 +12,7 @@ import { stripHtml } from "@/lib/utils/string.utils";
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { Modal } from "@/components/ui/Modal";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
+import { buildProductPath } from "@/lib/seo/canonical";
 
 interface ProductGridProps {
   products: Product[];
@@ -189,7 +190,7 @@ export function ProductGrid({
           return (
             <Link
               key={product.id}
-              href={`/product/${product.id}`}
+              href={buildProductPath(product.slug ?? product.id)}
               className="group flex h-full flex-col"
             >
               <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-[var(--storefront-bg-subtle)] border border-[var(--storefront-border)]">

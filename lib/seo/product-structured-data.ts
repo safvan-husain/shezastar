@@ -100,7 +100,7 @@ export function buildProductStructuredData(
             availability: isProductInStock(product)
                 ? 'https://schema.org/InStock'
                 : 'https://schema.org/OutOfStock',
-            url: buildProductCanonicalUrl(product.id),
+            url: buildProductCanonicalUrl(product.slug ?? product.id),
             hasMerchantReturnPolicy: buildMerchantReturnPolicy(),
             shippingDetails: buildShippingDetails(),
         },

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Product } from '@/lib/product/model/product.model';
 
 export const ProductSeoUpdateSchema = z.object({
+    slug: z.string().nullable().optional(),
     metaTitle: z.string().nullable().optional(),
     metaDescription: z.string().nullable().optional(),
 });

@@ -5,6 +5,7 @@ import { buildProductStructuredData } from '@/lib/seo/product-structured-data';
 function createProduct(overrides: Partial<Product> = {}): Product {
     return {
         id: 'prod-1',
+        slug: 'dash-cam-pro',
         name: 'Dash Cam Pro',
         subtitle: null,
         description: 'High quality dash cam',
@@ -56,6 +57,7 @@ describe('buildProductStructuredData', () => {
             merchantReturnDays: 7,
             returnPolicyUrl: 'https://shezastar.com/return-refund-policy',
         });
+        expect(structuredData.offers.url).toBe('https://shezastar.com/product/dash-cam-pro');
         expect(structuredData.offers.shippingDetails).toMatchObject({
             '@type': 'OfferShippingDetails',
             shippingRate: {

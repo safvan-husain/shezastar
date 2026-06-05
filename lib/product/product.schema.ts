@@ -48,6 +48,7 @@ export const InstallationServiceSchema = z.object({
 
 export const CreateProductSchema = z.object({
     name: z.string().min(1, 'Product name is required'),
+    slug: z.string().nullable().optional(),
     subtitle: z.string().optional(),
     description: z.string().nullable().optional(),
     metaTitle: z.string().nullable().optional(),
@@ -66,6 +67,8 @@ export const CreateProductSchema = z.object({
 
 export const UpdateProductSchema = z.object({
     name: z.string().min(1).optional(),
+    slug: z.string().nullable().optional(),
+    slugUpdateMode: z.enum(['keep', 'regenerate']).optional(),
     subtitle: z.string().optional(),
     description: z.string().nullable().optional(),
     metaTitle: z.string().nullable().optional(),

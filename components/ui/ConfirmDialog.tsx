@@ -7,6 +7,7 @@ import { Button } from './Button';
 interface ConfirmDialogProps {
     isOpen: boolean;
     onClose: () => void;
+    onCancel?: () => void;
     onConfirm: () => void;
     title: string;
     message: string;
@@ -19,6 +20,7 @@ interface ConfirmDialogProps {
 export function ConfirmDialog({
     isOpen,
     onClose,
+    onCancel,
     onConfirm,
     title,
     message,
@@ -32,7 +34,7 @@ export function ConfirmDialog({
             <p className="text-[var(--text-secondary)] mb-6">{message}</p>
 
             <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={onClose} disabled={isLoading}>
+                <Button variant="outline" onClick={onCancel ?? onClose} disabled={isLoading}>
                     {cancelText}
                 </Button>
                 <Button variant={variant} onClick={onConfirm} disabled={isLoading}>

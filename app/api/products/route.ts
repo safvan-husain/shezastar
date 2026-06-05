@@ -29,6 +29,16 @@ function parseOptionalMetaField(value: FormDataEntryValue | null): string | null
     return normalized ? normalized : null;
 }
 
+function parseOptionalSlugField(value: FormDataEntryValue | null): string | null | undefined {
+    if (value === null) return undefined;
+    const normalized = String(value).trim();
+    return normalized ? normalized : null;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
+}
+
 async function GETHandler(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -52,9 +62,9 @@ async function GETHandler(req: Request) {
                     totalPages: Math.ceil(total / limit),
                 },
             }, { headers: withNoStoreHeaders() });
-        } catch (error: any) {
+        } catch (error) {
             return NextResponse.json(
-                { error: error.message || 'Failed to search products' },
+                { error: getErrorMessage(error, 'Failed to search products') },
                 { status: 500, headers: withNoStoreHeaders() }
             );
         }
@@ -104,6 +114,7 @@ async function POSTHandler(req: Request) {
             const name = formData.get('name') as string;
             const subtitle = formData.get('subtitle') as string;
             const description = formData.get('description') as string | null;
+            const slug = parseOptionalSlugField(formData.get('slug'));
             const metaTitle = parseOptionalMetaField(formData.get('metaTitle'));
             const metaDescription = parseOptionalMetaField(formData.get('metaDescription'));
             const basePrice = parseFloat(formData.get('basePrice') as string);
@@ -119,10 +130,9 @@ async function POSTHandler(req: Request) {
             const brandId = (formData.get('brandId') as string) || undefined;
 
             // Handle new image uploads
-            const newImagesCount = parseInt(formData.get('newImagesCount') as string || '0');
             const newImageFiles = formData.getAll('newImages') as File[];
 
-            let uploadedImages: any[] = [];
+            let uploadedImages: Array<{ id: string; url: string; mappedVariants: string[]; order: number }> = [];
             if (newImageFiles.length > 0) {
                 const urls = await saveImages(newImageFiles);
 
@@ -145,6 +155,7 @@ async function POSTHandler(req: Request) {
 
             const productData = {
                 name,
+                slug,
                 subtitle,
                 description,
                 metaTitle,
@@ -162,7 +173,10 @@ async function POSTHandler(req: Request) {
 
             const { status, body } = await handleCreateProduct(productData, actor);
             if (status < 400 && 'id' in body && typeof body.id === 'string') {
-                revalidateProductCache(body.id);
+                revalidateProductCache({
+                    id: body.id,
+                    slug: 'slug' in body && typeof body.slug === 'string' ? body.slug : undefined,
+                });
             }
             return NextResponse.json(body, { status });
         }
@@ -170,16 +184,19 @@ async function POSTHandler(req: Request) {
         const jsonData = await req.json();
         const { status, body } = await handleCreateProduct(jsonData, actor);
         if (status < 400 && 'id' in body && typeof body.id === 'string') {
-            revalidateProductCache(body.id);
+            revalidateProductCache({
+                id: body.id,
+                slug: 'slug' in body && typeof body.slug === 'string' ? body.slug : undefined,
+            });
         }
         return NextResponse.json(body, { status });
-    } catch (error: any) {
+    } catch (error) {
         const handled = catchError(error);
-        if (handled.status !== 500 || error?.code === 'UNAUTHORIZED') {
+        if (handled.status !== 500 || (typeof error === 'object' && error !== null && 'code' in error && error.code === 'UNAUTHORIZED')) {
             return NextResponse.json(handled.body, { status: handled.status });
         }
         return NextResponse.json(
-            { error: error.message || 'Failed to create product' },
+            { error: getErrorMessage(error, 'Failed to create product') },
             { status: 500 }
         );
     }

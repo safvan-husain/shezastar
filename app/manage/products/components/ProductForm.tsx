@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ImagesStep } from './steps/ImagesStep';
 import { CategoryStep } from './steps/CategoryStep';
@@ -19,6 +20,7 @@ import { ProductCardImage } from './ProductCardImage';
 import { InstallationLocation } from '@/lib/app-settings/app-settings.schema';
 import { ProductInstallationLocation } from '@/lib/product/product.schema';
 import { stripHtml } from '@/lib/utils/string.utils';
+import { buildSuggestedProductSlug, shouldPromptForSlugDecision } from './product-form-slug';
 
 interface ImageFile {
     id: string;
@@ -43,11 +45,50 @@ interface ProductVariant {
     selectedItems: VariantItem[];
 }
 
+interface BrandOption {
+    id: string;
+    name: string;
+}
+
+interface ProductFormImage {
+    id: string;
+    url: string;
+    mappedVariants?: string[];
+}
+
+interface ProductFormData {
+    id?: string;
+    name?: string;
+    slug?: string;
+    subtitle?: string;
+    description?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    specifications?: ProductSpecification[];
+    basePrice?: string | number;
+    offerPercentage?: string | number;
+    images?: ProductFormImage[];
+    variants?: ProductVariant[];
+    variantStock?: Array<{ variantCombinationKey: string; stockCount: number; priceDelta?: number; price?: number }>;
+    subCategoryIds?: string[];
+    installationService?: {
+        enabled?: boolean;
+        inStorePrice?: number;
+        atHomePrice?: number;
+        availableLocations?: ProductInstallationLocation[];
+    };
+    brandId?: string;
+}
+
 interface ProductFormProps {
-    initialData?: any;
+    initialData?: ProductFormData;
     globalInstallationLocations?: InstallationLocation[];
-    brands?: any[];
+    brands?: BrandOption[];
     mode?: 'full' | 'seo';
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
 }
 
 function ReadOnlyValue({ label, value }: { label: string; value: string }) {
@@ -107,6 +148,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
     const [error, setError] = useState('');
 
     const [name, setName] = useState(initialData?.name || '');
+    const [slug, setSlug] = useState(initialData?.slug || '');
     const [subtitle, setSubtitle] = useState(initialData?.subtitle || '');
     const [description, setDescription] = useState(initialData?.description || '');
     const [metaTitle, setMetaTitle] = useState(initialData?.metaTitle || '');
@@ -115,7 +157,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
     const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
     const [offerPercentage, setOfferPercentage] = useState(initialData?.offerPercentage || '');
     const [images, setImages] = useState<ImageFile[]>(
-        initialData?.images?.map((img: any) => ({
+        initialData?.images?.map((img) => ({
             id: String(img.id),
             url: img.url,
             preview: img.url,
@@ -133,9 +175,12 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
         initialData?.installationService?.availableLocations || []
     );
     const [brandId, setBrandId] = useState(initialData?.brandId || '');
+    const [slugTouched, setSlugTouched] = useState(false);
+    const [isSlugDecisionOpen, setIsSlugDecisionOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const [imageMappings, setImageMappings] = useState<Record<string, string[]>>(
-        initialData?.images?.reduce((acc: any, img: any) => {
+        initialData?.images?.reduce<Record<string, string[]>>((acc, img) => {
             if (img.mappedVariants && img.mappedVariants.length > 0) {
                 acc[img.id] = img.mappedVariants;
             }
@@ -177,7 +222,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
         });
     }, [basePrice, variants.length]);
 
-    const handleSubmit = async () => {
+    const submitFullProduct = async (slugUpdateMode?: 'keep' | 'regenerate') => {
         setError('');
 
         // Explicit validation checks
@@ -212,6 +257,10 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
 
             // Add basic product data
             formData.append('name', name);
+            formData.append('slug', slug.trim());
+            if (slugUpdateMode) {
+                formData.append('slugUpdateMode', slugUpdateMode);
+            }
             formData.append('subtitle', subtitle || '');
             // Ensure description is HTML
             const ensureHtml = (str: string) => {
@@ -236,7 +285,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             formData.append('variants', JSON.stringify(variants));
 
             // Ensure products without variants keep default stock in sync with base price
-            let finalVariantStock = [...variantStock];
+            const finalVariantStock = [...variantStock];
             if (variants.length === 0) {
                 const parsedPrice = parseFloat(basePrice) || 0;
                 const defaultIndex = finalVariantStock.findIndex(
@@ -302,14 +351,17 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             });
 
             if (!res.ok) {
-                let data: any = {};
+                let data: Record<string, unknown> = {};
                 try {
-                    data = await res.json();
+                    data = await res.json() as Record<string, unknown>;
                 } catch {
                     data = { error: 'Failed to parse response body' };
                 }
 
-                const message = data.message || data.error || 'Failed to save product';
+                const message =
+                    (typeof data.message === 'string' && data.message) ||
+                    (typeof data.error === 'string' && data.error) ||
+                    'Failed to save product';
                 showToast(message, 'error', {
                     status: res.status,
                     body: data,
@@ -328,20 +380,36 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             setLoading(false);
             router.push('/manage/products');
             router.refresh();
-        } catch (err: any) {
-            setError(err.message);
-            showToast(err.message || 'Failed to save product', 'error', {
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to save product');
+            setError(message);
+            showToast(message, 'error', {
                 url: requestUrl,
                 method: requestMethod,
-                body: { error: err.message },
+                body: { error: message },
             });
             setLoading(false);
         }
     };
 
+    const handleSubmit = async () => {
+        const shouldPrompt = shouldPromptForSlugDecision({
+            currentName: name,
+            initialName: initialData?.name,
+            slugTouched,
+            hasInitialProduct: Boolean(initialData?.id),
+        });
+
+        if (shouldPrompt) {
+            setIsSlugDecisionOpen(true);
+            return;
+        }
+
+        await submitFullProduct();
+    };
+
     const handleDelete = async () => {
         if (!initialData?.id) return;
-        if (!confirm('Are you sure you want to delete this product?')) return;
 
         setLoading(true);
         const url = `/api/products/${initialData.id}`;
@@ -353,14 +421,17 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             });
 
             if (!res.ok) {
-                let data: any = {};
+                let data: Record<string, unknown> = {};
                 try {
-                    data = await res.json();
+                    data = await res.json() as Record<string, unknown>;
                 } catch {
                     data = { error: 'Failed to parse response body' };
                 }
 
-                const message = data.message || data.error || 'Failed to delete product';
+                const message =
+                    (typeof data.message === 'string' && data.message) ||
+                    (typeof data.error === 'string' && data.error) ||
+                    'Failed to delete product';
                 showToast(message, 'error', {
                     status: res.status,
                     body: data,
@@ -376,12 +447,13 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             setLoading(false);
             router.push('/manage/products');
             router.refresh();
-        } catch (err: any) {
-            setError(err.message);
-            showToast(err.message || 'Failed to delete product', 'error', {
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to delete product');
+            setError(message);
+            showToast(message, 'error', {
                 url,
                 method,
-                body: { error: err.message },
+                body: { error: message },
             });
             setLoading(false);
         }
@@ -400,6 +472,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    slug: slug.trim() || null,
                     metaTitle: metaTitle.trim() || null,
                     metaDescription: metaDescription.trim() || null,
                 }),
@@ -421,8 +494,8 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             showToast('Product SEO updated successfully', 'success');
             router.push('/manage/seo/products');
             router.refresh();
-        } catch (err: any) {
-            const message = err.message || 'Failed to update product SEO';
+        } catch (error) {
+            const message = getErrorMessage(error, 'Failed to update product SEO');
             setError(message);
             showToast(message, 'error', {
                 url,
@@ -463,6 +536,15 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                     </div>
                     <div className="grid gap-5 md:grid-cols-2">
                         <Input
+                            label="Product Slug (optional)"
+                            value={slug}
+                            onChange={(event) => {
+                                setSlug(event.target.value);
+                                setSlugTouched(true);
+                            }}
+                            placeholder="SEO-friendly product URL"
+                        />
+                        <Input
                             label="SEO Meta Title (optional)"
                             value={metaTitle}
                             onChange={(event) => setMetaTitle(event.target.value)}
@@ -500,7 +582,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                         <ReadOnlyValue label="Subtitle" value={subtitle || 'Not set'} />
                         <ReadOnlyValue
                             label="Brand"
-                            value={brands.find((brand: any) => brand.id === brandId)?.name || 'No brand'}
+                            value={brands.find((brand) => brand.id === brandId)?.name || 'No brand'}
                         />
                         <ReadOnlyValue label="Price" value={basePrice ? `AED ${basePrice}` : 'Not set'} />
                         <ReadOnlyValue label="Offer Percentage" value={offerPercentage ? `${offerPercentage}%` : '0%'} />
@@ -652,6 +734,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
             <div className="space-y-8 pb-32">
                 <BasicInfoStep
                     name={name}
+                    slug={slug}
                     subtitle={subtitle}
                     description={description}
                     basePrice={basePrice}
@@ -660,6 +743,10 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                     metaDescription={metaDescription}
                     specifications={specifications}
                     onNameChange={setName}
+                    onSlugChange={(value) => {
+                        setSlug(value);
+                        setSlugTouched(true);
+                    }}
                     onSubtitleChange={setSubtitle}
                     onDescriptionChange={setDescription}
                     onMetaTitleChange={setMetaTitle}
@@ -744,7 +831,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
 
                         <div className="flex flex-wrap gap-3">
                             {initialData?.id && (
-                                <Button variant="danger" size="lg" onClick={handleDelete} disabled={loading}>
+                                <Button variant="danger" size="lg" onClick={() => setIsDeleteDialogOpen(true)} disabled={loading}>
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1 1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
@@ -773,6 +860,42 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                     </div>
                 </div>
             </div>
+
+            <ConfirmDialog
+                isOpen={isDeleteDialogOpen}
+                onClose={() => setIsDeleteDialogOpen(false)}
+                onConfirm={async () => {
+                    setIsDeleteDialogOpen(false);
+                    await handleDelete();
+                }}
+                title="Delete product?"
+                message="This will permanently remove the product and its uploaded images."
+                confirmText="Delete Product"
+                cancelText="Keep Product"
+                variant="danger"
+                isLoading={loading}
+            />
+
+            <ConfirmDialog
+                isOpen={isSlugDecisionOpen}
+                onClose={() => {
+                    setIsSlugDecisionOpen(false);
+                }}
+                onCancel={async () => {
+                    setIsSlugDecisionOpen(false);
+                    await submitFullProduct('keep');
+                }}
+                onConfirm={async () => {
+                    setIsSlugDecisionOpen(false);
+                    await submitFullProduct('regenerate');
+                }}
+                title="Update product slug?"
+                message={`The product name changed. Keep the current slug, or update it to "${buildSuggestedProductSlug(name)}"?`}
+                confirmText="Update Slug"
+                cancelText="Keep Old Slug"
+                variant="primary"
+                isLoading={loading}
+            />
         </div>
     );
 }

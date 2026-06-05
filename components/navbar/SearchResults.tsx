@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Product } from '@/lib/product/model/product.model';
 import { useCurrency } from "@/lib/currency/CurrencyContext";
 import { stripHtml } from '@/lib/utils/string.utils';
+import { buildProductPath } from '@/lib/seo/canonical';
 
 interface SearchResultsProps {
     results: Product[];
@@ -28,7 +29,7 @@ export function SearchResults({ results, isLoading, onClose, query }: SearchResu
     if (!results.length && query) {
         return (
             <div className="absolute top-full left-0 w-full bg-white shadow-xl border border-gray-100 rounded-b-lg p-6 z-50">
-                <p className="text-gray-500 text-center text-sm">No results found for "{query}"</p>
+                <p className="text-gray-500 text-center text-sm">No results found for &quot;{query}&quot;</p>
             </div>
         );
     }
@@ -44,7 +45,7 @@ export function SearchResults({ results, isLoading, onClose, query }: SearchResu
                 {results.map((product) => (
                     <Link
                         key={product.id}
-                        href={`/product/${product.id}`}
+                        href={buildProductPath(product.slug ?? product.id)}
                         onClick={onClose}
                         className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors group"
                     >

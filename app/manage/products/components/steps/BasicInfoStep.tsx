@@ -7,8 +7,14 @@ import { Input } from '@/components/ui/Input';
 
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
+interface BrandOption {
+    id: string;
+    name: string;
+}
+
 interface BasicInfoStepProps {
     name: string;
+    slug: string;
     subtitle: string;
     description: string;
     metaTitle: string;
@@ -17,6 +23,7 @@ interface BasicInfoStepProps {
     offerPercentage: string;
     specifications: Array<{ title: string; items: string[] }>;
     onNameChange: (value: string) => void;
+    onSlugChange: (value: string) => void;
     onSubtitleChange: (value: string) => void;
     onDescriptionChange: (value: string) => void;
     onMetaTitleChange: (value: string) => void;
@@ -26,11 +33,12 @@ interface BasicInfoStepProps {
     onSpecificationsChange: (value: Array<{ title: string; items: string[] }>) => void;
     brandId?: string;
     onBrandIdChange: (value: string) => void;
-    brands: any[];
+    brands: BrandOption[];
 }
 
 export function BasicInfoStep({
     name,
+    slug,
     subtitle,
     description,
     metaTitle,
@@ -39,6 +47,7 @@ export function BasicInfoStep({
     offerPercentage,
     specifications,
     onNameChange,
+    onSlugChange,
     onSubtitleChange,
     onDescriptionChange,
     onMetaTitleChange,
@@ -71,6 +80,12 @@ export function BasicInfoStep({
                     required
                 />
                 <Input
+                    label="Product Slug (optional)"
+                    value={slug}
+                    onChange={(e) => onSlugChange(e.target.value)}
+                    placeholder="e.g., wireless-dash-cam"
+                />
+                <Input
                     label="Subtitle (optional)"
                     value={subtitle}
                     onChange={(e) => onSubtitleChange(e.target.value)}
@@ -84,7 +99,7 @@ export function BasicInfoStep({
                         className="w-full px-4 py-2 rounded-lg border-2 border-[var(--border)] bg-transparent focus:border-[var(--primary)] outline-none transition-colors"
                     >
                         <option value="">No Brand</option>
-                        {brands.map((brand: any) => (
+                        {brands.map((brand) => (
                             <option key={brand.id} value={brand.id}>
                                 {brand.name}
                             </option>
@@ -143,7 +158,7 @@ export function BasicInfoStep({
                         Product Specifications
                     </label>
                     <p className="text-xs text-[var(--muted-foreground)] mb-3">
-                        Detailed technical specs. Add a title (e.g., "Display") and its bullet points.
+                        Detailed technical specs. Add a title (e.g., &quot;Display&quot;) and its bullet points.
                     </p>
 
                     <div className="space-y-4">

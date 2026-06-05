@@ -13,11 +13,22 @@ import { PRODUCT_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
+import { getProduct } from '@/lib/product/product.service';
 
 function parseOptionalMetaField(value: FormDataEntryValue | null): string | null | undefined {
     if (value === null) return undefined;
     const normalized = String(value).trim();
     return normalized ? normalized : null;
+}
+
+function parseOptionalSlugField(value: FormDataEntryValue | null): string | null | undefined {
+    if (value === null) return undefined;
+    const normalized = String(value).trim();
+    return normalized ? normalized : null;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
 }
 
 async function GETHandler(
@@ -38,6 +49,7 @@ async function PUTHandler(
         const actor = buildAdminActivityActor(admin);
         const { id } = await params;
         const contentType = req.headers.get('content-type');
+        const existingProduct = await getProduct(id);
 
         // Check if it's FormData (multipart) or JSON
         if (contentType?.includes('multipart/form-data')) {
@@ -45,6 +57,8 @@ async function PUTHandler(
 
             // Extract basic product data
             const name = formData.get('name') as string | null;
+            const slug = parseOptionalSlugField(formData.get('slug'));
+            const slugUpdateModeRaw = formData.get('slugUpdateMode');
             const subtitle = formData.get('subtitle') as string | null;
             const description = formData.get('description') as string | null;
             const metaTitle = parseOptionalMetaField(formData.get('metaTitle'));
@@ -64,7 +78,7 @@ async function PUTHandler(
             // Handle new image uploads
             const newImageFiles = formData.getAll('newImages') as File[];
 
-            let uploadedImages: any[] = [];
+            let uploadedImages: Array<{ id: string; url: string; mappedVariants: string[]; order: number }> = [];
             if (newImageFiles.length > 0) {
                 const urls = await saveImages(newImageFiles);
 
@@ -85,8 +99,12 @@ async function PUTHandler(
             // Combine existing and new images
             const allImages = [...existingImages, ...uploadedImages];
 
-            const productData: any = {};
+            const productData: Record<string, unknown> = {};
             if (name) productData.name = name;
+            if (slug !== undefined) productData.slug = slug;
+            if (slugUpdateModeRaw === 'keep' || slugUpdateModeRaw === 'regenerate') {
+                productData.slugUpdateMode = slugUpdateModeRaw;
+            }
             if (subtitle !== null) productData.subtitle = subtitle;
             if (description !== null) productData.description = description;
             if (metaTitle !== undefined) productData.metaTitle = metaTitle;
@@ -103,7 +121,11 @@ async function PUTHandler(
 
             const { status, body } = await handleUpdateProduct(id, productData, actor);
             if (status < 400) {
-                revalidateProductCache(id);
+                revalidateProductCache({
+                    id,
+                    slug: 'slug' in body && typeof body.slug === 'string' ? body.slug : undefined,
+                    previousSlug: existingProduct.slug,
+                });
             }
             return NextResponse.json(body, { status });
         } else {
@@ -111,17 +133,21 @@ async function PUTHandler(
             const data = await req.json();
             const { status, body } = await handleUpdateProduct(id, data, actor);
             if (status < 400) {
-                revalidateProductCache(id);
+                revalidateProductCache({
+                    id,
+                    slug: 'slug' in body && typeof body.slug === 'string' ? body.slug : undefined,
+                    previousSlug: existingProduct.slug,
+                });
             }
             return NextResponse.json(body, { status });
         }
-    } catch (error: any) {
+    } catch (error) {
         const handled = catchError(error);
-        if (handled.status !== 500 || error?.code === 'UNAUTHORIZED') {
+        if (handled.status !== 500 || (typeof error === 'object' && error !== null && 'code' in error && error.code === 'UNAUTHORIZED')) {
             return NextResponse.json(handled.body, { status: handled.status });
         }
         return NextResponse.json(
-            { error: error.message || 'Failed to update product' },
+            { error: getErrorMessage(error, 'Failed to update product') },
             { status: 500 }
         );
     }
@@ -135,9 +161,13 @@ async function DELETEHandler(
         const admin = await requireAdminApiAuth({ roles: [...PRODUCT_ADMIN_ROLES] });
         const actor = buildAdminActivityActor(admin);
         const { id } = await params;
+        const existingProduct = await getProduct(id);
         const { status, body } = await handleDeleteProduct(id, actor);
         if (status < 400) {
-            revalidateProductCache(id);
+            revalidateProductCache({
+                id,
+                slug: existingProduct.slug,
+            });
         }
         return NextResponse.json(body, { status });
     } catch (error) {

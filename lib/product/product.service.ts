@@ -11,8 +11,104 @@ import {
     createActivityLog,
 } from '@/lib/activity/activity.service';
 import type { ActivityActor, ActivityEntity } from '@/lib/activity/model/activity.model';
+import { buildDefaultProductSlug, isReservedProductSlug, normalizeProductSlug } from './product-slug';
 
 const COLLECTION = 'products';
+
+function parseProductObjectId(id: string) {
+    try {
+        return new ObjectId(id);
+    } catch {
+        throw new AppError(400, 'INVALID_ID');
+    }
+}
+
+function buildInvalidProductSlugError() {
+    return new AppError(400, 'INVALID_PRODUCT_SLUG', {
+        message: 'Product slug must contain letters or numbers and cannot look like a MongoDB id',
+    });
+}
+
+async function buildUniqueProductSlug(
+    collection: Awaited<ReturnType<typeof getCollection<ProductDocument>>>,
+    slugSource: string,
+    existingId?: ObjectId,
+) {
+    const baseSlug = buildDefaultProductSlug(slugSource);
+    let slug = baseSlug;
+    let index = 2;
+
+    while (true) {
+        const filter: Record<string, unknown> = { slug };
+        if (existingId) {
+            filter._id = { $ne: existingId };
+        }
+
+        const existing = await collection.findOne(filter);
+        if (!existing) {
+            return slug;
+        }
+
+        slug = `${baseSlug}-${index}`;
+        index += 1;
+    }
+}
+
+async function resolveProductSlug(
+    collection: Awaited<ReturnType<typeof getCollection<ProductDocument>>>,
+    options: {
+        name: string;
+        requestedSlug?: string | null;
+        existingId?: ObjectId;
+        rejectDuplicateRequestedSlug?: boolean;
+    },
+) {
+    const normalizedRequestedSlug =
+        typeof options.requestedSlug === 'string' ? normalizeProductSlug(options.requestedSlug) : '';
+
+    if (options.requestedSlug !== undefined && options.requestedSlug !== null) {
+        if (!normalizedRequestedSlug || isReservedProductSlug(normalizedRequestedSlug)) {
+            throw buildInvalidProductSlugError();
+        }
+
+        const existing = await collection.findOne({
+            slug: normalizedRequestedSlug,
+            ...(options.existingId ? { _id: { $ne: options.existingId } } : {}),
+        });
+
+        if (existing) {
+            if (options.rejectDuplicateRequestedSlug) {
+                throw new AppError(409, 'PRODUCT_SLUG_ALREADY_EXISTS', {
+                    message: 'Product slug is already in use',
+                });
+            }
+
+            return buildUniqueProductSlug(collection, normalizedRequestedSlug, options.existingId);
+        }
+
+        return normalizedRequestedSlug;
+    }
+
+    return buildUniqueProductSlug(collection, options.name, options.existingId);
+}
+
+async function ensureProductSlug(
+    collection: Awaited<ReturnType<typeof getCollection<ProductDocument>>>,
+    doc: ProductDocument,
+) {
+    if (doc.slug) {
+        return doc;
+    }
+
+    const slug = await buildUniqueProductSlug(collection, doc.name, doc._id);
+    await collection.updateOne({ _id: doc._id }, { $set: { slug, updatedAt: new Date() } });
+
+    return {
+        ...doc,
+        slug,
+        updatedAt: new Date(),
+    };
+}
 
 export interface ResolvedCategoryFilter {
     requestedIds: string[];
@@ -52,8 +148,14 @@ export async function createProduct(input: CreateProductInput, actor?: ActivityA
     }));
 
     const now = new Date();
+    const slug = await resolveProductSlug(collection, {
+        name: input.name,
+        requestedSlug: input.slug,
+        rejectDuplicateRequestedSlug: true,
+    });
     const doc: Omit<ProductDocument, '_id'> = {
         name: input.name,
+        slug,
         subtitle: input.subtitle,
         description: input.description,
         metaTitle: input.metaTitle,
@@ -103,28 +205,25 @@ export async function createProduct(input: CreateProductInput, actor?: ActivityA
 export async function getProduct(id: string) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ID');
-    }
+    const objectId = parseProductObjectId(id);
 
     const doc = await collection.findOne({ _id: objectId });
     if (!doc) {
         throw new AppError(404, 'PRODUCT_NOT_FOUND');
     }
 
-    const product = toProduct(doc);
+    const ensuredDoc = await ensureProductSlug(collection, doc);
+    const product = toProduct(ensuredDoc);
 
     if (product.brandId) {
         try {
             const brandCollection = await getCollection('brands');
             const brandDoc = await brandCollection.findOne({ _id: new ObjectId(product.brandId) });
             if (brandDoc) {
+                const brand = brandDoc as { name?: string; imageUrl?: string };
                 product.brand = {
-                    name: (brandDoc as any).name,
-                    imageUrl: (brandDoc as any).imageUrl,
+                    name: brand.name ?? '',
+                    imageUrl: brand.imageUrl ?? '',
                 };
             }
         } catch (e) {
@@ -139,7 +238,7 @@ export async function getAllProducts(page = 1, limit = 20, categoryId?: string |
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
     const skip = (page - 1) * limit;
-    let filter: Record<string, any> = {};
+    let filter: Record<string, unknown> = {};
 
     // Get lineage map once for uses that need ancestry-based scoring.
     const lineageMap = originId ? await getCategoryLineageMap() : null;
@@ -268,12 +367,7 @@ export async function updateProduct(id: string, input: UpdateProductInput, actor
         });
     }
 
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ID');
-    }
+    const objectId = parseProductObjectId(id);
 
     // Check if product exists
     const existing = await collection.findOne({ _id: objectId });
@@ -283,11 +377,31 @@ export async function updateProduct(id: string, input: UpdateProductInput, actor
 
 
 
-    const updateDoc: any = {
+    const updateDoc: Partial<ProductDocument> = {
         updatedAt: new Date(),
     };
 
+    const nextName = input.name ?? existing.name;
     if (input.name) updateDoc.name = input.name;
+    const shouldResolveSlug =
+        input.slug !== undefined ||
+        input.slugUpdateMode === 'regenerate' ||
+        !existing.slug;
+
+    if (shouldResolveSlug) {
+        const requestedSlug = input.slug !== undefined
+            ? input.slug
+            : input.slugUpdateMode === 'regenerate'
+                ? null
+                : existing.slug ?? null;
+
+        updateDoc.slug = await resolveProductSlug(collection, {
+            name: nextName,
+            requestedSlug,
+            existingId: objectId,
+            rejectDuplicateRequestedSlug: input.slug !== undefined,
+        });
+    }
     if (input.subtitle !== undefined) updateDoc.subtitle = input.subtitle;
     if (input.description !== undefined) updateDoc.description = input.description;
     if (input.metaTitle !== undefined) updateDoc.metaTitle = input.metaTitle;
@@ -338,12 +452,7 @@ export async function updateProduct(id: string, input: UpdateProductInput, actor
 export async function updateProductWeight(id: string, weight: number) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ID');
-    }
+    const objectId = parseProductObjectId(id);
 
     const result = await collection.findOneAndUpdate(
         { _id: objectId },
@@ -361,12 +470,7 @@ export async function updateProductWeight(id: string, weight: number) {
 export async function deleteProduct(id: string, actor?: ActivityActor) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ID');
-    }
+    const objectId = parseProductObjectId(id);
 
     const existing = await collection.findOne({ _id: objectId });
     if (!existing) {
@@ -405,12 +509,7 @@ export async function deleteProduct(id: string, actor?: ActivityActor) {
 export async function addProductImages(id: string, images: ProductImage[]) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ID');
-    }
+    const objectId = parseProductObjectId(id);
 
     const existing = await collection.findOne({ _id: objectId });
     if (!existing) {
@@ -443,12 +542,7 @@ export async function addProductImages(id: string, images: ProductImage[]) {
 export async function deleteProductImage(id: string, imageId: string) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ID');
-    }
+    const objectId = parseProductObjectId(id);
 
     const existing = await collection.findOne({ _id: objectId });
     if (!existing) {
@@ -484,12 +578,7 @@ export async function deleteProductImage(id: string, imageId: string) {
 export async function mapImageToVariants(id: string, mappings: ImageMappingInput[]) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ID');
-    }
+    const objectId = parseProductObjectId(id);
 
     const existing = await collection.findOne({ _id: objectId });
     if (!existing) {
@@ -566,7 +655,7 @@ export async function searchProducts(query: string, limit = 10) {
     });
 
     const phraseIds = phraseDocs.map((doc) => doc._id);
-    const fallbackFilter: Record<string, any> = {
+    const fallbackFilter: Record<string, unknown> = {
         $and: wordClauses,
     };
 
@@ -634,7 +723,7 @@ export async function bulkUpdatePrices(input: BulkPriceUpdateInput, actor?: Acti
     };
 
     // Build the filter based on mode
-    let filter: Record<string, any> = {};
+    let filter: Record<string, unknown> = {};
 
     if (input.mode === 'category') {
         if (input.ids.length === 0) {
@@ -789,17 +878,12 @@ export async function getProductsSeoList(page = 1, limit = 20, search?: string) 
 
 export async function updateProductSeo(
     id: string,
-    input: { metaTitle?: string | null; metaDescription?: string | null },
+    input: { slug?: string | null; metaTitle?: string | null; metaDescription?: string | null },
     actor?: ActivityActor,
 ) {
     const collection = await getCollection<ProductDocument>(COLLECTION);
 
-    let objectId: ObjectId;
-    try {
-        objectId = new ObjectId(id);
-    } catch {
-        throw new AppError(400, 'INVALID_ID');
-    }
+    const objectId = parseProductObjectId(id);
 
     const existing = await collection.findOne({ _id: objectId });
     if (!existing) {
@@ -809,6 +893,21 @@ export async function updateProductSeo(
     const updateDoc: Partial<ProductDocument> = {
         updatedAt: new Date(),
     };
+
+    if (input.slug !== undefined) {
+        updateDoc.slug = await resolveProductSlug(collection, {
+            name: existing.name,
+            requestedSlug: input.slug,
+            existingId: objectId,
+            rejectDuplicateRequestedSlug: true,
+        });
+    } else if (!existing.slug) {
+        updateDoc.slug = await resolveProductSlug(collection, {
+            name: existing.name,
+            requestedSlug: null,
+            existingId: objectId,
+        });
+    }
 
     if (input.metaTitle !== undefined) {
         updateDoc.metaTitle = input.metaTitle;

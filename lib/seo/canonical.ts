@@ -33,16 +33,16 @@ export function buildCanonicalUrl(pathname: string) {
     return new URL(normalizePath(pathname), getSiteUrl()).toString();
 }
 
-export function buildProductPath(productId: string) {
-    return `/product/${encodeURIComponent(productId)}`;
+export function buildProductPath(productSlug: string) {
+    return `/product/${encodeURIComponent(productSlug)}`;
 }
 
 export function buildCategoryPath(slug: string) {
     return `/category/${encodeURIComponent(slug)}`;
 }
 
-export function buildProductCanonicalUrl(productId: string) {
-    return buildCanonicalUrl(buildProductPath(productId));
+export function buildProductCanonicalUrl(productSlug: string) {
+    return buildCanonicalUrl(buildProductPath(productSlug));
 }
 
 export function buildCategoryCanonicalUrl(slug: string) {

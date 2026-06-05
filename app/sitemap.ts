@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getCachedPublishedBlogSitemapEntries } from '@/lib/blog/blog-cache';
-import { getCachedProductIds } from '@/lib/product/product-cache';
+import { getCachedProductSlugs } from '@/lib/product/product-cache';
 import { getCachedAllCategories } from '@/lib/category/category-cache';
 import { Category } from '@/lib/category/model/category.model';
 import {
@@ -36,14 +36,14 @@ function collectCategoryPaths(categories: Category[]) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const [productIds, categories, blogEntries] = await Promise.all([
-        getCachedProductIds(),
+    const [productSlugs, categories, blogEntries] = await Promise.all([
+        getCachedProductSlugs(),
         getCachedAllCategories(),
         getCachedPublishedBlogSitemapEntries(),
     ]);
 
-    const productEntries = productIds.map((id) => ({
-        url: buildCanonicalUrl(buildProductPath(id)),
+    const productEntries = productSlugs.map((slug) => ({
+        url: buildCanonicalUrl(buildProductPath(slug)),
         lastModified: new Date(),
     }));
     const categoryEntries = collectCategoryPaths(categories).map((path) => ({

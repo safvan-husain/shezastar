@@ -7,6 +7,7 @@ import { SEO_ADMIN_ROLES } from '@/lib/auth/admin-permissions';
 import { buildAdminActivityActor } from '@/lib/activity/activity.service';
 import { catchError } from '@/lib/errors/app-error';
 import { withRequestLogging } from '@/lib/logging/request-logger';
+import { getProduct } from '@/lib/product/product.service';
 
 function normalizeNullableString(value: unknown) {
     if (value === null) {
@@ -28,14 +29,20 @@ async function PATCHHandler(
         const actor = buildAdminActivityActor(admin);
         const { id } = await params;
         const body = await req.json();
+        const existingProduct = await getProduct(id);
 
         const parsed = ProductSeoUpdateSchema.parse({
+            slug: normalizeNullableString(body.slug),
             metaTitle: normalizeNullableString(body.metaTitle),
             metaDescription: normalizeNullableString(body.metaDescription),
         });
 
         const product = await updateProductSeo(id, parsed, actor);
-        revalidateProductCache(id);
+        revalidateProductCache({
+            id,
+            slug: product.slug,
+            previousSlug: existingProduct.slug,
+        });
 
         return NextResponse.json(product);
     } catch (error) {

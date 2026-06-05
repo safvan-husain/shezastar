@@ -25,6 +25,7 @@ import type { CartItem } from "@/lib/cart/model/cart.model";
 import { CartItemDetailsModal } from "@/components/storefront/CartItemDetailsModal";
 import { TabbyPromo } from "@/components/storefront/TabbyPromo";
 import { useCountry } from "@/lib/country/CountryContext";
+import { buildProductPath } from "@/lib/seo/canonical";
 
 interface CartPageContentProps {
   initialCart: Cart | null;
@@ -569,7 +570,7 @@ export function CartPageContent({
                       View Details
                     </button>
                     <Link
-                      href={`/product/${encodeURIComponent(item.productId)}`}
+                      href={buildProductPath(product?.slug ?? item.productId)}
                       className="text-xs font-semibold text-[var(--storefront-button-primary)] hover:underline"
                     >
                       View product

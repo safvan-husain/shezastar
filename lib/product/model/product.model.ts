@@ -5,6 +5,7 @@ import { ProductImage, ProductVariant, InstallationService, VariantStock, Produc
 export interface ProductDocument {
     _id: ObjectId;
     name: string;
+    slug?: string;
     subtitle?: string | null;
     description?: string | null;
     metaTitle?: string | null;
@@ -26,6 +27,7 @@ export interface ProductDocument {
 export interface Product {
     id: string;
     name: string;
+    slug?: string;
     subtitle?: string | null;
     description?: string | null;
     metaTitle?: string | null;
@@ -52,6 +54,7 @@ export function toProduct(doc: ProductDocument): Product {
     return {
         id: doc._id.toString(),
         name: doc.name,
+        slug: doc.slug,
         subtitle: doc.subtitle,
         description: doc.description,
         metaTitle: doc.metaTitle,
