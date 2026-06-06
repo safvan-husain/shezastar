@@ -91,6 +91,14 @@ function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback;
 }
 
+function toInputString(value?: string | number | null) {
+    if (value === undefined || value === null) {
+        return '';
+    }
+
+    return String(value);
+}
+
 function ReadOnlyValue({ label, value }: { label: string; value: string }) {
     return (
         <Input
@@ -154,8 +162,8 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
     const [metaTitle, setMetaTitle] = useState(initialData?.metaTitle || '');
     const [metaDescription, setMetaDescription] = useState(initialData?.metaDescription || '');
     const [specifications, setSpecifications] = useState<ProductSpecification[]>(initialData?.specifications || []);
-    const [basePrice, setBasePrice] = useState(initialData?.basePrice || '');
-    const [offerPercentage, setOfferPercentage] = useState(initialData?.offerPercentage || '');
+    const [basePrice, setBasePrice] = useState(() => toInputString(initialData?.basePrice));
+    const [offerPercentage, setOfferPercentage] = useState(() => toInputString(initialData?.offerPercentage));
     const [images, setImages] = useState<ImageFile[]>(
         initialData?.images?.map((img) => ({
             id: String(img.id),
