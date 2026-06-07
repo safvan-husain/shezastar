@@ -326,7 +326,7 @@ export function ProductDetails({ product, tabbyConfig }: ProductDetailsProps) {
 
           <h1 className="text-3xl font-bold text-[var(--storefront-text-primary)] break-words">{displayTitle}</h1>
 
-          <div className="flex items-baseline gap-3">
+          <div className="flex flex-col sm:flex-row items-baseline gap-3">
             {(() => {
               const discountPct = product.offerPercentage ?? 0;
               const hasDiscount = discountPct > 0;
