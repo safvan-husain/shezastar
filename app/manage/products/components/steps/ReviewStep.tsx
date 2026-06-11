@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { getVariantCombinationKey } from "@/lib/product/product.utils";
 import { filterImagesByVariants } from "@/lib/product/model/product.model";
+import { parseCategoriesResponse } from '@/lib/category/category-client';
 
 interface ImageFile {
     id: string;
@@ -106,15 +107,7 @@ export function ReviewStep({
                     return;
                 }
 
-                const data: {
-                    id: string;
-                    name: string;
-                    subCategories: {
-                        id: string;
-                        name: string;
-                        subSubCategories: { id: string; name: string }[];
-                    }[];
-                }[] = await res.json();
+                const data = parseCategoriesResponse(await res.json());
 
                 const map = new Map<string, string[]>();
 

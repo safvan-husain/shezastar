@@ -55,8 +55,11 @@ function normalizeSubCategory(
     };
 }
 
-function normalizeSubCategories(categoryName: string, subCategories: CategorySubCategory[]) {
-    return subCategories.map(subCategory => normalizeSubCategory(categoryName, subCategory));
+function normalizeSubCategories(
+    categoryName: string,
+    subCategories: CategorySubCategory[] | null | undefined
+) {
+    return (subCategories ?? []).map(subCategory => normalizeSubCategory(categoryName, subCategory));
 }
 
 export interface CategoryDocument {
@@ -91,7 +94,7 @@ export function toCategory(doc: CategoryDocument): Category {
         metaTitle: doc.metaTitle ?? null,
         metaDescription: doc.metaDescription ?? null,
         imagePath: doc.imagePath ?? null,
-        subCategories: normalizeSubCategories(doc.name, doc.subCategories),
+        subCategories: normalizeSubCategories(doc.name, doc.subCategories ?? []),
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
     };

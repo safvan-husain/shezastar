@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
+import { parseCategoriesResponse } from '@/lib/category/category-client';
 
 interface SubSubCategory {
     id: string;
@@ -33,9 +34,9 @@ type ExpandedState = Record<string, boolean>;
  */
 function getAllDescendantIds(category: Category): string[] {
     const ids: string[] = [];
-    category.subCategories.forEach(sub => {
+    (category.subCategories ?? []).forEach(sub => {
         ids.push(sub.id);
-        sub.subSubCategories.forEach(subSub => ids.push(subSub.id));
+        (sub.subSubCategories ?? []).forEach(subSub => ids.push(subSub.id));
     });
     return ids;
 }
@@ -59,7 +60,7 @@ export function CategoryTreeSelector({ selectedIds, onSelectionChange }: Categor
             try {
                 const res = await fetch('/api/categories');
                 if (!res.ok) throw new Error('Failed to load categories');
-                const data = await res.json();
+                const data = parseCategoriesResponse(await res.json());
                 setCategories(data);
             } catch (err: any) {
                 showToast(err.message || 'Failed to load categories', 'error');

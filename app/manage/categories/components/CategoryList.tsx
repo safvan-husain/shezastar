@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SingleImageUploader } from '@/components/ui/SingleImageUploader';
+import { parseCategoriesResponse } from '@/lib/category/category-client';
 
 interface SubSubCategory {
     id: string;
@@ -126,7 +127,7 @@ export function CategoryList() {
                 return;
             }
 
-            const data = await res.json();
+            const data = parseCategoriesResponse(await res.json());
             setCategories(data);
         } catch (err: unknown) {
             const message = getErrorMessage(err, 'Failed to load categories');

@@ -24,6 +24,7 @@ import {
     getSubSubCategorySlug,
 } from './slug';
 import type { ProductDocument } from '@/lib/product/model/product.model';
+import { logger } from '@/lib/logging/logger';
 
 const COLLECTION = 'categories';
 const PRODUCT_COLLECTION = 'products';
@@ -196,6 +197,16 @@ export async function getCategory(identifier: string) {
 export async function getAllCategories() {
     const collection = await getCollection<CategoryDocument>(COLLECTION);
     const docs = await collection.find({}).sort({ name: 1 }).toArray();
+
+    for (const doc of docs) {
+        if (!Array.isArray(doc.subCategories)) {
+            await logger.debug('Category document missing subCategories array; normalizing on read', {
+                categoryId: doc._id.toString(),
+                categoryName: doc.name,
+            });
+        }
+    }
+
     return toCategories(docs);
 }
 
@@ -591,7 +602,7 @@ export async function getCategoryHierarchyIds(identifier: string): Promise<strin
                 break;
             }
 
-            for (const sub of cat.subCategories) {
+            for (const sub of cat.subCategories ?? []) {
                 if (sub.slug === identifier) {
                     for (const [mid, lineage] of lineageMap.entries()) {
                         if (lineage.includes(sub.id)) matchedIds.add(mid);
@@ -636,7 +647,7 @@ export async function getCategoryLineageMap(): Promise<Map<string, string[]>> {
         const catId = cat._id.toString();
         map.set(catId, [catId]);
 
-        for (const sub of cat.subCategories) {
+        for (const sub of cat.subCategories ?? []) {
             const subId = sub.id;
             map.set(subId, [catId, subId]);
 

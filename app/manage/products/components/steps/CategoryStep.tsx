@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
+import { parseCategoriesResponse } from '@/lib/category/category-client';
 
 interface SubSubCategory {
     id: string;
@@ -65,10 +66,10 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
                 return;
             }
 
-            const data = await res.json();
+            const data = parseCategoriesResponse(await res.json());
             setCategories(data);
-        } catch (err: any) {
-            const message = err.message || 'Failed to load categories';
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to load categories';
             showToast(message, 'error', {
                 url: '/api/categories',
                 method: 'GET',
@@ -92,7 +93,7 @@ export function CategoryStep({ selectedSubCategoryIds, onSelectionChange }: Cate
             options.push(categoryOption);
             map.set(categoryOption.id, categoryOption);
 
-            category.subCategories.forEach(sub => {
+            (category.subCategories ?? []).forEach(sub => {
                 // Add sub-category
                 const subOption: CategoryOption = {
                     id: sub.id,
