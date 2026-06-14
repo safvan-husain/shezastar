@@ -295,12 +295,8 @@ export default function ProductsClient({ adminRole = 'super_admin' }: { adminRol
                             <ProductCard
                                 key={product.id}
                                 product={product}
-                                editHref={
-                                    adminRole === 'seo_manager'
-                                        ? `/manage/seo/products/${product.id}/edit`
-                                        : `/manage/products/${product.id}/edit`
-                                }
-                                editLabel={adminRole === 'seo_manager' ? 'Edit SEO' : 'Edit Product'}
+                                editHref={`/manage/products/${product.id}/edit`}
+                                editLabel="Edit Product"
                                 showFeaturedAction={adminRole === 'super_admin'}
                             />
                         ))}

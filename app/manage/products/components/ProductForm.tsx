@@ -85,6 +85,7 @@ interface ProductFormProps {
     globalInstallationLocations?: InstallationLocation[];
     brands?: BrandOption[];
     mode?: 'full' | 'seo';
+    allowDelete?: boolean;
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -148,7 +149,13 @@ function ReadOnlyPillList({ label, items, emptyLabel }: { label: string; items: 
     );
 }
 
-export function ProductForm({ initialData, globalInstallationLocations = [], brands = [], mode = 'full' }: ProductFormProps) {
+export function ProductForm({
+    initialData,
+    globalInstallationLocations = [],
+    brands = [],
+    mode = 'full',
+    allowDelete = true,
+}: ProductFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
     const isSeoMode = mode === 'seo';
@@ -838,7 +845,7 @@ export function ProductForm({ initialData, globalInstallationLocations = [], bra
                         </div>
 
                         <div className="flex flex-wrap gap-3">
-                            {initialData?.id && (
+                            {initialData?.id && allowDelete && (
                                 <Button variant="danger" size="lg" onClick={() => setIsDeleteDialogOpen(true)} disabled={loading}>
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1 1h-4a1 1 0 00-1 1v3M4 7h16" />

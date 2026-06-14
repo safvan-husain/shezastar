@@ -99,7 +99,7 @@ describe('admin SEO permissions integration', () => {
         expect(patchBody.metaDescription).toBe('SEO Description');
     });
 
-    it('blocks seo manager from full product updates', async () => {
+    it('allows seo manager to update existing products', async () => {
         const response = await updateProduct(
             new Request(`http://localhost/api/products/${productId}`, {
                 method: 'PUT',
@@ -113,8 +113,9 @@ describe('admin SEO permissions integration', () => {
         );
         const body = await response.json();
 
-        expect(response.status).toBe(403);
-        expect(body.code).toBe('FORBIDDEN');
+        expect(response.status).toBe(200);
+        expect(body.name).toBe('Renamed Product');
+        expect(body.basePrice).toBe(999);
     });
 
     it('blocks seo manager from creating and deleting products', async () => {

@@ -4,6 +4,7 @@ import { ProductForm } from '../../components/ProductForm';
 import { ErrorToastHandler, type ToastErrorPayload } from '@/components/ErrorToastHandler';
 import { getInstallationLocations } from '@/lib/app-settings/app-settings.service';
 import { handleGetAllBrands } from '@/lib/brand/brand.controller';
+import { getAdminRole, requireAdminAuth } from '@/lib/auth/admin-auth';
 
 type ProductFormData = NonNullable<Parameters<typeof ProductForm>[0]['initialData']>;
 
@@ -56,6 +57,8 @@ export default async function EditProductPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
+    const admin = await requireAdminAuth();
+    const adminRole = getAdminRole(admin);
     const { product, error } = await getProduct(id);
     const globalInstallationLocations = await getInstallationLocations();
     const { body: brandsBody } = await handleGetAllBrands();
@@ -103,6 +106,7 @@ export default async function EditProductPage({
                         initialData={product}
                         globalInstallationLocations={globalInstallationLocations}
                         brands={brands}
+                        allowDelete={adminRole === 'super_admin'}
                     />
                 ) : (
                     <div className="rounded-xl border-2 border-[var(--border-subtle)] p-4 text-[var(--muted-foreground)]">
