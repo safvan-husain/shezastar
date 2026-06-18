@@ -4,8 +4,9 @@ export const SUPER_ADMIN_ROLES = ['super_admin'] as const satisfies readonly Adm
 export const SEO_ADMIN_ROLES = ['super_admin', 'seo_manager'] as const satisfies readonly AdminRole[];
 export const PRODUCT_UPDATE_ROLES = ['super_admin', 'seo_manager'] as const satisfies readonly AdminRole[];
 export const PRODUCT_ADMIN_ROLES = ['super_admin'] as const satisfies readonly AdminRole[];
+export const BLOG_ADMIN_ROLES = ['super_admin', 'seo_manager'] as const satisfies readonly AdminRole[];
 
-export const SEO_MANAGER_ALLOWED_PATH_PREFIXES = ['/manage/seo', '/manage/products'] as const;
+export const SEO_MANAGER_ALLOWED_PATH_PREFIXES = ['/manage/seo', '/manage/products', '/manage/blogs'] as const;
 export const SEO_MANAGER_BLOCKED_PATH_PREFIXES = [
     '/manage/products/bulk-price-update',
     '/manage/products/new',

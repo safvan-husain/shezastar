@@ -5,6 +5,8 @@ import { PATCH as patchProductSeoById } from '@/app/api/admin/seo/products/[id]/
 import { POST as createProductRoute } from '@/app/api/products/route';
 import { PUT as updateProduct, DELETE as deleteProduct } from '@/app/api/products/[id]/route';
 import { PATCH as patchStaticSeo } from '@/app/api/admin/settings/seo/[key]/route';
+import { POST as createBlogRoute } from '@/app/api/blogs/route';
+import { PUT as updateBlog, DELETE as deleteBlog } from '@/app/api/blogs/[id]/route';
 import { createProduct } from '@/lib/product/product.service';
 import { clear } from '../test-db';
 import { AppError } from '@/lib/errors/app-error';
@@ -167,6 +169,47 @@ describe('admin SEO permissions integration', () => {
 
         expect(response.status).toBe(200);
         expect(body.title).toBe('Updated Home Title');
+    });
+
+    it('allows seo manager to create, update, and delete blogs', async () => {
+        const createResponse = await createBlogRoute(
+            new Request('http://localhost/api/blogs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: 'SEO Manager Blog',
+                    excerpt: 'A blog post created by the SEO manager.',
+                    content: 'Full blog content for SEO manager permissions test.',
+                    status: 'draft',
+                }),
+            }),
+        );
+        const created = await createResponse.json();
+
+        expect(createResponse.status).toBe(201);
+        expect(created.title).toBe('SEO Manager Blog');
+
+        const updateResponse = await updateBlog(
+            new Request(`http://localhost/api/blogs/${created.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: 'SEO Manager Blog Updated',
+                }),
+            }),
+            { params: Promise.resolve({ id: created.id }) },
+        );
+        const updated = await updateResponse.json();
+
+        expect(updateResponse.status).toBe(200);
+        expect(updated.title).toBe('SEO Manager Blog Updated');
+
+        const deleteResponse = await deleteBlog(
+            new Request(`http://localhost/api/blogs/${created.id}`, { method: 'DELETE' }),
+            { params: Promise.resolve({ id: created.id }) },
+        );
+
+        expect(deleteResponse.status).toBe(200);
     });
 
     it('allows super admin through protected product mutation routes', async () => {

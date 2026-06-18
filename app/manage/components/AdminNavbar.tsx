@@ -192,7 +192,15 @@ const SEO_MANAGER_PRODUCTS_NAV_GROUP: NavGroupItem = {
     ),
 };
 
-const SEO_MANAGER_NAV_ITEMS: NavItem[] = [SEO_MANAGER_PRODUCTS_NAV_GROUP, ...SEO_NAV_ITEMS];
+const BLOGS_NAV_ITEM: NavLinkItem = {
+    type: 'link',
+    href: '/manage/blogs',
+    label: 'Blogs',
+    shortLabel: 'Blog',
+    Icon: BlogIcon,
+};
+
+const SEO_MANAGER_NAV_ITEMS: NavItem[] = [SEO_MANAGER_PRODUCTS_NAV_GROUP, BLOGS_NAV_ITEM, ...SEO_NAV_ITEMS];
 
 const NAV_ITEMS: NavItem[] = [
     { type: 'link', href: '/manage', label: 'Dashboard', shortLabel: 'Dash', Icon: DashboardIcon },

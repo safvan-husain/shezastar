@@ -35,7 +35,7 @@ describe('admin permissions', () => {
         expect(isSuperAdmin(createAdmin('super_admin'))).toBe(true);
     });
 
-    it('allows seo manager under /manage/seo and /manage/products only', () => {
+    it('allows seo manager under product, blog, and seo manage paths', () => {
         expect(canAccessManagePath('seo_manager', '/manage/seo')).toBe(true);
         expect(canAccessManagePath('seo_manager', '/manage/seo/products')).toBe(true);
         expect(canAccessManagePath('seo_manager', '/manage/seo/products/507f1f77bcf86cd799439011/edit')).toBe(true);
@@ -43,6 +43,9 @@ describe('admin permissions', () => {
         expect(canAccessManagePath('seo_manager', '/manage/products/new')).toBe(false);
         expect(canAccessManagePath('seo_manager', '/manage/products/507f1f77bcf86cd799439011/edit')).toBe(true);
         expect(canAccessManagePath('seo_manager', '/manage/products/bulk-price-update')).toBe(false);
+        expect(canAccessManagePath('seo_manager', '/manage/blogs')).toBe(true);
+        expect(canAccessManagePath('seo_manager', '/manage/blogs/new')).toBe(true);
+        expect(canAccessManagePath('seo_manager', '/manage/blogs/507f1f77bcf86cd799439011')).toBe(true);
         expect(canAccessManagePath('seo_manager', '/manage')).toBe(false);
         expect(canAccessManagePath('seo_manager', '/manage/categories')).toBe(false);
     });
