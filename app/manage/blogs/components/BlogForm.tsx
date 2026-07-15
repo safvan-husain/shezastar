@@ -195,6 +195,9 @@ export function BlogForm({ initialData }: BlogFormProps) {
                             <option value="draft">Draft</option>
                             <option value="published">Published</option>
                         </select>
+                        <p className="text-xs text-[var(--text-muted)]">
+                            Draft blogs stay in the admin panel. Only published blogs appear on the storefront.
+                        </p>
                     </div>
 
                     <RichTextEditor

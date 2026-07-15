@@ -85,8 +85,6 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 }
 
 async function CachedBlogPage({ slug }: { slug: string }) {
-    'use cache';
-
     let blog: Blog | null = null;
 
     try {
