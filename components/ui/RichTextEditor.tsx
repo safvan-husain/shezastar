@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useEffect, useId, useMemo, useReducer, useRef, useState } from 'react';
 import { EditorContent, type Editor, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -67,6 +67,10 @@ export function RichTextEditor({
     editorClassName = '',
 }: RichTextEditorProps) {
     const [, forceRender] = useReducer((count) => count + 1, 0);
+    const [showLinkControls, setShowLinkControls] = useState(false);
+    const [linkUrl, setLinkUrl] = useState('');
+    const [linkError, setLinkError] = useState('');
+    const linkInputId = useId();
     const valueRef = useRef(value);
     const minHeight = Math.max(rows, 6) * 28;
 
@@ -132,6 +136,36 @@ export function RichTextEditor({
     }, [editor, value]);
 
     const activeBlockStyle = getActiveBlockStyle(editor);
+    const canEditLink = Boolean(
+        editor && (editor.isActive('link') || editor.state.selection.from !== editor.state.selection.to)
+    );
+
+    const openLinkControls = () => {
+        if (!editor || disabled || !canEditLink) return;
+        setLinkUrl(editor.getAttributes('link').href || '');
+        setLinkError('');
+        setShowLinkControls(true);
+    };
+
+    const applyLink = () => {
+        if (!editor || disabled) return;
+        const href = linkUrl.trim();
+        if (!href) return;
+        const applied = editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
+        if (!applied) {
+            setLinkError('Enter a valid and safe link URL.');
+            return;
+        }
+        setLinkError('');
+        setShowLinkControls(false);
+    };
+
+    const removeLink = () => {
+        if (!editor || disabled) return;
+        editor.chain().focus().extendMarkRange('link').unsetLink().run();
+        setLinkUrl('');
+        setShowLinkControls(false);
+    };
 
     return (
         <div className={className}>
@@ -183,6 +217,14 @@ export function RichTextEditor({
                     >
                         <span className="italic">I</span>
                     </ToolbarButton>
+                    <ToolbarButton
+                        label="Add or edit link"
+                        active={editor?.isActive('link')}
+                        disabled={!editor || disabled || !canEditLink}
+                        onClick={openLinkControls}
+                    >
+                        Link
+                    </ToolbarButton>
 
                     <div className="hidden h-6 w-px bg-[var(--border-subtle)] sm:block" />
 
@@ -220,6 +262,50 @@ export function RichTextEditor({
                         Redo
                     </ToolbarButton>
                 </div>
+
+                {showLinkControls && (
+                    <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2">
+                        <label htmlFor={linkInputId} className="sr-only">
+                            Link URL
+                        </label>
+                        <input
+                            id={linkInputId}
+                            type="text"
+                            inputMode="url"
+                            value={linkUrl}
+                            onChange={(event) => {
+                                setLinkUrl(event.target.value);
+                                setLinkError('');
+                            }}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    applyLink();
+                                }
+                                if (event.key === 'Escape') setShowLinkControls(false);
+                            }}
+                            placeholder="https://example.com or /page"
+                            autoFocus
+                            className="h-9 min-w-64 flex-1 rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                        />
+                        <ToolbarButton label="Apply link" disabled={!linkUrl.trim()} onClick={applyLink}>
+                            Apply
+                        </ToolbarButton>
+                        {editor?.isActive('link') && (
+                            <ToolbarButton label="Remove link" onClick={removeLink}>
+                                Remove
+                            </ToolbarButton>
+                        )}
+                        <ToolbarButton label="Cancel link editing" onClick={() => setShowLinkControls(false)}>
+                            Cancel
+                        </ToolbarButton>
+                        {linkError && (
+                            <p role="alert" className="w-full text-xs text-red-600 dark:text-red-400">
+                                {linkError}
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 <div className="bg-[var(--bg-base)] p-4">
                     <EditorContent editor={editor} />

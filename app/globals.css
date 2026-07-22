@@ -282,6 +282,13 @@ body {
   list-style: decimal;
 }
 
+.shezastar-rich-editor a {
+  color: var(--text-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .storefront-blog-content {
   color: var(--storefront-text-secondary);
   font-size: 1rem;
@@ -329,6 +336,17 @@ body {
 
 .storefront-blog-content strong {
   color: var(--storefront-text-primary);
+}
+
+.storefront-blog-content a {
+  color: var(--storefront-text-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+}
+
+.storefront-blog-content a:hover {
+  text-decoration-thickness: 0.14em;
 }
 
 @layer utilities {
