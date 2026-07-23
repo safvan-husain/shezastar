@@ -88,6 +88,12 @@ export function RichTextEditor({
                     levels: [1, 2, 3],
                 },
                 horizontalRule: false,
+                link: {
+                    HTMLAttributes: {
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                    },
+                },
                 strike: false,
             }),
             Placeholder.configure({
@@ -151,7 +157,12 @@ export function RichTextEditor({
         if (!editor || disabled) return;
         const href = linkUrl.trim();
         if (!href) return;
-        const applied = editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
+        const applied = editor
+            .chain()
+            .focus()
+            .extendMarkRange('link')
+            .setLink({ href, target: '_blank', rel: 'noopener noreferrer' })
+            .run();
         if (!applied) {
             setLinkError('Enter a valid and safe link URL.');
             return;

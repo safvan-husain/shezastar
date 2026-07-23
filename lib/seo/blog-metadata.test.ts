@@ -27,7 +27,7 @@ describe('blog detail metadata', () => {
             params: Promise.resolve({ slug: 'test-blog' }),
         });
 
-        expect(metadata.title).toBe('Test Blog | Sheza Star');
+        expect(metadata.title).toBe('Test Blog');
         expect(metadata.description).toBe('A short excerpt for the blog post.');
         expect(metadata.alternates?.canonical).toBe('/blogs/test-blog');
         expect(metadata.openGraph).toMatchObject({
@@ -40,7 +40,7 @@ describe('blog detail metadata', () => {
                 {
                     url: 'https://shezastar.com/uploads/test-blog-cover.jpg',
                     secureUrl: 'https://shezastar.com/uploads/test-blog-cover.jpg',
-                    alt: 'Test Blog | Sheza Star',
+                    alt: 'Test Blog',
                 },
             ],
         });

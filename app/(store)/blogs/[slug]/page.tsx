@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
 
     try {
         const blog = await getCachedPublishedBlogBySlug(slug);
-        const title = `${blog.title} | Sheza Star`;
+        const title = blog.title;
 
         return {
             title,
@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
         };
     } catch {
         return {
-            title: 'Blog | Sheza Star',
+            title: 'Blog',
         };
     }
 }
